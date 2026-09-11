@@ -1,0 +1,13 @@
+agent: continuity_inspector
+signals:
+  deterministic_graph:
+    enabled: true
+  visual_cv_vlm:
+    enabled: true
+  contrastive_pre_filter:
+    enabled: true
+prompts:
+  vlm_continuity_check: "Compare these two keyframes from the same scene. Identify any visual continuity errors..."
+thresholds:
+  visual_continuity_precision_floor: 0.75
+  contrastive_anomaly_distance_threshold: 0.85

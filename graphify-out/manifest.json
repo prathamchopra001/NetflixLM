@@ -1,0 +1,1880 @@
+{
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\plugins\\graphify.js": {
+    "mtime": 1788746019.481081,
+    "seen": 1788888207.4471738,
+    "ast_hash": "05c1b965c8d4f9d185bdd6abcd3eb51f",
+    "semantic_hash": "05c1b965c8d4f9d185bdd6abcd3eb51f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\new_build_v2\\pipeline\\agents\\continuity_inspector.py": {
+    "mtime": 1782357283.1035511,
+    "seen": 1788888207.4471788,
+    "ast_hash": "fac200037bf5e4d85089493967be0030",
+    "semantic_hash": "fac200037bf5e4d85089493967be0030"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\new_build_v2\\pipeline\\agents\\recap_agent.py": {
+    "mtime": 1782357276.8665364,
+    "seen": 1788888207.4471803,
+    "ast_hash": "d8712cf6ace111605c2758be2bd7e17b",
+    "semantic_hash": "d8712cf6ace111605c2758be2bd7e17b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\new_build_v2\\pipeline\\agents\\script_critic.py": {
+    "mtime": 1782357270.708278,
+    "seen": 1788888207.447182,
+    "ast_hash": "e5acef5a6879c2904408217b950fa7d6",
+    "semantic_hash": "e5acef5a6879c2904408217b950fa7d6"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\new_build_v2\\services\\api\\main.py": {
+    "mtime": 1782357295.4812207,
+    "seen": 1788888207.4471827,
+    "ast_hash": "90708351beb913c25828e2a189b7d33f",
+    "semantic_hash": "90708351beb913c25828e2a189b7d33f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\opencode.json": {
+    "mtime": 1788745254.6688209,
+    "seen": 1788888207.4471836,
+    "ast_hash": "1efe24ecf938911d4f23e4b1c6ec91f7",
+    "semantic_hash": "1efe24ecf938911d4f23e4b1c6ec91f7"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\__init__.py": {
+    "mtime": 1782351660.8287504,
+    "seen": 1788888207.4471846,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\__init__.py": {
+    "mtime": 1782351665.1081011,
+    "seen": 1788888207.4471858,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\continuity_inspector\\__init__.py": {
+    "mtime": 1782351665.7779734,
+    "seen": 1788888207.4471867,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\continuity_inspector\\contrastive_filter.py": {
+    "mtime": 1782352000.7835338,
+    "seen": 1788888207.4471872,
+    "ast_hash": "dbe6fbd01e2fddf4fa533e6838b0b4f6",
+    "semantic_hash": "dbe6fbd01e2fddf4fa533e6838b0b4f6"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\continuity_inspector\\graph_check.py": {
+    "mtime": 1782351983.9502213,
+    "seen": 1788888207.447188,
+    "ast_hash": "a8d0e8bc1a54959c8d100c7ef9df1808",
+    "semantic_hash": "a8d0e8bc1a54959c8d100c7ef9df1808"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\continuity_inspector\\visual_pipeline.py": {
+    "mtime": 1782351991.8882253,
+    "seen": 1788888207.447189,
+    "ast_hash": "32035959cc4d0b833f7d3df9b1d80f14",
+    "semantic_hash": "32035959cc4d0b833f7d3df9b1d80f14"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\recap_agent\\__init__.py": {
+    "mtime": 1782351666.1238477,
+    "seen": 1788888207.44719,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\recap_agent\\base_generator.py": {
+    "mtime": 1782352010.7788458,
+    "seen": 1788888207.4471908,
+    "ast_hash": "a026b265a2293dc2e805255923110f86",
+    "semantic_hash": "a026b265a2293dc2e805255923110f86"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\recap_agent\\metadata_schema.py": {
+    "mtime": 1782352024.618168,
+    "seen": 1788888207.4471915,
+    "ast_hash": "cae1e08a676b28110ef2549dd7cb41c2",
+    "semantic_hash": "cae1e08a676b28110ef2549dd7cb41c2"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\recap_agent\\spoiler_control.py": {
+    "mtime": 1782352030.441934,
+    "seen": 1788888207.4471927,
+    "ast_hash": "ae177975ddfc5a27ea24117aaa5afa28",
+    "semantic_hash": "ae177975ddfc5a27ea24117aaa5afa28"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\recap_agent\\variant_engine.py": {
+    "mtime": 1782352020.2148604,
+    "seen": 1788888207.4471939,
+    "ast_hash": "6e28cfa58b2aa0bb809fab6805a0878e",
+    "semantic_hash": "6e28cfa58b2aa0bb809fab6805a0878e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\script_critic\\__init__.py": {
+    "mtime": 1782351665.4242544,
+    "seen": 1788888207.4471948,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\script_critic\\bdi_simulator.py": {
+    "mtime": 1782351953.1311448,
+    "seen": 1788888207.4471953,
+    "ast_hash": "7a8c96761171ac22bdd154dc9204156d",
+    "semantic_hash": "7a8c96761171ac22bdd154dc9204156d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\script_critic\\graph_traversal.py": {
+    "mtime": 1782351938.774951,
+    "seen": 1788888207.4471962,
+    "ast_hash": "26ff3468df78394d433f62b5ca6b7323",
+    "semantic_hash": "26ff3468df78394d433f62b5ca6b7323"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\script_critic\\rac_retrieval.py": {
+    "mtime": 1782351950.5479994,
+    "seen": 1788888207.4471972,
+    "ast_hash": "ee43ee9c7d452ada172640f644769e8a",
+    "semantic_hash": "ee43ee9c7d452ada172640f644769e8a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\__init__.py": {
+    "mtime": 1782355797.9840045,
+    "seen": 1788888207.4471982,
+    "ast_hash": "15688576e0271668cc729306a95c1c8f",
+    "semantic_hash": "15688576e0271668cc729306a95c1c8f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\normalizer\\__init__.py": {
+    "mtime": 1782355801.8419404,
+    "seen": 1788888207.4472003,
+    "ast_hash": "3757b1ccd8706c5eef490db7597802cf",
+    "semantic_hash": "3757b1ccd8706c5eef490db7597802cf"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\normalizer\\episode_document.py": {
+    "mtime": 1782355716.6471274,
+    "seen": 1788888207.447201,
+    "ast_hash": "95a4606409ec01f95ac768bbfda10f18",
+    "semantic_hash": "95a4606409ec01f95ac768bbfda10f18"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\parsers\\__init__.py": {
+    "mtime": 1782355796.0655055,
+    "seen": 1788888207.447202,
+    "ast_hash": "820ce904f4fd2d9dcc5f2da8814aaddf",
+    "semantic_hash": "820ce904f4fd2d9dcc5f2da8814aaddf"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\parsers\\fdx_parser.py": {
+    "mtime": 1782355730.5791032,
+    "seen": 1788888207.4472032,
+    "ast_hash": "53b9da5b2ab18999010e80ba6adff635",
+    "semantic_hash": "53b9da5b2ab18999010e80ba6adff635"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\parsers\\fountain_parser.py": {
+    "mtime": 1782355745.2317667,
+    "seen": 1788888207.4472036,
+    "ast_hash": "45105dc134f5a5ef5fd7912744c2d798",
+    "semantic_hash": "45105dc134f5a5ef5fd7912744c2d798"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\parsers\\pdf_parser.py": {
+    "mtime": 1782355736.8782904,
+    "seen": 1788888207.4472046,
+    "ast_hash": "8de4460ecc64c1a560c38931e7abbe9e",
+    "semantic_hash": "8de4460ecc64c1a560c38931e7abbe9e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\parsers\\subtitle_parser.py": {
+    "mtime": 1782355755.8854902,
+    "seen": 1788888207.4472053,
+    "ast_hash": "09f37173cc5ee9936ecf47ee9e9ca23b",
+    "semantic_hash": "09f37173cc5ee9936ecf47ee9e9ca23b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\video\\__init__.py": {
+    "mtime": 1782355802.390387,
+    "seen": 1788888207.4472063,
+    "ast_hash": "d0c62fd1cae2b211a195ae5f49f94a06",
+    "semantic_hash": "d0c62fd1cae2b211a195ae5f49f94a06"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\video\\keyframe_extractor.py": {
+    "mtime": 1782355765.1864407,
+    "seen": 1788888207.447207,
+    "ast_hash": "2a95a6cef2731961dd18d77541db5c5d",
+    "semantic_hash": "2a95a6cef2731961dd18d77541db5c5d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\ingestion\\video\\smpte_aligner.py": {
+    "mtime": 1782355791.250664,
+    "seen": 1788888207.4472077,
+    "ast_hash": "f19574ee47bcdb66467883d8e2f6f143",
+    "semantic_hash": "f19574ee47bcdb66467883d8e2f6f143"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\__init__.py": {
+    "mtime": 1782351662.4661639,
+    "seen": 1788888207.4472084,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\builder\\__init__.py": {
+    "mtime": 1782351663.4652097,
+    "seen": 1788888207.4472094,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\builder\\graph_builder.py": {
+    "mtime": 1782410335.977043,
+    "seen": 1788888207.44721,
+    "ast_hash": "70cf7b9ed91436523dc482243aa10eb8",
+    "semantic_hash": "70cf7b9ed91436523dc482243aa10eb8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\constraints\\__init__.py": {
+    "mtime": 1782351663.8134468,
+    "seen": 1788888207.447211,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\constraints\\engine.py": {
+    "mtime": 1782410335.9588804,
+    "seen": 1788888207.4472117,
+    "ast_hash": "5b93365fc248a3001d9eb3966bf5921d",
+    "semantic_hash": "5b93365fc248a3001d9eb3966bf5921d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\correction\\__init__.py": {
+    "mtime": 1782351664.490689,
+    "seen": 1788888207.4472127,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\extraction\\__init__.py": {
+    "mtime": 1782351663.138923,
+    "seen": 1788888207.4472134,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\extraction\\ner_model.py": {
+    "mtime": 1782351953.8199315,
+    "seen": 1788888207.4472141,
+    "ast_hash": "886ad2b615fc740a29be95a8c2c8a5ce",
+    "semantic_hash": "886ad2b615fc740a29be95a8c2c8a5ce"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\extraction\\relation_model.py": {
+    "mtime": 1782351987.2620187,
+    "seen": 1788888207.4472146,
+    "ast_hash": "39fe76f6dbc750a139da596f9f03bccd",
+    "semantic_hash": "39fe76f6dbc750a139da596f9f03bccd"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\queries\\__init__.py": {
+    "mtime": 1782351664.1332662,
+    "seen": 1788888207.4472156,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\schema\\__init__.py": {
+    "mtime": 1782351662.7878075,
+    "seen": 1788888207.4472163,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\schema\\entities.py": {
+    "mtime": 1782351865.6046958,
+    "seen": 1788888207.4472177,
+    "ast_hash": "e6a4af9dee320680e92d1c2ef01eef16",
+    "semantic_hash": "e6a4af9dee320680e92d1c2ef01eef16"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\knowledge_graph\\schema\\relations.py": {
+    "mtime": 1782351896.7093966,
+    "seen": 1788888207.4472184,
+    "ast_hash": "76d286ab0847765fe9d097f00fd646ef",
+    "semantic_hash": "76d286ab0847765fe9d097f00fd646ef"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\orchestrator\\__init__.py": {
+    "mtime": 1782351667.0564692,
+    "seen": 1788888207.4472191,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\report\\__init__.py": {
+    "mtime": 1782351666.7388487,
+    "seen": 1788888207.4472196,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\vector_index\\__init__.py": {
+    "mtime": 1782351664.7793033,
+    "seen": 1788888207.4472208,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\vector_index\\chunker.py": {
+    "mtime": 1782410266.4366868,
+    "seen": 1788888207.4472218,
+    "ast_hash": "20883bcb4f739807b4401ff3665668f5",
+    "semantic_hash": "20883bcb4f739807b4401ff3665668f5"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\verification\\__init__.py": {
+    "mtime": 1782351666.4187381,
+    "seen": 1788888207.4472225,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\services\\api\\deps.py": {
+    "mtime": 1782355085.1185963,
+    "seen": 1788888207.447223,
+    "ast_hash": "099f5aeba1dcacb3ca5db531223c7f2a",
+    "semantic_hash": "099f5aeba1dcacb3ca5db531223c7f2a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\services\\api\\main.py": {
+    "mtime": 1782355090.244953,
+    "seen": 1788888207.4472263,
+    "ast_hash": "b726facd926f2b0e67574f5ab56612c7",
+    "semantic_hash": "b726facd926f2b0e67574f5ab56612c7"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\services\\api\\models.py": {
+    "mtime": 1782355087.4065628,
+    "seen": 1788888207.4472268,
+    "ast_hash": "5ef0aea2a84922f94060bc8bad41399e",
+    "semantic_hash": "5ef0aea2a84922f94060bc8bad41399e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\services\\api\\routes\\episodes.py": {
+    "mtime": 1782355094.3332782,
+    "seen": 1788888207.447228,
+    "ast_hash": "8c3b28baa2dc847fa66f6b375b8ddc8a",
+    "semantic_hash": "8c3b28baa2dc847fa66f6b375b8ddc8a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\services\\api\\routes\\flags.py": {
+    "mtime": 1782355096.214576,
+    "seen": 1788888207.447229,
+    "ast_hash": "c0a6f03aade05c2f4a23a034a03d8190",
+    "semantic_hash": "c0a6f03aade05c2f4a23a034a03d8190"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\services\\api\\routes\\nowledge_graph.py": {
+    "mtime": 1782355102.9344044,
+    "seen": 1788888207.4472296,
+    "ast_hash": "f133a84734c831d7e24086c9f3b6c259",
+    "semantic_hash": "f133a84734c831d7e24086c9f3b6c259"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\services\\api\\routes\\recaps.py": {
+    "mtime": 1782355098.685688,
+    "seen": 1788888207.4472306,
+    "ast_hash": "47a9760eb11fdb3e43a9b652394d1605",
+    "semantic_hash": "47a9760eb11fdb3e43a9b652394d1605"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\tests\\__init__.py": {
+    "mtime": 1782351667.3554938,
+    "seen": 1788888207.4472315,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\tests\\integration\\__init__.py": {
+    "mtime": 1782351667.632476,
+    "seen": 1788888207.4472322,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\3d-scene-developer.md": {
+    "mtime": 1782354743.6947868,
+    "seen": 1788888207.447233,
+    "ast_hash": "5e7a2ddcdfdf199b6e5175b34dfb28bd",
+    "semantic_hash": "5e7a2ddcdfdf199b6e5175b34dfb28bd"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\accessibility-auditor.md": {
+    "mtime": 1782354743.7874095,
+    "seen": 1788888207.4472337,
+    "ast_hash": "16d45eddf5211098b2e725625b9a884d",
+    "semantic_hash": "16d45eddf5211098b2e725625b9a884d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\account-strategist.md": {
+    "mtime": 1782354743.8682625,
+    "seen": 1788888207.4472346,
+    "ast_hash": "bec0b82ab456702cc3b07bde2b550e50",
+    "semantic_hash": "bec0b82ab456702cc3b07bde2b550e50"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\accounts-payable-agent.md": {
+    "mtime": 1782354743.9368873,
+    "seen": 1788888207.4472353,
+    "ast_hash": "757d64cad2ada2d0e2c7a3047c1e1e18",
+    "semantic_hash": "757d64cad2ada2d0e2c7a3047c1e1e18"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\ad-creative-strategist.md": {
+    "mtime": 1782354743.9981349,
+    "seen": 1788888207.447236,
+    "ast_hash": "901b34c77e46c2990d03684029b960cc",
+    "semantic_hash": "901b34c77e46c2990d03684029b960cc"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\aeo-foundations-architect.md": {
+    "mtime": 1782354744.0811048,
+    "seen": 1788888207.4472368,
+    "ast_hash": "673f970ecedca6c55c551f5cc11f23ff",
+    "semantic_hash": "673f970ecedca6c55c551f5cc11f23ff"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\agentic-identity-trust-architect.md": {
+    "mtime": 1782354744.165919,
+    "seen": 1788888207.4472375,
+    "ast_hash": "bcaec8cd9844e546fb3bcce4e87391d1",
+    "semantic_hash": "bcaec8cd9844e546fb3bcce4e87391d1"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\agentic-search-optimizer.md": {
+    "mtime": 1782354744.2726557,
+    "seen": 1788888207.4472382,
+    "ast_hash": "526ed6263b08aaabba3aa85a26524c78",
+    "semantic_hash": "526ed6263b08aaabba3aa85a26524c78"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\agents-orchestrator.md": {
+    "mtime": 1782354744.3566222,
+    "seen": 1788888207.447239,
+    "ast_hash": "0ebf290898ab681eb8eab1909d815a77",
+    "semantic_hash": "0ebf290898ab681eb8eab1909d815a77"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\ai-citation-strategist.md": {
+    "mtime": 1782354744.4296746,
+    "seen": 1788888207.4472399,
+    "ast_hash": "1ce552adeea42efead699ac2bd97efae",
+    "semantic_hash": "1ce552adeea42efead699ac2bd97efae"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\ai-data-remediation-engineer.md": {
+    "mtime": 1782354744.503413,
+    "seen": 1788888207.4472406,
+    "ast_hash": "1dcccfa442f2e99423a49b890b1fed0f",
+    "semantic_hash": "1dcccfa442f2e99423a49b890b1fed0f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\ai-engineer.md": {
+    "mtime": 1782354744.5865371,
+    "seen": 1788888207.4472418,
+    "ast_hash": "6757fe31156b47cbaf65ca098fd7a1e1",
+    "semantic_hash": "6757fe31156b47cbaf65ca098fd7a1e1"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\analytics-reporter.md": {
+    "mtime": 1782354744.655602,
+    "seen": 1788888207.4472425,
+    "ast_hash": "3a82a9229c64d8f252e3a31258ea0cdd",
+    "semantic_hash": "3a82a9229c64d8f252e3a31258ea0cdd"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\anthropologist.md": {
+    "mtime": 1782354744.73472,
+    "seen": 1788888207.4472435,
+    "ast_hash": "3c50719275e16770b07080fe385ce706",
+    "semantic_hash": "3c50719275e16770b07080fe385ce706"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\api-tester.md": {
+    "mtime": 1782354744.8142643,
+    "seen": 1788888207.447244,
+    "ast_hash": "008e9aa9c6f5aa1cf9033be86c6f5c25",
+    "semantic_hash": "008e9aa9c6f5aa1cf9033be86c6f5c25"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\app-store-optimizer.md": {
+    "mtime": 1782354744.8770854,
+    "seen": 1788888207.4472451,
+    "ast_hash": "b3857be0b313be470f647383bcf02b48",
+    "semantic_hash": "b3857be0b313be470f647383bcf02b48"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\application-security-engineer.md": {
+    "mtime": 1782354744.9592423,
+    "seen": 1788888207.4472456,
+    "ast_hash": "8bee64c1f4d06b8860de5653ad170bb9",
+    "semantic_hash": "8bee64c1f4d06b8860de5653ad170bb9"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\automation-governance-architect.md": {
+    "mtime": 1782354745.0314054,
+    "seen": 1788888207.4472463,
+    "ast_hash": "066e76fa62ea03c0c1ad6aeca8856c18",
+    "semantic_hash": "066e76fa62ea03c0c1ad6aeca8856c18"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\autonomous-optimization-architect.md": {
+    "mtime": 1782354745.1123936,
+    "seen": 1788888207.4472473,
+    "ast_hash": "ad8cadf48315c0038804c3ac22de00e1",
+    "semantic_hash": "ad8cadf48315c0038804c3ac22de00e1"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\backend-architect.md": {
+    "mtime": 1782354745.1981914,
+    "seen": 1788888207.447248,
+    "ast_hash": "dba4047eae432123a1bc8c69601210a3",
+    "semantic_hash": "dba4047eae432123a1bc8c69601210a3"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\baidu-seo-specialist.md": {
+    "mtime": 1782354745.272986,
+    "seen": 1788888207.447249,
+    "ast_hash": "4086bcdf4d0b588041f91642d26177f2",
+    "semantic_hash": "4086bcdf4d0b588041f91642d26177f2"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\behavioral-nudge-engine.md": {
+    "mtime": 1782354745.361121,
+    "seen": 1788888207.4472494,
+    "ast_hash": "de76423c11b6b383a733e973fbc808be",
+    "semantic_hash": "de76423c11b6b383a733e973fbc808be"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\bilibili-content-strategist.md": {
+    "mtime": 1782354745.4406674,
+    "seen": 1788888207.44725,
+    "ast_hash": "da9697c65d360e4e1522eecdb91f5817",
+    "semantic_hash": "da9697c65d360e4e1522eecdb91f5817"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\bim-gis-specialist.md": {
+    "mtime": 1782354745.524378,
+    "seen": 1788888207.4472506,
+    "ast_hash": "9f9d022b59145c8ca240b96d98c7456c",
+    "semantic_hash": "9f9d022b59145c8ca240b96d98c7456c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\blender-add-on-engineer.md": {
+    "mtime": 1782354745.6004443,
+    "seen": 1788888207.4472518,
+    "ast_hash": "67236bfe2a58d41cdba54092e53b04a1",
+    "semantic_hash": "67236bfe2a58d41cdba54092e53b04a1"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\blockchain-security-auditor.md": {
+    "mtime": 1782354745.6699398,
+    "seen": 1788888207.4472523,
+    "ast_hash": "4d032a5383410812d5a56f79ea7b4232",
+    "semantic_hash": "4d032a5383410812d5a56f79ea7b4232"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\book-co-author.md": {
+    "mtime": 1782354745.7497761,
+    "seen": 1788888207.447253,
+    "ast_hash": "4ea9106f7f2af0a9d886d25fa7294a71",
+    "semantic_hash": "4ea9106f7f2af0a9d886d25fa7294a71"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\bookkeeper-controller.md": {
+    "mtime": 1782354745.8256848,
+    "seen": 1788888207.447255,
+    "ast_hash": "d4990ef7712aa0f6f785eed8112a21d2",
+    "semantic_hash": "d4990ef7712aa0f6f785eed8112a21d2"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\brand-guardian.md": {
+    "mtime": 1782354745.8890243,
+    "seen": 1788888207.447256,
+    "ast_hash": "f0e279fed20f841be27f72dd8cdf5abe",
+    "semantic_hash": "f0e279fed20f841be27f72dd8cdf5abe"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\business-strategist.md": {
+    "mtime": 1782354745.949955,
+    "seen": 1788888207.447257,
+    "ast_hash": "350ba530fdb928adc0f2702c80d5f9cf",
+    "semantic_hash": "350ba530fdb928adc0f2702c80d5f9cf"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\carousel-growth-engine.md": {
+    "mtime": 1782354746.0160458,
+    "seen": 1788888207.4472575,
+    "ast_hash": "492a67b94df1ec98ee72b58a0440e586",
+    "semantic_hash": "492a67b94df1ec98ee72b58a0440e586"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\cartography-designer.md": {
+    "mtime": 1782354746.093692,
+    "seen": 1788888207.4472587,
+    "ast_hash": "4acc92b5e635f417bd47fb4c2abe4bc5",
+    "semantic_hash": "4acc92b5e635f417bd47fb4c2abe4bc5"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\change-management-consultant.md": {
+    "mtime": 1782354746.153694,
+    "seen": 1788888207.4472594,
+    "ast_hash": "d51f409bc18e2234fd38100c950f4659",
+    "semantic_hash": "d51f409bc18e2234fd38100c950f4659"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\chief-financial-officer.md": {
+    "mtime": 1782354746.2296658,
+    "seen": 1788888207.4472601,
+    "ast_hash": "e44ce15f57c1ac193abd9371586b2037",
+    "semantic_hash": "e44ce15f57c1ac193abd9371586b2037"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\chief-of-staff.md": {
+    "mtime": 1782354746.3070564,
+    "seen": 1788888207.447261,
+    "ast_hash": "bf27468d979316b11cec86c7b861987f",
+    "semantic_hash": "bf27468d979316b11cec86c7b861987f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\china-e-commerce-operator.md": {
+    "mtime": 1782354746.3732975,
+    "seen": 1788888207.447262,
+    "ast_hash": "1a7e22ab35e15f89559c328896484d62",
+    "semantic_hash": "1a7e22ab35e15f89559c328896484d62"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\china-market-localization-strategist.md": {
+    "mtime": 1782354746.436834,
+    "seen": 1788888207.447263,
+    "ast_hash": "164a7bc08f3928ae0b52ed9a67f3ae16",
+    "semantic_hash": "164a7bc08f3928ae0b52ed9a67f3ae16"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\civil-engineer.md": {
+    "mtime": 1782354746.5068057,
+    "seen": 1788888207.4472635,
+    "ast_hash": "05592158729355ccc63c64dc6d023d96",
+    "semantic_hash": "05592158729355ccc63c64dc6d023d96"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\cloud-security-architect.md": {
+    "mtime": 1782354746.5926726,
+    "seen": 1788888207.4472644,
+    "ast_hash": "229ce414636dfaa71d6251d75dce2dc2",
+    "semantic_hash": "229ce414636dfaa71d6251d75dce2dc2"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\cms-developer.md": {
+    "mtime": 1782354746.6747332,
+    "seen": 1788888207.4472654,
+    "ast_hash": "6b7aecdb265095d1cf10ca4d89a52c77",
+    "semantic_hash": "6b7aecdb265095d1cf10ca4d89a52c77"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\code-reviewer.md": {
+    "mtime": 1782354746.7619903,
+    "seen": 1788888207.4472663,
+    "ast_hash": "5f6e1969515798d135dd5f925e4e2acc",
+    "semantic_hash": "5f6e1969515798d135dd5f925e4e2acc"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\codebase-onboarding-engineer.md": {
+    "mtime": 1782354746.8386555,
+    "seen": 1788888207.4472668,
+    "ast_hash": "51eb5f1d3b16122a4a475a10bde9bacd",
+    "semantic_hash": "51eb5f1d3b16122a4a475a10bde9bacd"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\compliance-auditor.md": {
+    "mtime": 1782354746.910101,
+    "seen": 1788888207.4472678,
+    "ast_hash": "d00d817525c8372a03526a3c47bcb10f",
+    "semantic_hash": "d00d817525c8372a03526a3c47bcb10f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\content-creator.md": {
+    "mtime": 1782354746.976173,
+    "seen": 1788888207.4472687,
+    "ast_hash": "7f138c99871087cf90ba24c9ea7796a8",
+    "semantic_hash": "7f138c99871087cf90ba24c9ea7796a8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\corporate-training-designer.md": {
+    "mtime": 1782354747.0429473,
+    "seen": 1788888207.4472694,
+    "ast_hash": "0628ee2e4d7afffd68540d8f0cf4d9ea",
+    "semantic_hash": "0628ee2e4d7afffd68540d8f0cf4d9ea"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\cross-border-e-commerce-specialist.md": {
+    "mtime": 1782354747.1086543,
+    "seen": 1788888207.4472709,
+    "ast_hash": "8d429459d4354f04b6d2d821a97562b1",
+    "semantic_hash": "8d429459d4354f04b6d2d821a97562b1"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\cultural-intelligence-strategist.md": {
+    "mtime": 1782354747.185134,
+    "seen": 1788888207.4472716,
+    "ast_hash": "5bdfac55ede509f779317d86ce4b7684",
+    "semantic_hash": "5bdfac55ede509f779317d86ce4b7684"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\customer-service.md": {
+    "mtime": 1782354747.2761872,
+    "seen": 1788888207.4472725,
+    "ast_hash": "b4268c614c76eee91d846c3f9c213840",
+    "semantic_hash": "b4268c614c76eee91d846c3f9c213840"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\customer-success-manager.md": {
+    "mtime": 1782354747.3433821,
+    "seen": 1788888207.4472733,
+    "ast_hash": "e51df0471c9e967f70d114913fb86f75",
+    "semantic_hash": "e51df0471c9e967f70d114913fb86f75"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\data-consolidation-agent.md": {
+    "mtime": 1782354747.4152162,
+    "seen": 1788888207.447274,
+    "ast_hash": "023daa2ec414b57d1823568a68929049",
+    "semantic_hash": "023daa2ec414b57d1823568a68929049"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\data-engineer.md": {
+    "mtime": 1782354747.4777596,
+    "seen": 1788888207.447275,
+    "ast_hash": "a13cf2b0e240906a2d5a58c235273b02",
+    "semantic_hash": "a13cf2b0e240906a2d5a58c235273b02"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\data-privacy-officer.md": {
+    "mtime": 1782354747.5475361,
+    "seen": 1788888207.4472756,
+    "ast_hash": "a4de7fee675ab31e139c3a93b8238ec0",
+    "semantic_hash": "a4de7fee675ab31e139c3a93b8238ec0"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\database-optimizer.md": {
+    "mtime": 1782354747.6182852,
+    "seen": 1788888207.4472764,
+    "ast_hash": "a98162e7f3a2a15724ba1b808206966b",
+    "semantic_hash": "a98162e7f3a2a15724ba1b808206966b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\deal-strategist.md": {
+    "mtime": 1782354747.680227,
+    "seen": 1788888207.447277,
+    "ast_hash": "9cfb8c97002ff84c88e0e80cc4c452e3",
+    "semantic_hash": "9cfb8c97002ff84c88e0e80cc4c452e3"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\developer-advocate.md": {
+    "mtime": 1782354747.7410183,
+    "seen": 1788888207.447278,
+    "ast_hash": "7882991ba1946562ba0c0bd5b2e6be46",
+    "semantic_hash": "7882991ba1946562ba0c0bd5b2e6be46"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\devops-automator.md": {
+    "mtime": 1782354747.804373,
+    "seen": 1788888207.4472787,
+    "ast_hash": "b08fdc582de92ad3d48f205cb96af50f",
+    "semantic_hash": "b08fdc582de92ad3d48f205cb96af50f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\discovery-coach.md": {
+    "mtime": 1782354747.866667,
+    "seen": 1788888207.4472802,
+    "ast_hash": "f2ecf811ea9a776d133a110dfe21a4dc",
+    "semantic_hash": "f2ecf811ea9a776d133a110dfe21a4dc"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\document-generator.md": {
+    "mtime": 1782354747.9524405,
+    "seen": 1788888207.4472806,
+    "ast_hash": "f704acadad314f55dfa28ca8bc71026a",
+    "semantic_hash": "f704acadad314f55dfa28ca8bc71026a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\douyin-strategist.md": {
+    "mtime": 1782354748.046617,
+    "seen": 1788888207.4472814,
+    "ast_hash": "028d1c9582725c3bb5006c1663663a44",
+    "semantic_hash": "028d1c9582725c3bb5006c1663663a44"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\drone-reality-mapping-specialist.md": {
+    "mtime": 1782354748.1127498,
+    "seen": 1788888207.447282,
+    "ast_hash": "c52859f66fe124bf2a5a18567eba24c7",
+    "semantic_hash": "c52859f66fe124bf2a5a18567eba24c7"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\drupal-shopping-cart-engineer.md": {
+    "mtime": 1782354748.2001643,
+    "seen": 1788888207.4472828,
+    "ast_hash": "c7aaeb9ebdd746d392b4c1150ffb49aa",
+    "semantic_hash": "c7aaeb9ebdd746d392b4c1150ffb49aa"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\email-intelligence-engineer.md": {
+    "mtime": 1782354748.260646,
+    "seen": 1788888207.4472837,
+    "ast_hash": "a4bf58357b3bedb7bfe5e1354bfd3612",
+    "semantic_hash": "a4bf58357b3bedb7bfe5e1354bfd3612"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\email-marketing-strategist.md": {
+    "mtime": 1782354748.3447573,
+    "seen": 1788888207.4472845,
+    "ast_hash": "41397e71f682488fc16f616cc85cf7c8",
+    "semantic_hash": "41397e71f682488fc16f616cc85cf7c8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\embedded-firmware-engineer.md": {
+    "mtime": 1782354748.407516,
+    "seen": 1788888207.4472854,
+    "ast_hash": "e171bd729ff8423456ba2512968dbffb",
+    "semantic_hash": "e171bd729ff8423456ba2512968dbffb"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\esg-sustainability-officer.md": {
+    "mtime": 1782354748.467775,
+    "seen": 1788888207.4472866,
+    "ast_hash": "747f7f22a7750f57243976da423d2d28",
+    "semantic_hash": "747f7f22a7750f57243976da423d2d28"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\evidence-collector.md": {
+    "mtime": 1782354748.5578308,
+    "seen": 1788888207.4472873,
+    "ast_hash": "ec0609de456405ed96e91fbbcfc6d232",
+    "semantic_hash": "ec0609de456405ed96e91fbbcfc6d232"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\executive-summary-generator.md": {
+    "mtime": 1782354748.6241238,
+    "seen": 1788888207.4472883,
+    "ast_hash": "c095a9236d2678dbf9f12b153cb1db4d",
+    "semantic_hash": "c095a9236d2678dbf9f12b153cb1db4d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\experiment-tracker.md": {
+    "mtime": 1782354748.6976295,
+    "seen": 1788888207.447289,
+    "ast_hash": "f91ec21e03f7843126fde3cd5ea0af6f",
+    "semantic_hash": "f91ec21e03f7843126fde3cd5ea0af6f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\feedback-synthesizer.md": {
+    "mtime": 1782354748.764431,
+    "seen": 1788888207.4472902,
+    "ast_hash": "a453b252a4f6ad4cf7d1b7c4f9e47af5",
+    "semantic_hash": "a453b252a4f6ad4cf7d1b7c4f9e47af5"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\feishu-integration-developer.md": {
+    "mtime": 1782354748.8424392,
+    "seen": 1788888207.447291,
+    "ast_hash": "b65bab5c5e7802d6b0ddcf448600d7e9",
+    "semantic_hash": "b65bab5c5e7802d6b0ddcf448600d7e9"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\filament-optimization-specialist.md": {
+    "mtime": 1782354748.9180565,
+    "seen": 1788888207.4472919,
+    "ast_hash": "909fe24620fff7594453c1950563c016",
+    "semantic_hash": "909fe24620fff7594453c1950563c016"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\finance-tracker.md": {
+    "mtime": 1782354748.9837234,
+    "seen": 1788888207.4472926,
+    "ast_hash": "56f7a9c9fe1ff0b2852c5ac598dbd935",
+    "semantic_hash": "56f7a9c9fe1ff0b2852c5ac598dbd935"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\financial-analyst.md": {
+    "mtime": 1782354749.0592563,
+    "seen": 1788888207.4472935,
+    "ast_hash": "9613dc741c2d500cb0e4a49400af7de8",
+    "semantic_hash": "9613dc741c2d500cb0e4a49400af7de8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\fp-a-analyst.md": {
+    "mtime": 1782354749.1199794,
+    "seen": 1788888207.4472942,
+    "ast_hash": "50d5fdd42c870f233f260a8e6b49e8b1",
+    "semantic_hash": "50d5fdd42c870f233f260a8e6b49e8b1"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\french-consulting-market-navigator.md": {
+    "mtime": 1782354749.1997843,
+    "seen": 1788888207.447295,
+    "ast_hash": "4ca9678000729db85fe46ebc45ee1993",
+    "semantic_hash": "4ca9678000729db85fe46ebc45ee1993"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\frontend-developer.md": {
+    "mtime": 1782354749.2695947,
+    "seen": 1788888207.447296,
+    "ast_hash": "55b04d66fe4937d5ab08c61e0a7a9981",
+    "semantic_hash": "55b04d66fe4937d5ab08c61e0a7a9981"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\game-audio-engineer.md": {
+    "mtime": 1782354749.3628502,
+    "seen": 1788888207.4472969,
+    "ast_hash": "b22ca0abe4c105072407bd5a16ceaf36",
+    "semantic_hash": "b22ca0abe4c105072407bd5a16ceaf36"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\game-designer.md": {
+    "mtime": 1782354749.451695,
+    "seen": 1788888207.4472973,
+    "ast_hash": "9588e725d27bbbf2c113c0d8a13ca15a",
+    "semantic_hash": "9588e725d27bbbf2c113c0d8a13ca15a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\geoai-ml-engineer.md": {
+    "mtime": 1782354749.5303998,
+    "seen": 1788888207.4472983,
+    "ast_hash": "c05317e15e02135883b30274658031c0",
+    "semantic_hash": "c05317e15e02135883b30274658031c0"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\geographer.md": {
+    "mtime": 1782354749.6072955,
+    "seen": 1788888207.447299,
+    "ast_hash": "81a860c1d1ac29ba70c69432e8503359",
+    "semantic_hash": "81a860c1d1ac29ba70c69432e8503359"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\geoprocessing-specialist.md": {
+    "mtime": 1782354749.680228,
+    "seen": 1788888207.4473,
+    "ast_hash": "b355ece54138daedf42f06f02d7c2de6",
+    "semantic_hash": "b355ece54138daedf42f06f02d7c2de6"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\gis-analyst.md": {
+    "mtime": 1782354749.7564547,
+    "seen": 1788888207.447301,
+    "ast_hash": "03665869052b4edd977f3b2b1b857952",
+    "semantic_hash": "03665869052b4edd977f3b2b1b857952"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\gis-qa-engineer.md": {
+    "mtime": 1782354749.8187344,
+    "seen": 1788888207.4473014,
+    "ast_hash": "fe6383f42fd61115ff65f1d57682016c",
+    "semantic_hash": "fe6383f42fd61115ff65f1d57682016c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\git-workflow-master.md": {
+    "mtime": 1782354749.8875725,
+    "seen": 1788888207.447302,
+    "ast_hash": "411f1df7b923364ebf471f0bea28a279",
+    "semantic_hash": "411f1df7b923364ebf471f0bea28a279"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\global-podcast-strategist.md": {
+    "mtime": 1782354749.9479308,
+    "seen": 1788888207.4473026,
+    "ast_hash": "8a1664db671faaece05771efe144e82c",
+    "semantic_hash": "8a1664db671faaece05771efe144e82c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\godot-gameplay-scripter.md": {
+    "mtime": 1782354750.0113845,
+    "seen": 1788888207.4473035,
+    "ast_hash": "3fcc9deadb4c165f02cc9cbea786c771",
+    "semantic_hash": "3fcc9deadb4c165f02cc9cbea786c771"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\godot-multiplayer-engineer.md": {
+    "mtime": 1782354750.0834618,
+    "seen": 1788888207.4473042,
+    "ast_hash": "e0f4523717f8da4b78e938fe0bf280fb",
+    "semantic_hash": "e0f4523717f8da4b78e938fe0bf280fb"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\godot-shader-developer.md": {
+    "mtime": 1782354750.155413,
+    "seen": 1788888207.4473052,
+    "ast_hash": "f40884bbb3b830a1f43f1414f1378639",
+    "semantic_hash": "f40884bbb3b830a1f43f1414f1378639"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\government-digital-presales-consultant.md": {
+    "mtime": 1782354750.2153738,
+    "seen": 1788888207.447306,
+    "ast_hash": "7c615328168cd876ab1737392ee4e5f6",
+    "semantic_hash": "7c615328168cd876ab1737392ee4e5f6"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\grant-writer.md": {
+    "mtime": 1782354750.2800713,
+    "seen": 1788888207.4473066,
+    "ast_hash": "d38d427d2d75e9f54da6aeb0ca68d497",
+    "semantic_hash": "d38d427d2d75e9f54da6aeb0ca68d497"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\growth-hacker.md": {
+    "mtime": 1782354750.3610108,
+    "seen": 1788888207.4473078,
+    "ast_hash": "50d2b20c56ef50daa325ebebca3178c4",
+    "semantic_hash": "50d2b20c56ef50daa325ebebca3178c4"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\healthcare-customer-service.md": {
+    "mtime": 1782354750.456328,
+    "seen": 1788888207.44731,
+    "ast_hash": "ae654b1c181c7744911c9579d456cb62",
+    "semantic_hash": "ae654b1c181c7744911c9579d456cb62"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\healthcare-marketing-compliance-specialist.md": {
+    "mtime": 1782354750.5210557,
+    "seen": 1788888207.447311,
+    "ast_hash": "4d450123cfc84ae2be9b95ae2690325e",
+    "semantic_hash": "4d450123cfc84ae2be9b95ae2690325e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\historian.md": {
+    "mtime": 1782354750.5816946,
+    "seen": 1788888207.4473116,
+    "ast_hash": "06ac97f18a790ab2fa92cacaa8be546a",
+    "semantic_hash": "06ac97f18a790ab2fa92cacaa8be546a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\hospitality-guest-services.md": {
+    "mtime": 1782354750.6592367,
+    "seen": 1788888207.4473124,
+    "ast_hash": "c3f3c6615c7c0bb1a1bbffc5556b68f5",
+    "semantic_hash": "c3f3c6615c7c0bb1a1bbffc5556b68f5"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\hr-onboarding.md": {
+    "mtime": 1782354750.745636,
+    "seen": 1788888207.4473133,
+    "ast_hash": "405ea8fb8fbe4b507664f998ea158c09",
+    "semantic_hash": "405ea8fb8fbe4b507664f998ea158c09"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\identity-graph-operator.md": {
+    "mtime": 1782354750.8352501,
+    "seen": 1788888207.4473143,
+    "ast_hash": "aaf594ff1a9377f2525d6f1bbe7f2361",
+    "semantic_hash": "aaf594ff1a9377f2525d6f1bbe7f2361"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\image-prompt-engineer.md": {
+    "mtime": 1782354750.9146678,
+    "seen": 1788888207.4473152,
+    "ast_hash": "edcc666531987ccc66b486e056156bd0",
+    "semantic_hash": "edcc666531987ccc66b486e056156bd0"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\incident-responder.md": {
+    "mtime": 1782354750.9906468,
+    "seen": 1788888207.447316,
+    "ast_hash": "8d881224222074a66517b3106ff4e267",
+    "semantic_hash": "8d881224222074a66517b3106ff4e267"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\incident-response-commander.md": {
+    "mtime": 1782354751.0577588,
+    "seen": 1788888207.4473166,
+    "ast_hash": "e36deb9f1b626b5f7eb95ba65824fb30",
+    "semantic_hash": "e36deb9f1b626b5f7eb95ba65824fb30"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\inclusive-visuals-specialist.md": {
+    "mtime": 1782354751.135431,
+    "seen": 1788888207.4473176,
+    "ast_hash": "863f6c1e8dc8f29c5613880fe14e6ee4",
+    "semantic_hash": "863f6c1e8dc8f29c5613880fe14e6ee4"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\infrastructure-maintainer.md": {
+    "mtime": 1782354751.2077844,
+    "seen": 1788888207.4473186,
+    "ast_hash": "b55c7e37d1d149cbea52e1efdf39e386",
+    "semantic_hash": "b55c7e37d1d149cbea52e1efdf39e386"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\instagram-curator.md": {
+    "mtime": 1782354751.268857,
+    "seen": 1788888207.4473193,
+    "ast_hash": "3d34a36ff91a9b4159baea669e5fdf1c",
+    "semantic_hash": "3d34a36ff91a9b4159baea669e5fdf1c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\investment-researcher.md": {
+    "mtime": 1782354751.3520548,
+    "seen": 1788888207.44732,
+    "ast_hash": "3ba9801b566b923de338a6390c6a21d0",
+    "semantic_hash": "3ba9801b566b923de338a6390c6a21d0"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\it-service-manager.md": {
+    "mtime": 1782354751.4282644,
+    "seen": 1788888207.4473212,
+    "ast_hash": "2cf631d4160c77b4513901c4decbc0aa",
+    "semantic_hash": "2cf631d4160c77b4513901c4decbc0aa"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\jira-workflow-steward.md": {
+    "mtime": 1782354751.4956398,
+    "seen": 1788888207.447322,
+    "ast_hash": "a857ff1b6ebf1f1a9cf1b0d5d512db6f",
+    "semantic_hash": "a857ff1b6ebf1f1a9cf1b0d5d512db6f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\korean-business-navigator.md": {
+    "mtime": 1782354751.561188,
+    "seen": 1788888207.4473228,
+    "ast_hash": "7db0ac068e6465bac80aecc39d505325",
+    "semantic_hash": "7db0ac068e6465bac80aecc39d505325"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\kuaishou-strategist.md": {
+    "mtime": 1782354751.6416855,
+    "seen": 1788888207.4473236,
+    "ast_hash": "1a22a71bed6d555e613154b8a6161a45",
+    "semantic_hash": "1a22a71bed6d555e613154b8a6161a45"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\language-translator.md": {
+    "mtime": 1782354751.6982374,
+    "seen": 1788888207.4473248,
+    "ast_hash": "65f12928b9a3fa6aa80a649c733f17ee",
+    "semantic_hash": "65f12928b9a3fa6aa80a649c733f17ee"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\legal-billing-time-tracking.md": {
+    "mtime": 1782354751.776917,
+    "seen": 1788888207.4473255,
+    "ast_hash": "4b26ad6b9e4942a855e840f6fa2f378b",
+    "semantic_hash": "4b26ad6b9e4942a855e840f6fa2f378b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\legal-client-intake.md": {
+    "mtime": 1782354751.8574822,
+    "seen": 1788888207.4473267,
+    "ast_hash": "ab496ddfc28b918b43437f3098a3f112",
+    "semantic_hash": "ab496ddfc28b918b43437f3098a3f112"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\legal-compliance-checker.md": {
+    "mtime": 1782354751.9183342,
+    "seen": 1788888207.4473274,
+    "ast_hash": "c77c763bc687934d13daa2619fd4bc48",
+    "semantic_hash": "c77c763bc687934d13daa2619fd4bc48"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\legal-document-review.md": {
+    "mtime": 1782354751.9867892,
+    "seen": 1788888207.4473305,
+    "ast_hash": "ed2c04319dcc29037f864223d9df465e",
+    "semantic_hash": "ed2c04319dcc29037f864223d9df465e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\level-designer.md": {
+    "mtime": 1782354752.0625937,
+    "seen": 1788888207.4473317,
+    "ast_hash": "86b3aa87fcb3580712f34c60b76d4999",
+    "semantic_hash": "86b3aa87fcb3580712f34c60b76d4999"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\linkedin-content-creator.md": {
+    "mtime": 1782354752.1342275,
+    "seen": 1788888207.4473324,
+    "ast_hash": "7e712a9ee91495164168a02d92424e34",
+    "semantic_hash": "7e712a9ee91495164168a02d92424e34"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\livestream-commerce-coach.md": {
+    "mtime": 1782354752.2150776,
+    "seen": 1788888207.4473333,
+    "ast_hash": "f5fd00c6f2fc5b00d904d856e2c11d67",
+    "semantic_hash": "f5fd00c6f2fc5b00d904d856e2c11d67"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\loan-officer-assistant.md": {
+    "mtime": 1782354752.2774103,
+    "seen": 1788888207.4473343,
+    "ast_hash": "b41a7b42b054966cafb86c69ff0768c7",
+    "semantic_hash": "b41a7b42b054966cafb86c69ff0768c7"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\lsp-index-engineer.md": {
+    "mtime": 1782354752.3535922,
+    "seen": 1788888207.4473352,
+    "ast_hash": "4fadb4dc5631909d08d2a852bb0b72de",
+    "semantic_hash": "4fadb4dc5631909d08d2a852bb0b72de"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\m-a-integration-manager.md": {
+    "mtime": 1782354752.4244194,
+    "seen": 1788888207.4473362,
+    "ast_hash": "d26dbffd06f9d6256ffd096f827b00fa",
+    "semantic_hash": "d26dbffd06f9d6256ffd096f827b00fa"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\macos-spatial-metal-engineer.md": {
+    "mtime": 1782354752.5079627,
+    "seen": 1788888207.4473367,
+    "ast_hash": "b66f2dcb920554f6b9d254f67f8677a5",
+    "semantic_hash": "b66f2dcb920554f6b9d254f67f8677a5"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\mcp-builder.md": {
+    "mtime": 1782354752.5890234,
+    "seen": 1788888207.447339,
+    "ast_hash": "24ebf34b01edf3be3ea8d69abbd37738",
+    "semantic_hash": "24ebf34b01edf3be3ea8d69abbd37738"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\medical-billing-coding-specialist.md": {
+    "mtime": 1782354752.6589153,
+    "seen": 1788888207.4473398,
+    "ast_hash": "fa26b931f839c9dd178051e789e8ddac",
+    "semantic_hash": "fa26b931f839c9dd178051e789e8ddac"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\meeting-notes-specialist.md": {
+    "mtime": 1782354752.7232437,
+    "seen": 1788888207.4473407,
+    "ast_hash": "5eab4099062f7c3199bdc93294698245",
+    "semantic_hash": "5eab4099062f7c3199bdc93294698245"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\minimal-change-engineer.md": {
+    "mtime": 1782354752.807098,
+    "seen": 1788888207.4473417,
+    "ast_hash": "771c5b35e603ca8940cb394c5e07244f",
+    "semantic_hash": "771c5b35e603ca8940cb394c5e07244f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\mobile-app-builder.md": {
+    "mtime": 1782354752.878206,
+    "seen": 1788888207.4473424,
+    "ast_hash": "ca94d4c38eb315313a094bc13f41b4c0",
+    "semantic_hash": "ca94d4c38eb315313a094bc13f41b4c0"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\model-qa-specialist.md": {
+    "mtime": 1782354752.9446788,
+    "seen": 1788888207.447343,
+    "ast_hash": "b00923654d0553ddc74ee90faadf7f11",
+    "semantic_hash": "b00923654d0553ddc74ee90faadf7f11"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\multi-agent-systems-architect.md": {
+    "mtime": 1782354753.0052936,
+    "seen": 1788888207.4473443,
+    "ast_hash": "c194c3cbd0062b8b226721dd51811fba",
+    "semantic_hash": "c194c3cbd0062b8b226721dd51811fba"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\multi-platform-publisher.md": {
+    "mtime": 1782354753.0671358,
+    "seen": 1788888207.4473448,
+    "ast_hash": "fbd584228a18aa5b3f3aa0dca6a7170d",
+    "semantic_hash": "fbd584228a18aa5b3f3aa0dca6a7170d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\narrative-designer.md": {
+    "mtime": 1782354753.1488135,
+    "seen": 1788888207.447346,
+    "ast_hash": "9a98b4d476e4aff65019dc6c5e8f85bb",
+    "semantic_hash": "9a98b4d476e4aff65019dc6c5e8f85bb"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\narratologist.md": {
+    "mtime": 1782354753.2097251,
+    "seen": 1788888207.4473467,
+    "ast_hash": "b7df99ab3609d7c0ae633b9809cfcb80",
+    "semantic_hash": "b7df99ab3609d7c0ae633b9809cfcb80"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\offer-lead-gen-strategist.md": {
+    "mtime": 1782354753.2754953,
+    "seen": 1788888207.4473474,
+    "ast_hash": "4d116ceb3f43c41657651750814acede",
+    "semantic_hash": "4d116ceb3f43c41657651750814acede"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\operations-manager.md": {
+    "mtime": 1782354753.3511803,
+    "seen": 1788888207.447348,
+    "ast_hash": "6dd2b429adcb067253ee1ca61895873c",
+    "semantic_hash": "6dd2b429adcb067253ee1ca61895873c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\organizational-psychologist.md": {
+    "mtime": 1782354753.4145863,
+    "seen": 1788888207.447349,
+    "ast_hash": "7a3a9e6d393f57c823d8f988cb2ba668",
+    "semantic_hash": "7a3a9e6d393f57c823d8f988cb2ba668"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\orgscript-engineer.md": {
+    "mtime": 1782354753.478975,
+    "seen": 1788888207.4473495,
+    "ast_hash": "81fb3c4d15af591be8536dc43626cf13",
+    "semantic_hash": "81fb3c4d15af591be8536dc43626cf13"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\outbound-strategist.md": {
+    "mtime": 1782354753.5582304,
+    "seen": 1788888207.4473505,
+    "ast_hash": "ad72b0b3e803b0ad5eead50e13536959",
+    "semantic_hash": "ad72b0b3e803b0ad5eead50e13536959"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\paid-media-auditor.md": {
+    "mtime": 1782354753.639002,
+    "seen": 1788888207.4473512,
+    "ast_hash": "bd83d5adbbd0e07fa6e4f29e9f0e032f",
+    "semantic_hash": "bd83d5adbbd0e07fa6e4f29e9f0e032f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\paid-social-strategist.md": {
+    "mtime": 1782354753.7234032,
+    "seen": 1788888207.4473522,
+    "ast_hash": "5e0e82f9e5305df784b6f48baee71c05",
+    "semantic_hash": "5e0e82f9e5305df784b6f48baee71c05"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\penetration-tester.md": {
+    "mtime": 1782354753.7907684,
+    "seen": 1788888207.4473526,
+    "ast_hash": "4c566a374cbee70d23658341222bdf93",
+    "semantic_hash": "4c566a374cbee70d23658341222bdf93"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\performance-benchmarker.md": {
+    "mtime": 1782354753.8537836,
+    "seen": 1788888207.4473536,
+    "ast_hash": "5d2df2aa3bc0728cb77c2823d163c0d2",
+    "semantic_hash": "5d2df2aa3bc0728cb77c2823d163c0d2"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\persona-walkthrough-specialist.md": {
+    "mtime": 1782354753.936437,
+    "seen": 1788888207.447354,
+    "ast_hash": "1fb731c6c9ea1851f3fa00952c2943c7",
+    "semantic_hash": "1fb731c6c9ea1851f3fa00952c2943c7"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\personal-growth-mentor.md": {
+    "mtime": 1782354754.004511,
+    "seen": 1788888207.4473548,
+    "ast_hash": "863ec0b7aeedf66d67f14e3720a6b141",
+    "semantic_hash": "863ec0b7aeedf66d67f14e3720a6b141"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\pipeline-analyst.md": {
+    "mtime": 1782354754.0653844,
+    "seen": 1788888207.4473555,
+    "ast_hash": "fdb4b2cffcbc1cd70fe5ec29acbcb056",
+    "semantic_hash": "fdb4b2cffcbc1cd70fe5ec29acbcb056"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\podcast-strategist.md": {
+    "mtime": 1782354754.1279092,
+    "seen": 1788888207.4473565,
+    "ast_hash": "b58a76af46f762fc350e2f9b95fd4a3c",
+    "semantic_hash": "b58a76af46f762fc350e2f9b95fd4a3c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\ppc-campaign-strategist.md": {
+    "mtime": 1782354754.2037368,
+    "seen": 1788888207.4473572,
+    "ast_hash": "dad6624ed60b738fca41ee766b748148",
+    "semantic_hash": "dad6624ed60b738fca41ee766b748148"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\pr-communications-manager.md": {
+    "mtime": 1782354754.2654781,
+    "seen": 1788888207.4473581,
+    "ast_hash": "dc988bd31ea735ba422f1f5af23b22d2",
+    "semantic_hash": "dc988bd31ea735ba422f1f5af23b22d2"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\pricing-analyst.md": {
+    "mtime": 1782354754.349477,
+    "seen": 1788888207.4473586,
+    "ast_hash": "ca2e26c98d2a659fbc78f68a5c65c9cf",
+    "semantic_hash": "ca2e26c98d2a659fbc78f68a5c65c9cf"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\private-domain-operator.md": {
+    "mtime": 1782354754.4188936,
+    "seen": 1788888207.4473596,
+    "ast_hash": "33263f650954faecdcc0c45eee70f15f",
+    "semantic_hash": "33263f650954faecdcc0c45eee70f15f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\product-manager.md": {
+    "mtime": 1782354754.486584,
+    "seen": 1788888207.4473605,
+    "ast_hash": "07c3695210c4659001dc23790370cea0",
+    "semantic_hash": "07c3695210c4659001dc23790370cea0"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\programmatic-display-buyer.md": {
+    "mtime": 1782354754.5483425,
+    "seen": 1788888207.4473612,
+    "ast_hash": "d8ca70318aa8ab37601882dd0c75d88a",
+    "semantic_hash": "d8ca70318aa8ab37601882dd0c75d88a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\project-shepherd.md": {
+    "mtime": 1782354754.608306,
+    "seen": 1788888207.4473624,
+    "ast_hash": "90ffb3176d5662494b4ec1de1f637492",
+    "semantic_hash": "90ffb3176d5662494b4ec1de1f637492"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\prompt-engineer.md": {
+    "mtime": 1782354754.676609,
+    "seen": 1788888207.4473631,
+    "ast_hash": "c50d0abb9b2667b2acbb726bf7956ddf",
+    "semantic_hash": "c50d0abb9b2667b2acbb726bf7956ddf"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\proposal-strategist.md": {
+    "mtime": 1782354754.7380657,
+    "seen": 1788888207.4473639,
+    "ast_hash": "6fca78759f2afd3ae88959b9eaf85a2a",
+    "semantic_hash": "6fca78759f2afd3ae88959b9eaf85a2a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\psychologist.md": {
+    "mtime": 1782354754.8046591,
+    "seen": 1788888207.4473643,
+    "ast_hash": "6ff6693d21b07a6edc576e553d023857",
+    "semantic_hash": "6ff6693d21b07a6edc576e553d023857"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\rapid-prototyper.md": {
+    "mtime": 1782354754.8927102,
+    "seen": 1788888207.447365,
+    "ast_hash": "62de729cc4ecf74f870a45a2d22c02d0",
+    "semantic_hash": "62de729cc4ecf74f870a45a2d22c02d0"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\real-estate-buyer-seller.md": {
+    "mtime": 1782354754.9656434,
+    "seen": 1788888207.447366,
+    "ast_hash": "ced4fd4f9578d7952a6fe5de24ec9c2c",
+    "semantic_hash": "ced4fd4f9578d7952a6fe5de24ec9c2c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\reality-checker.md": {
+    "mtime": 1782354755.0507023,
+    "seen": 1788888207.4473667,
+    "ast_hash": "0c8034300cdfb46af5bcff51a91a3193",
+    "semantic_hash": "0c8034300cdfb46af5bcff51a91a3193"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\recruitment-specialist.md": {
+    "mtime": 1782354755.131775,
+    "seen": 1788888207.4473674,
+    "ast_hash": "832a3151784a5e4c59ceb789735f8d34",
+    "semantic_hash": "832a3151784a5e4c59ceb789735f8d34"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\reddit-community-builder.md": {
+    "mtime": 1782354755.208774,
+    "seen": 1788888207.447368,
+    "ast_hash": "7758b5f6d8ffb2299d9b5c114d11084a",
+    "semantic_hash": "7758b5f6d8ffb2299d9b5c114d11084a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\report-distribution-agent.md": {
+    "mtime": 1782354755.2879949,
+    "seen": 1788888207.4473686,
+    "ast_hash": "0a9649cfb9c81ce9ba81897eac56694a",
+    "semantic_hash": "0a9649cfb9c81ce9ba81897eac56694a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\retail-customer-returns.md": {
+    "mtime": 1782354755.3602262,
+    "seen": 1788888207.447369,
+    "ast_hash": "3ab18f13403b33f0bf4bdbfe23d4083b",
+    "semantic_hash": "3ab18f13403b33f0bf4bdbfe23d4083b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\roblox-avatar-creator.md": {
+    "mtime": 1782354755.4330378,
+    "seen": 1788888207.44737,
+    "ast_hash": "b4e77cf3b6660da3ad1937c62453f0b7",
+    "semantic_hash": "b4e77cf3b6660da3ad1937c62453f0b7"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\roblox-experience-designer.md": {
+    "mtime": 1782354755.4936159,
+    "seen": 1788888207.4473705,
+    "ast_hash": "bfd1004cf068fafe0e4d2c117f52b09d",
+    "semantic_hash": "bfd1004cf068fafe0e4d2c117f52b09d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\roblox-systems-scripter.md": {
+    "mtime": 1782354755.5563731,
+    "seen": 1788888207.4473712,
+    "ast_hash": "6f9e88acac0d2dedfc622aca7820e2c4",
+    "semantic_hash": "6f9e88acac0d2dedfc622aca7820e2c4"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\sales-coach.md": {
+    "mtime": 1782354755.6261513,
+    "seen": 1788888207.4473717,
+    "ast_hash": "a3737674fe52ceaf83d94b36a942c4ad",
+    "semantic_hash": "a3737674fe52ceaf83d94b36a942c4ad"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\sales-data-extraction-agent.md": {
+    "mtime": 1782354755.688386,
+    "seen": 1788888207.4473724,
+    "ast_hash": "9211b05762191b5478eecf0c246caeec",
+    "semantic_hash": "9211b05762191b5478eecf0c246caeec"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\sales-engineer.md": {
+    "mtime": 1782354755.746168,
+    "seen": 1788888207.4473732,
+    "ast_hash": "05acc642d7291bba001642666c60fad5",
+    "semantic_hash": "05acc642d7291bba001642666c60fad5"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\sales-outreach.md": {
+    "mtime": 1782354755.8118653,
+    "seen": 1788888207.4473739,
+    "ast_hash": "5969b4dbd81bbfb6455435b4679f5537",
+    "semantic_hash": "5969b4dbd81bbfb6455435b4679f5537"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\salesforce-architect.md": {
+    "mtime": 1782354755.874358,
+    "seen": 1788888207.4473746,
+    "ast_hash": "14a5bb55a8f2acd5c3b9c9e41d4e6908",
+    "semantic_hash": "14a5bb55a8f2acd5c3b9c9e41d4e6908"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\search-query-analyst.md": {
+    "mtime": 1782354755.9384387,
+    "seen": 1788888207.447375,
+    "ast_hash": "1f61ca43971fa522ed294284b4c1fba2",
+    "semantic_hash": "1f61ca43971fa522ed294284b4c1fba2"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\security-architect.md": {
+    "mtime": 1782354756.005483,
+    "seen": 1788888207.4473758,
+    "ast_hash": "520319ef386a59c08d042bb5be90c0ea",
+    "semantic_hash": "520319ef386a59c08d042bb5be90c0ea"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\senior-developer.md": {
+    "mtime": 1782354756.0691538,
+    "seen": 1788888207.4473765,
+    "ast_hash": "9441cafcc956b4b24119dfc58ff9efef",
+    "semantic_hash": "9441cafcc956b4b24119dfc58ff9efef"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\senior-project-manager.md": {
+    "mtime": 1782354756.1641212,
+    "seen": 1788888207.4473774,
+    "ast_hash": "cc80c6c970008a6fe1f1a7ab1ba8b0e8",
+    "semantic_hash": "cc80c6c970008a6fe1f1a7ab1ba8b0e8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\senior-secops-engineer.md": {
+    "mtime": 1782354756.2384229,
+    "seen": 1788888207.447378,
+    "ast_hash": "ea5eb6ccd37fca48c2ec461b6b184f1e",
+    "semantic_hash": "ea5eb6ccd37fca48c2ec461b6b184f1e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\seo-specialist.md": {
+    "mtime": 1782354756.3193617,
+    "seen": 1788888207.4473789,
+    "ast_hash": "f11f2b05f162b22119a97819efcf0022",
+    "semantic_hash": "f11f2b05f162b22119a97819efcf0022"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\short-video-editing-coach.md": {
+    "mtime": 1782354756.4195778,
+    "seen": 1788888207.4473798,
+    "ast_hash": "a425810b87e587a293ba7220b9426435",
+    "semantic_hash": "a425810b87e587a293ba7220b9426435"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\social-media-strategist.md": {
+    "mtime": 1782354756.491997,
+    "seen": 1788888207.4473803,
+    "ast_hash": "2e662e815c160de2213ebdfd480635e4",
+    "semantic_hash": "2e662e815c160de2213ebdfd480635e4"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\software-architect.md": {
+    "mtime": 1782354756.5642436,
+    "seen": 1788888207.447381,
+    "ast_hash": "231f3cba430c65d0f2bc76cade1fefe5",
+    "semantic_hash": "231f3cba430c65d0f2bc76cade1fefe5"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\solidity-smart-contract-engineer.md": {
+    "mtime": 1782354756.628623,
+    "seen": 1788888207.4473815,
+    "ast_hash": "2b398f752b1127a13eb2d37f3118da05",
+    "semantic_hash": "2b398f752b1127a13eb2d37f3118da05"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\solution-engineer.md": {
+    "mtime": 1782354756.7108417,
+    "seen": 1788888207.4473825,
+    "ast_hash": "7a26c7446312bce32ece482e4636d06b",
+    "semantic_hash": "7a26c7446312bce32ece482e4636d06b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\spatial-data-engineer.md": {
+    "mtime": 1782354756.7733996,
+    "seen": 1788888207.447383,
+    "ast_hash": "cc3a08896e2a337b7452f429559d274c",
+    "semantic_hash": "cc3a08896e2a337b7452f429559d274c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\spatial-data-scientist.md": {
+    "mtime": 1782354756.855064,
+    "seen": 1788888207.4473839,
+    "ast_hash": "dd6ad3ce59f4b44a6b150e51fde168ea",
+    "semantic_hash": "dd6ad3ce59f4b44a6b150e51fde168ea"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\sprint-prioritizer.md": {
+    "mtime": 1782354756.9262908,
+    "seen": 1788888207.4473846,
+    "ast_hash": "83c022b0018f3efa9a65d76e01383d2f",
+    "semantic_hash": "83c022b0018f3efa9a65d76e01383d2f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\sre-site-reliability-engineer.md": {
+    "mtime": 1782354756.992548,
+    "seen": 1788888207.4473855,
+    "ast_hash": "6f6ea2bef4ee723e4d60345c7e307c89",
+    "semantic_hash": "6f6ea2bef4ee723e4d60345c7e307c89"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\strategy-duel-agent.md": {
+    "mtime": 1782354757.064176,
+    "seen": 1788888207.447386,
+    "ast_hash": "33184cc4d2da32536fe8ac8bde4814bd",
+    "semantic_hash": "33184cc4d2da32536fe8ac8bde4814bd"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\studio-operations.md": {
+    "mtime": 1782354757.142074,
+    "seen": 1788888207.447387,
+    "ast_hash": "c3d40a06da4095eca2068b63623d2c1e",
+    "semantic_hash": "c3d40a06da4095eca2068b63623d2c1e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\studio-producer.md": {
+    "mtime": 1782354757.2228196,
+    "seen": 1788888207.4473877,
+    "ast_hash": "82637d751dbe35c1cbc0bf389640fb10",
+    "semantic_hash": "82637d751dbe35c1cbc0bf389640fb10"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\study-abroad-advisor.md": {
+    "mtime": 1782354757.3029125,
+    "seen": 1788888207.4473886,
+    "ast_hash": "5e065cb10465d4ef9069211334d7eff8",
+    "semantic_hash": "5e065cb10465d4ef9069211334d7eff8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\supply-chain-strategist.md": {
+    "mtime": 1782354757.403349,
+    "seen": 1788888207.4473891,
+    "ast_hash": "82e91c3cf2961b6cabdd5cba16952ba8",
+    "semantic_hash": "82e91c3cf2961b6cabdd5cba16952ba8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\support-responder.md": {
+    "mtime": 1782354757.4708705,
+    "seen": 1788888207.4473903,
+    "ast_hash": "266ddf1b993e0c9b79a9532a45ce486b",
+    "semantic_hash": "266ddf1b993e0c9b79a9532a45ce486b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\tax-strategist.md": {
+    "mtime": 1782354757.5319867,
+    "seen": 1788888207.4473908,
+    "ast_hash": "9a1158114d168e6c47b8bfb2461c8f04",
+    "semantic_hash": "9a1158114d168e6c47b8bfb2461c8f04"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\technical-artist.md": {
+    "mtime": 1782354757.5937414,
+    "seen": 1788888207.4473917,
+    "ast_hash": "bef1e75d2db6ed59c893072ad27e9358",
+    "semantic_hash": "bef1e75d2db6ed59c893072ad27e9358"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\technical-consultant.md": {
+    "mtime": 1782354757.6848216,
+    "seen": 1788888207.4473925,
+    "ast_hash": "1bba61a9c9c8faf9eef8c6f3eb9364fe",
+    "semantic_hash": "1bba61a9c9c8faf9eef8c6f3eb9364fe"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\technical-writer.md": {
+    "mtime": 1782354757.7619529,
+    "seen": 1788888207.4473932,
+    "ast_hash": "eaaf16dc7716115928d7fcfc05ab537e",
+    "semantic_hash": "eaaf16dc7716115928d7fcfc05ab537e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\terminal-integration-specialist.md": {
+    "mtime": 1782354757.8563385,
+    "seen": 1788888207.4473941,
+    "ast_hash": "27918eadf201d447b6be423e5e5c4ad5",
+    "semantic_hash": "27918eadf201d447b6be423e5e5c4ad5"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\test-results-analyzer.md": {
+    "mtime": 1782354757.9327242,
+    "seen": 1788888207.4473948,
+    "ast_hash": "3c24357a2b42c59ed30220a0ada128a6",
+    "semantic_hash": "3c24357a2b42c59ed30220a0ada128a6"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\threat-detection-engineer.md": {
+    "mtime": 1782354758.0080466,
+    "seen": 1788888207.4473956,
+    "ast_hash": "b0a7b23c245d77bf0a17098db1302f0e",
+    "semantic_hash": "b0a7b23c245d77bf0a17098db1302f0e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\threat-intelligence-analyst.md": {
+    "mtime": 1782354758.0886037,
+    "seen": 1788888207.4473963,
+    "ast_hash": "ea343500d8740d33ee72edcfba59c7d0",
+    "semantic_hash": "ea343500d8740d33ee72edcfba59c7d0"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\tiktok-strategist.md": {
+    "mtime": 1782354758.1707368,
+    "seen": 1788888207.4473968,
+    "ast_hash": "2106d38df28ee10df6c6b57c1bbdfca6",
+    "semantic_hash": "2106d38df28ee10df6c6b57c1bbdfca6"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\tool-evaluator.md": {
+    "mtime": 1782354758.251709,
+    "seen": 1788888207.4473977,
+    "ast_hash": "99cf0284c74ee1c4675535c60045c028",
+    "semantic_hash": "99cf0284c74ee1c4675535c60045c028"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\tracking-measurement-specialist.md": {
+    "mtime": 1782354758.312075,
+    "seen": 1788888207.4473984,
+    "ast_hash": "1a358c00c3cdae4f197027d6fb2ca609",
+    "semantic_hash": "1a358c00c3cdae4f197027d6fb2ca609"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\trend-researcher.md": {
+    "mtime": 1782354758.3971248,
+    "seen": 1788888207.4473991,
+    "ast_hash": "042f6afbcc2c9a7d6ea774706a3d0126",
+    "semantic_hash": "042f6afbcc2c9a7d6ea774706a3d0126"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\twitter-engager.md": {
+    "mtime": 1782354758.478289,
+    "seen": 1788888207.4473996,
+    "ast_hash": "0bfb0ff94acff3e4b2291025e24daa7b",
+    "semantic_hash": "0bfb0ff94acff3e4b2291025e24daa7b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\ui-designer.md": {
+    "mtime": 1782354758.569422,
+    "seen": 1788888207.4474003,
+    "ast_hash": "a54921757ccd7c1a2f96421800815ccc",
+    "semantic_hash": "a54921757ccd7c1a2f96421800815ccc"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\unity-architect.md": {
+    "mtime": 1782354758.6330526,
+    "seen": 1788888207.447401,
+    "ast_hash": "1e4c7ede11857a426c94e3238771f39d",
+    "semantic_hash": "1e4c7ede11857a426c94e3238771f39d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\unity-editor-tool-developer.md": {
+    "mtime": 1782354758.697609,
+    "seen": 1788888207.4474015,
+    "ast_hash": "4bce0854cc136c913f4f6784b77455b8",
+    "semantic_hash": "4bce0854cc136c913f4f6784b77455b8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\unity-multiplayer-engineer.md": {
+    "mtime": 1782354758.7844067,
+    "seen": 1788888207.4474022,
+    "ast_hash": "0e88fa0e31b52350d8b4261dbf8cee63",
+    "semantic_hash": "0e88fa0e31b52350d8b4261dbf8cee63"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\unity-shader-graph-artist.md": {
+    "mtime": 1782354758.863924,
+    "seen": 1788888207.447403,
+    "ast_hash": "84e4bd20ae0c05aa5a0974b7fcd6d289",
+    "semantic_hash": "84e4bd20ae0c05aa5a0974b7fcd6d289"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\unreal-multiplayer-architect.md": {
+    "mtime": 1782354758.9470212,
+    "seen": 1788888207.4474034,
+    "ast_hash": "3f200c510abee1ece763c7d82d82a8e3",
+    "semantic_hash": "3f200c510abee1ece763c7d82d82a8e3"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\unreal-systems-engineer.md": {
+    "mtime": 1782354759.028764,
+    "seen": 1788888207.4474046,
+    "ast_hash": "c77a04c0794b228dbce03a9aff35ef15",
+    "semantic_hash": "c77a04c0794b228dbce03a9aff35ef15"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\unreal-technical-artist.md": {
+    "mtime": 1782354759.114354,
+    "seen": 1788888207.447405,
+    "ast_hash": "d322bb2a31c0280cc77d19ac3ded96f8",
+    "semantic_hash": "d322bb2a31c0280cc77d19ac3ded96f8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\unreal-world-builder.md": {
+    "mtime": 1782354759.2199116,
+    "seen": 1788888207.447406,
+    "ast_hash": "795a010476cf338724522e3823e2727d",
+    "semantic_hash": "795a010476cf338724522e3823e2727d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\ux-architect.md": {
+    "mtime": 1782354759.3077734,
+    "seen": 1788888207.4474068,
+    "ast_hash": "7afe51e08227692ad44246a45d4ca2c2",
+    "semantic_hash": "7afe51e08227692ad44246a45d4ca2c2"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\ux-researcher.md": {
+    "mtime": 1782354759.38385,
+    "seen": 1788888207.447408,
+    "ast_hash": "1aee4c32fe51183e956f4a7c19dc52c4",
+    "semantic_hash": "1aee4c32fe51183e956f4a7c19dc52c4"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\video-optimization-specialist.md": {
+    "mtime": 1782354759.465076,
+    "seen": 1788888207.4474087,
+    "ast_hash": "681f90aa4308ef08c46323da2265224a",
+    "semantic_hash": "681f90aa4308ef08c46323da2265224a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\visionos-spatial-engineer.md": {
+    "mtime": 1782354759.541505,
+    "seen": 1788888207.4474094,
+    "ast_hash": "b628d0cda9b28cab91c1395a14ae6c51",
+    "semantic_hash": "b628d0cda9b28cab91c1395a14ae6c51"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\visual-storyteller.md": {
+    "mtime": 1782354759.621341,
+    "seen": 1788888207.4474099,
+    "ast_hash": "dcd5ce7882aa02b89b3946842eafc540",
+    "semantic_hash": "dcd5ce7882aa02b89b3946842eafc540"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\voice-ai-integration-engineer.md": {
+    "mtime": 1782354759.7003949,
+    "seen": 1788888207.4474106,
+    "ast_hash": "d2ae1f9620b574a98212251b76a5c2cf",
+    "semantic_hash": "d2ae1f9620b574a98212251b76a5c2cf"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\web-gis-developer.md": {
+    "mtime": 1782354759.7846968,
+    "seen": 1788888207.4474118,
+    "ast_hash": "5cce0cc1e7e9cb5c46e18327227b1ba9",
+    "semantic_hash": "5cce0cc1e7e9cb5c46e18327227b1ba9"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\wechat-mini-program-developer.md": {
+    "mtime": 1782354759.8766174,
+    "seen": 1788888207.447414,
+    "ast_hash": "e1876daf972f663f4861db934407fcd7",
+    "semantic_hash": "e1876daf972f663f4861db934407fcd7"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\wechat-official-account-manager.md": {
+    "mtime": 1782354759.984214,
+    "seen": 1788888207.4474149,
+    "ast_hash": "3ff4434a2b0639df5c7a5c821703a1cb",
+    "semantic_hash": "3ff4434a2b0639df5c7a5c821703a1cb"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\weibo-strategist.md": {
+    "mtime": 1782354760.080259,
+    "seen": 1788888207.4474158,
+    "ast_hash": "635d6c29abbdced409b54805826b0a31",
+    "semantic_hash": "635d6c29abbdced409b54805826b0a31"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\whimsy-injector.md": {
+    "mtime": 1782354760.1735716,
+    "seen": 1788888207.4474165,
+    "ast_hash": "9ff07395a5549331c4f586089967846c",
+    "semantic_hash": "9ff07395a5549331c4f586089967846c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\wordpress-shopping-cart-engineer.md": {
+    "mtime": 1782354760.2666116,
+    "seen": 1788888207.4474175,
+    "ast_hash": "a97888558067fce9430a61f2df4a5f10",
+    "semantic_hash": "a97888558067fce9430a61f2df4a5f10"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\workflow-architect.md": {
+    "mtime": 1782354760.3572822,
+    "seen": 1788888207.4474185,
+    "ast_hash": "7b9d3b3254a7f21e74281562c5475b98",
+    "semantic_hash": "7b9d3b3254a7f21e74281562c5475b98"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\workflow-optimizer.md": {
+    "mtime": 1782354760.4530275,
+    "seen": 1788888207.4474192,
+    "ast_hash": "6960fdea43cedc621c4d9438a28ded22",
+    "semantic_hash": "6960fdea43cedc621c4d9438a28ded22"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\x-twitter-intelligence-analyst.md": {
+    "mtime": 1782354760.5387106,
+    "seen": 1788888207.44742,
+    "ast_hash": "24a86fa510338886234b290ed32165a8",
+    "semantic_hash": "24a86fa510338886234b290ed32165a8"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\xiaohongshu-specialist.md": {
+    "mtime": 1782354760.624529,
+    "seen": 1788888207.4474208,
+    "ast_hash": "7e8a2cf0861c78c36e68699e0d35b93b",
+    "semantic_hash": "7e8a2cf0861c78c36e68699e0d35b93b"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\xr-cockpit-interaction-specialist.md": {
+    "mtime": 1782354760.71056,
+    "seen": 1788888207.4474218,
+    "ast_hash": "76fe2fd5bc8f9856a417f1dbb843b779",
+    "semantic_hash": "76fe2fd5bc8f9856a417f1dbb843b779"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\xr-immersive-developer.md": {
+    "mtime": 1782354760.8227134,
+    "seen": 1788888207.4474227,
+    "ast_hash": "7d3acd34745b6bb96535799d967c8145",
+    "semantic_hash": "7d3acd34745b6bb96535799d967c8145"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\xr-interface-architect.md": {
+    "mtime": 1782354760.9070942,
+    "seen": 1788888207.4474235,
+    "ast_hash": "3e07baea4af417942407333039f1d23f",
+    "semantic_hash": "3e07baea4af417942407333039f1d23f"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\zhihu-strategist.md": {
+    "mtime": 1782354760.9759312,
+    "seen": 1788888207.4474244,
+    "ast_hash": "33c221d2c8bf39d957cbc5d8b5405e38",
+    "semantic_hash": "33c221d2c8bf39d957cbc5d8b5405e38"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\.opencode\\agents\\zk-steward.md": {
+    "mtime": 1782354761.0443335,
+    "seen": 1788888207.4474254,
+    "ast_hash": "9c25df8519ac63efbdd3d5035db4514e",
+    "semantic_hash": "9c25df8519ac63efbdd3d5035db4514e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\AGENTS.md": {
+    "mtime": 1788746401.2846484,
+    "seen": 1788888207.4474263,
+    "ast_hash": "0818ea0d90ac1187a83a3949690f4420",
+    "semantic_hash": "0818ea0d90ac1187a83a3949690f4420"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\README.md": {
+    "mtime": 1782324194.7798464,
+    "seen": 1788888207.447427,
+    "ast_hash": "f407396ee905b84266e0ff06bacd0e59",
+    "semantic_hash": "f407396ee905b84266e0ff06bacd0e59"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\config\\feature_flags.yaml": {
+    "mtime": 1782355683.6389742,
+    "seen": 1788888207.4474277,
+    "ast_hash": "8e69d338c25203db7a39623bf006fdf9",
+    "semantic_hash": "8e69d338c25203db7a39623bf006fdf9"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\config\\pipeline_settings.yaml": {
+    "mtime": 1782355682.1688578,
+    "seen": 1788888207.4474287,
+    "ast_hash": "d4a19437295d6873e8f3cb6f32b26e04",
+    "semantic_hash": "d4a19437295d6873e8f3cb6f32b26e04"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\config\\show_profiles\\template_comedy.yaml": {
+    "mtime": 1782355697.771323,
+    "seen": 1788888207.4474297,
+    "ast_hash": "df022fe319a9aa2df5fba92a59779398",
+    "semantic_hash": "df022fe319a9aa2df5fba92a59779398"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\config\\show_profiles\\template_drama.yaml": {
+    "mtime": 1782355690.3193333,
+    "seen": 1788888207.4474306,
+    "ast_hash": "5fecd01ae1dae1168cff68ebad7d6630",
+    "semantic_hash": "5fecd01ae1dae1168cff68ebad7d6630"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\config\\show_profiles\\template_scifi.yaml": {
+    "mtime": 1782355693.955989,
+    "seen": 1788888207.4474316,
+    "ast_hash": "aaba31e2be90e56945ab1786744c8a67",
+    "semantic_hash": "aaba31e2be90e56945ab1786744c8a67"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\docker-compose.yml": {
+    "mtime": 1782410095.6799223,
+    "seen": 1788888207.4474325,
+    "ast_hash": "17cf01f205a5c3ea49171e738512529c",
+    "semantic_hash": "17cf01f205a5c3ea49171e738512529c"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\docs\\api-contracts.md": {
+    "mtime": 1782324501.7803612,
+    "seen": 1788888207.4474335,
+    "ast_hash": "716ab536f794e830039ecfe584d57905",
+    "semantic_hash": "716ab536f794e830039ecfe584d57905"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\docs\\architecture.md": {
+    "mtime": 1782324252.8902125,
+    "seen": 1788888207.4474342,
+    "ast_hash": "324270f5098a27f1cb505cdbad97bb89",
+    "semantic_hash": "324270f5098a27f1cb505cdbad97bb89"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\docs\\data-schemas.md": {
+    "mtime": 1782324449.5982065,
+    "seen": 1788888207.447435,
+    "ast_hash": "b3667bea079d1d4f771328b2bd00948d",
+    "semantic_hash": "b3667bea079d1d4f771328b2bd00948d"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\docs\\phased-plan.md": {
+    "mtime": 1782324352.242581,
+    "seen": 1788888207.4474359,
+    "ast_hash": "ba6e2931df65c6798ed533b48ffbf5fb",
+    "semantic_hash": "ba6e2931df65c6798ed533b48ffbf5fb"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\docs\\project-structure.md": {
+    "mtime": 1782324553.608155,
+    "seen": 1788888207.4474368,
+    "ast_hash": "3ca77d69422c7a778375e01e00513fda",
+    "semantic_hash": "3ca77d69422c7a778375e01e00513fda"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\docs\\tech-stack.md": {
+    "mtime": 1782324308.4844663,
+    "seen": 1788888207.447438,
+    "ast_hash": "38275de555effebda934d28562f5046e",
+    "semantic_hash": "38275de555effebda934d28562f5046e"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\monitoring\\alerting\\alert_rules.yml": {
+    "mtime": 1782352003.407193,
+    "seen": 1788888207.447439,
+    "ast_hash": "44d0c85646b0c0df4c347f9abe42dc10",
+    "semantic_hash": "44d0c85646b0c0df4c347f9abe42dc10"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\monitoring\\prometheus.yml": {
+    "mtime": 1782428945.7604928,
+    "seen": 1788888207.44744,
+    "ast_hash": "887167b40547945f25832fc0b1d74c59",
+    "semantic_hash": "887167b40547945f25832fc0b1d74c59"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\new_build_v2\\docker-compose.yml": {
+    "mtime": 1782357243.658887,
+    "seen": 1788888207.4474423,
+    "ast_hash": "cc2b10086db826681c5f4f84ec60e3de",
+    "semantic_hash": "cc2b10086db826681c5f4f84ec60e3de"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\new_build_v2\\requirements.txt": {
+    "mtime": 1782357253.3085294,
+    "seen": 1788888207.4474428,
+    "ast_hash": "2bc10f8070b63d2b521d4fcb7fd77dd9",
+    "semantic_hash": "2bc10f8070b63d2b521d4fcb7fd77dd9"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\continuity_inspector\\config.yaml": {
+    "mtime": 1782351932.8422332,
+    "seen": 1788888207.4474437,
+    "ast_hash": "675a8cc324382410af36eba7794da534",
+    "semantic_hash": "675a8cc324382410af36eba7794da534"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\recap_agent\\config.yaml": {
+    "mtime": 1782351934.4177327,
+    "seen": 1788888207.4474444,
+    "ast_hash": "86ae5c463181b07a1f56b683f8852361",
+    "semantic_hash": "86ae5c463181b07a1f56b683f8852361"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\pipeline\\agents\\script_critic\\config.yaml": {
+    "mtime": 1782351931.416992,
+    "seen": 1788888207.4474454,
+    "ast_hash": "eaec0cc6ce6046756719bc574e57256a",
+    "semantic_hash": "eaec0cc6ce6046756719bc574e57256a"
+  },
+  "D:\\Projects\\In Process\\Netflix LM\\services\\api\\requirements.txt": {
+    "mtime": 1782355081.1066768,
+    "seen": 1788888207.4474466,
+    "ast_hash": "42e11fefd8fc34b8a47871ba55962262",
+    "semantic_hash": "42e11fefd8fc34b8a47871ba55962262"
+  }
+}

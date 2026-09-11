@@ -1,0 +1,20 @@
+genre: comedy
+tone_guide: "Light, gag-driven, referential"
+recap_tone_preferences:
+  preferred_tone: comedy
+  secondary_tones:
+    - character_study
+    - romance
+  thread_count: 3
+entity_types_priority:
+  - character
+  - location
+  - prop
+  - event
+  - running_gag
+constraint_strictness:
+  C-LOC-001: relaxed
+  C-DEAD-001: strict
+  C-PROP-001: relaxed
+  C-SEC-001: moderate
+  C-REL-001: relaxed

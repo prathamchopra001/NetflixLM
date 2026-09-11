@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pydantic
+neo4j-driver
+qdrant-client
+minio
+python-multipart

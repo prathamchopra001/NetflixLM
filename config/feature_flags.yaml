@@ -1,0 +1,13 @@
+features:
+  bdi_simulation:
+    enabled: false
+    description: "Character Belief-Desire-Intention models for motivational consistency"
+    flag: ENABLE_BDI_SIMULATION
+  per_show_lora:
+    enabled: false
+    description: "Fine-tune Llama 8B on show's prior recaps for voice match"
+    flag: ENABLE_PER_SHOW_LORA
+  vlm_continuity_fine_tune:
+    enabled: false
+    description: "Fine-tune Qwen2-VL on synthetic continuity examples"
+    flag: ENABLE_VLM_CONTINUITY_FT

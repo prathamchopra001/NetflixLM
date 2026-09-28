@@ -1,452 +1,375 @@
 # API Contracts
 
-## REST API
+## Conventions
 
-Base URL: `http://localhost:8080/api/v1`
+| Item | Value |
+|------|-------|
+| Base URL | `{NIP_PUBLIC_URL}/api/v1` (locally `http://localhost:8080/api/v1`) |
+| Auth | OIDC bearer token: `Authorization: Bearer <token>`. Expected issuer, signing-key URL, audience, and roles claim come from `NIP_OIDC_ISSUER`, `NIP_OIDC_JWKS_URL`, `NIP_OIDC_AUDIENCE`, `NIP_OIDC_ROLES_CLAIM`. Keycloak is bundled for local use; any OIDC provider works in production. |
+| IDs | Prefixed strings: `run_912`, `flg_48213`, `plan_42`, `src_77`. Evidence uses refs from [Data Model › Evidence Refs](data-model.md#evidence-refs). |
+| Timecodes | SMPTE strings in responses (`00:14:22:05`); frames are available as `frames: [in, out)` on every timed object. |
+| Pagination | `?page=1&page_size=50` (max 200); responses include `total`, `page`, `page_size`. |
+| Versioning | Additive changes only within `v1`; clients must ignore unknown fields. |
 
-Auth: OIDC via Keycloak. All endpoints require `Authorization: Bearer <token>`.
+### Roles
+
+| Role | Can |
+|------|-----|
+| `viewer` | Read reports, flags, facts |
+| `reviewer` | + disposition non-clearance flags, correct facts |
+| `legal` | + disposition clearance flags (only this role can) |
+| `operator` | + upload sources, start/cancel runs, view hardware and plans |
 
 ---
 
-### Pipeline Management
+## System
 
-#### `POST /episodes`
+### `GET /healthz` · `GET /readyz`
 
-Submit a new episode for processing.
+Liveness and readiness (readiness checks Postgres, object storage, and the Ray cluster). No auth. `GET /metrics` exposes Prometheus metrics on the internal network only.
+
+### `GET /system/hardware` *(operator)*
+
+The current hardware inventory as seen by the probe.
+
+```json
+{
+  "probed_at": "2026-10-02T09:14:03Z",
+  "nodes": [
+    {
+      "node_id": "a1f3…",
+      "cpus": 16, "ram_gb": 23.5,
+      "gpus": [{"index": 0, "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+                "vram_total_gb": 8.0, "vram_free_gb": 6.9, "compute_capability": "8.9"}]
+    }
+  ],
+  "autoscaling": {"enabled": false, "max_gpu_nodes": 0}
+}
+```
+
+### `GET /system/plan-preview?agents=auto&objective=quality` *(operator)*
+
+Dry run of the planner against the current hardware: the Plan a run would get right now. Same shape as `GET /runs/{id}/plan`.
+
+---
+
+## Shows, Episodes, Sources
+
+### `POST /shows` *(operator)*
+
+```json
+// Request
+{"slug": "harbor-lights", "title": "Harbor Lights"}
+// Response 201
+{"slug": "harbor-lights", "title": "Harbor Lights", "episodes": []}
+```
+
+### `POST /shows/{show}/episodes` *(operator)*
+
+```json
+// Request
+{"season": 1, "number": 3, "episode_seq": 3, "title": "Low Tide"}
+// Response 201
+{"ref": "S01E03", "timeline_source": "script_estimate"}
+```
+
+### `POST /uploads` *(operator)*
+
+Request a presigned upload URL. Object keys are content-addressed by the client-declared SHA-256, which the server verifies after upload.
+
+```json
+// Request
+{"filename": "s01e03_picture_lock_02.mp4", "size_bytes": 3876452113, "sha256": "4be1…"}
+// Response 201 (single PUT up to 5 GB; larger files get multipart part URLs)
+{"object_key": "harbor-lights/S01E03/source/4be1….mp4",
+ "upload_url": "https://…", "expires_at": "2026-10-02T10:14:03Z"}
+```
+
+### `POST /shows/{show}/sources` *(operator)*
+
+Register an uploaded file. Validation runs immediately; picture validation (media probe) may be asynchronous.
+
+```json
+// Request
+{"episode": "S01E03", "kind": "subtitle", "format": "ttml",
+ "lang": "es-419", "role": "target",
+ "object_key": "harbor-lights/S01E03/source/77c2….ttml", "version_label": "es_v3"}
+
+// Response 201
+{"source_id": "src_301", "status": "valid",
+ "warnings": ["Declared frameRate 25 differs from picture 24000/1001"]}
+
+// Response 422
+{"error": {"code": "INPUT_REJECTED",
+           "message": "Subtitle file failed to parse",
+           "details": {"line": 1842, "reason": "Unclosed <p> element"}}}
+```
+
+`kind` ∈ `script | picture | subtitle | bible | glossary | clearance_log`. Show-level files (`bible`, `glossary`, `clearance_log`) use `"episode": null`.
+
+### `GET /shows/{show}/sources?episode=S01E03&kind=subtitle`
+
+Lists registered sources with version labels and validation status.
+
+---
+
+## Runs
+
+### `POST /runs` *(operator)*
 
 ```json
 // Request
 {
-  "show_id": "stranger-things",
-  "season": 3,
-  "episode": 5,
-  "script_version": "draft_07",
-  "script_file": "s3e5_draft07.fdx",
-  "video_file": "s3e5_finalcut02.mp4",
-  "subtitles_file": "s3e5_subtitles.srt",
-  "options": {
-    "run_agents": ["script_critic", "continuity_inspector", "recap_agent"],
-    "recap_locales": ["en"],
-    "spoiler_mode": "episodic"
-  }
+  "show": "harbor-lights",
+  "episodes": ["S01E03", "S01E04"],
+  "agents": "auto",                     // or ["localization_auditor", "clearance_scanner", ...]
+  "languages": ["es-419", "fr-FR", "de-DE"],
+  "objective": "quality",               // optional; default from NIP_PLAN_OBJECTIVE
+  "pins": {},                           // optional; e.g. {"vlm": "qwen3.8-27b-int4"}
+  "force": false                        // true = ignore the cache
 }
 
 // Response 202
 {
-  "pipeline_run_id": "pr-uuid-001",
+  "run_id": "run_912",
   "status": "queued",
-  "estimated_duration_minutes": 30
+  "plan_id": "plan_42",
+  "agents_resolved": ["localization_auditor", "clearance_scanner", "script_critic", "continuity_inspector"],
+  "inputs_used": {"S01E03": ["src_101", "src_188", "src_301"], "S01E04": ["src_102", "src_190"]},
+  "skipped": [{"agent": "continuity_inspector", "episode": "S01E04",
+               "checks": ["cont.visual"], "reason": "no picture registered"}]
 }
 ```
 
-#### `GET /episodes/{show_id}/{season}/{episode}`
+With `"agents": "auto"`, agents and checks are activated from the inputs present ([Architecture › Activation matrix](architecture.md#activation-matrix)). Starting a run for an episode that already has an active run returns `409 RUN_CONFLICT`.
 
-Get the latest Pre-Live Report for an episode.
+### `GET /runs/{run_id}`
 
 ```json
-// Response 200
 {
-  "show_id": "stranger-things",
-  "season": 3,
-  "episode": 5,
-  "script_version": "draft_07",
-  "pipeline_run_id": "pr-uuid-001",
-  "status": "completed",
-  "flags": [
-    {
-      "id": "flag-uuid-001",
-      "type": "plot_hole",
-      "issue": "Walter references Gale's assignment in E6 but doesn't learn about it until E8",
-      "severity": 4,
-      "confidence": 0.97,
-      "source_agent": "script_critic",
-      "disposition": null
-    }
+  "run_id": "run_912",
+  "status": "running",                  // queued | running | completed | completed_with_gaps | failed | cancelled
+  "plan_id": "plan_42",
+  "mode": "staged",                     // staged | resident (from the Plan)
+  "stages": [
+    {"stage": "timeline.asr", "status": "done", "units": 2, "cached": 1},
+    {"stage": "knowledge.extract", "status": "running", "units_done": 31, "units_total": 58},
+    {"stage": "loc.gender", "status": "pending"}
   ],
-  "recaps": [
-    {
-      "locale": "en",
-      "base_recap": "...",
-      "variants": 5,
-      "spoiler_risk_score": 0.15
-    }
-  ],
-  "created_at": "2026-06-24T10:00:00Z",
-  "completed_at": "2026-06-24T10:28:00Z"
-}
-```
-
-#### `GET /episodes/{show_id}/{season}/{episode}/versions`
-
-List all script versions processed for this episode.
-
-```json
-// Response 200
-{
-  "versions": [
-    {
-      "script_version": "draft_06",
-      "pipeline_run_id": "pr-uuid-000",
-      "status": "completed",
-      "flag_count": 4,
-      "completed_at": "2026-06-20T14:00:00Z"
-    },
-    {
-      "script_version": "draft_07",
-      "pipeline_run_id": "pr-uuid-001",
-      "status": "completed",
-      "flag_count": 2,
-      "completed_at": "2026-06-24T10:28:00Z"
-    }
-  ]
-}
-```
-
-#### `GET /episodes/{show_id}/{season}/{episode}/diff`
-
-Get incremental diff between two script versions.
-
-```json
-// Request query params: ?from=draft_06&to=draft_07
-
-// Response 200
-{
-  "from_version": "draft_06",
-  "to_version": "draft_07",
-  "changed_scenes": ["Sc03", "Sc07"],
-  "affected_cross_references": ["Sc02", "Sc09"],
-  "new_flags": [
-    {
-      "id": "flag-uuid-003",
-      "type": "plot_hole",
-      "issue": "New inconsistency introduced by Sc03 changes"
-    }
-  ],
-  "resolved_flags": [
-    {
-      "id": "flag-uuid-001",
-      "type": "continuity",
-      "issue": "Prop swap in Sc05 (resolved by wardrobe change in draft_07)"
-    }
-  ]
-}
-```
-
----
-
-### Flag Management
-
-#### `PUT /flags/{flag_id}/disposition`
-
-Record human disposition on a flag.
-
-```json
-// Request
-{
-  "action": "overridden",
-  "note": "Intentional inconsistency - dream sequence",
-  "user": "editor@example.com"
-}
-
-// Response 200
-{
-  "flag_id": "flag-uuid-001",
-  "disposition": {
-    "action": "overridden",
-    "note": "Intentional inconsistency - dream sequence",
-    "timestamp": "2026-06-24T12:00:00Z",
-    "user": "editor@example.com"
-  }
-}
-```
-
-#### `GET /flags`
-
-List flags with filtering.
-
-```json
-// Query params: ?show_id=stranger-things&severity_min=3&disposition=null&source_agent=script_critic
-
-// Response 200
-{
-  "flags": [
-    {
-      "id": "flag-uuid-002",
-      "type": "plot_hole",
-      "issue": "...",
-      "severity": 4,
-      "confidence": 0.92,
-      "source_agent": "script_critic",
-      "disposition": null
-    }
-  ],
-  "total": 1,
-  "page": 1,
-  "page_size": 50
-}
-```
-
----
-
-### Recap Endpoints
-
-#### `GET /recaps/{show_id}/{season}/{episode}`
-
-Get all recap drafts for an episode.
-
-```json
-// Response 200
-{
-  "episode_ref": "S3E5",
-  "script_version": "draft_07",
-  "recaps": [
-    {
-      "locale": "en",
-      "base_recap": "...",
-      "variants": [
-        {
-          "text": "Tension explodes as Walter's double life...",
-          "tone": "suspense",
-          "thread_focus": "walter_coverup",
-          "emotional_valence": {"tension": 0.9, "relief": 0.1}
-        }
-      ],
-      "thread_labels": ["walter_coverup", "skyler_agency", "hank_investigation"],
-      "emotional_valence_map": {"tension": 0.85, "dread": 0.7, "relief": 0.1},
-      "character_arc_weights": {"walter": 0.4, "skyler": 0.3, "hank": 0.2, "jesse": 0.1},
-      "spoiler_risk_score": 0.15
-    }
-  ]
-}
-```
-
-#### `PUT /recaps/{recap_id}/publish`
-
-Publish a recap (requires all blocking flags resolved).
-
-```json
-// Request
-{
-  "variant_index": 0,
-  "user": "editor@example.com"
-}
-
-// Response 200 (if flags resolved)
-{
-  "recap_id": "recap-uuid-001",
-  "status": "published",
-  "published_variant": {
-    "tone": "suspense",
-    "text": "..."
+  "coverage": {
+    "clearance_scanner": {"units_total": 412, "done": 405, "failed": 7,
+                          "gaps": ["S01E03/shot/112-118: GPU out of memory"]}
   },
-  "published_at": "2026-06-24T12:30:00Z"
+  "started_at": "2026-10-02T09:20:11Z"
 }
+```
 
-// Response 403 (if blocking flags exist)
+### `GET /runs/{run_id}/plan`
+
+```json
 {
-  "error": "Cannot publish recap: 2 unresolved blocking flags",
-  "blocking_flags": ["flag-uuid-001", "flag-uuid-002"]
+  "plan_id": "plan_42",
+  "objective": "quality",
+  "mode": "staged",
+  "groups": ["timeline", "vision_prep", "text_prep", "vlm+llm", "judge"],
+  "decisions": {
+    "text_llm":  {"variant": "qwen3.5-4b-awq", "shared_with": ["vlm"], "replicas": 1, "gpus_per_replica": 1, "context": 8192},
+    "vlm":       {"variant": "qwen3.5-4b-awq", "shared_with": ["text_llm"]},
+    "judge_llm": {"variant": "ministral-3-3b-fp8", "independent_family": true},
+    "asr":       {"variant": "faster-whisper-large-v3-int8", "gpu_fraction": 0.5}
+  },
+  "amendments": [
+    {"at": "2026-10-02T09:41:52Z", "slot": "asr",
+     "from": "faster-whisper-large-v3-int8", "to": "faster-whisper-large-v3-turbo-int8",
+     "reason": "CUDA OOM persisted after batch reduction"}
+  ]
+}
+```
+
+(Abbreviated; `decisions` lists every slot the run needs.)
+
+Full Plan semantics: [Hardware Adaptation › Plan](hardware-adaptation.md#the-plan).
+
+### `POST /runs/{run_id}/cancel` *(operator)*
+
+Cancels pending units; running units finish. Completed unit outputs stay cached.
+
+### `GET /runs/{run_id}/diff?against=previous`
+
+```json
+{
+  "run_id": "run_915", "against": "run_912",
+  "changed_inputs": ["S01E03 script draft_07 → draft_08 (scenes 5, 12 changed)"],
+  "new_flags": ["flg_48790"],
+  "resolved_flags": ["flg_48213"],
+  "unchanged_flags": 41,
+  "units_rerun": 63, "units_cached": 1204
 }
 ```
 
 ---
 
-### Knowledge Graph
+## Reports
 
-#### `GET /kg/{show_id}/entities`
+### `GET /shows/{show}/episodes/{ep}/report?run=latest`
 
-Query entities in the knowledge graph.
+The ranked pre-release report.
 
 ```json
-// Query params: ?type=Character&episode=S3E5
-
-// Response 200
 {
-  "entities": [
-    {
-      "id": "walter",
-      "type": "Character",
-      "name": "Walter White",
-      "properties": {
-        "status": "alive",
-        "death_tc": null
-      }
-    }
+  "episode": "S01E03", "run_id": "run_912", "status": "completed_with_gaps",
+  "plan": {"plan_id": "plan_42", "mode": "staged", "judge_independent": false},
+  "coverage": {"localization_auditor": 1.0, "clearance_scanner": 0.983,
+               "script_critic": 1.0, "continuity_inspector": 1.0},
+  "counts": {"must_review": 9, "review_recommended": 14, "suppressed": 22},
+  "sections": [
+    {"category": "clearance",    "flags": [ /* flag summaries, ranked */ ]},
+    {"category": "continuity",   "flags": [ ]},
+    {"category": "localization", "flags": [ ]},
+    {"category": "plot_hole",    "flags": [ ]}
   ]
 }
 ```
 
-#### `GET /kg/{show_id}/constraints/violations`
+Flag summaries contain `id, check, severity, confidence, tier, title, lang, primary_tc, status`. Suppressed flags are included only with `?include_suppressed=true`.
 
-Get current constraint violations for a show.
+### `GET /shows/{show}/episodes/{ep}/clearance-report?run=latest&format=json|csv`
+
+One row per occurrence:
+
+```csv
+occurrence_id,item,kind,status,tc_in,tc_out,screen_time_s,prominence,severity,thumbnail_url,flag_id
+occ_19,Acme Hardware,logo,pending,00:12:04:08,00:12:10:13,6.2,featured,4,https://…,flg_48214
+```
+
+---
+
+## Flags
+
+### `GET /flags`
+
+Filters: `show, episode, run, agent, check, category, tier, lang, status, severity_min`.
+
+### `GET /flags/{flag_id}`
+
+The full flag ([Data Model › Flag and Evidence](data-model.md#flag-and-evidence)) with evidence resolved for display:
 
 ```json
-// Response 200
 {
-  "violations": [
-    {
-      "constraint_id": "C-SEC-001",
-      "description": "Walter knows Gale's assignment before revelation event",
-      "entities": ["walter", "gale_assignment_secret"],
-      "evidence_timecodes": ["S3E6@00:22:15", "S3E8@00:08:30"]
-    }
-  ]
+  "id": "flg_48213",
+  "check": "loc.spoiler",
+  "evidence": [
+    {"kind": "subtitle_cue", "ref": "S01E03/es-419/212", "role": "claim",
+     "tc_in": "00:14:22:05", "tc_out": "00:14:24:11", "quote": "La asesina sigue aquí.",
+     "aligned_source": {"ref": "S01E03/en/209", "quote": "The killer is still here."}}
+  ],
+  "media": {"proxy_url": "https://…", "seek_seconds": 862.2, "end_seconds": 864.5},
+  "history": [{"run_id": "run_880", "status": "open"}]
 }
 ```
 
-#### `POST /kg/{show_id}/corrections`
+`media.proxy_url` is a short-lived presigned URL.
 
-Submit a human correction to the KG.
+### `PUT /flags/{flag_id}/disposition` *(reviewer; legal for clearance flags)*
 
 ```json
 // Request
-{
-  "entity_id": "walter",
-  "relation_type": "KNOWS_SECRET",
-  "correction": {
-    "action": "delete",
-    "reason": "Walter doesn't know Gale's assignment in E6 — this was an extraction error"
-  },
-  "user": "editor@example.com"
-}
+{"action": "overridden", "note": "Intentional - the narrator is unreliable in this scene"}
+// Response 200
+{"flag_id": "flg_48213", "disposition": {"action": "overridden", "note": "…",
+ "actor": "reviewer@studio.example", "at": "2026-10-02T12:00:00Z"}}
+```
 
+`action` ∈ `accepted | fix_rerun | overridden`. `overridden` without a note → `400 OVERRIDE_NOTE_REQUIRED`. Dispositions attach to the flag's fingerprint, so they carry forward to later runs.
+
+---
+
+## Knowledge
+
+### `GET /shows/{show}/entities?kind=character&status=candidate`
+
+### `GET /shows/{show}/facts?entity=maya&predicate=learns&episode=S01E03`
+
+```json
+{
+  "facts": [
+    {"id": "fact/8812", "predicate": "learns", "subject": "maya", "object": "ada_is_informant",
+     "screen": {"from": "S01E06 @ 00:31:02:14", "to": null},
+     "story": {"from_seq": 211, "to_seq": null},
+     "confidence": 0.94,
+     "sources": [{"ref": "S01E06/line/18.7", "quote": "Ada's been feeding them everything."}]}
+  ]
+}
+```
+
+### `GET /shows/{show}/fact-queue`
+
+Low-confidence facts and candidate entities awaiting review, ordered by how many flags depend on them.
+
+### `POST /facts/{fact_id}/corrections` *(reviewer)*
+
+```json
+// Request
+{"action": "retract", "reason": "Sarcasm - Leo doesn't actually know this yet"}
 // Response 201
-{
-  "correction_id": "corr-uuid-001",
-  "status": "applied",
-  "entity_id": "walter",
-  "applied_at": "2026-06-24T13:00:00Z"
-}
+{"correction_id": "corr_55", "fact": "fact/8812", "new_version": 2,
+ "reevaluating_flags": ["flg_48790", "flg_48791"]}
 ```
 
 ---
 
-## Personalization Interface Contract
+## WebSocket Events
 
-Version: `1.0.0`
-
-This is the structured API that the recommendation engine consumes. The Recap Agent writes to this contract; the personalization system reads from it.
-
-### Recap Metadata (consumed by recommendation engine)
-
-```json
-{
-  "episode_ref": "S3E5",
-  "show_id": "stranger-things",
-  "locale": "en",
-  "available_variants": [
-    {
-      "variant_id": "v-suspense-001",
-      "tone": "suspense",
-      "thread_focus": "walter_coverup",
-      "emotional_valence": {"tension": 0.9, "relief": 0.1, "dread": 0.7},
-      "text": "Tension explodes as Walter's double life..."
-    },
-    {
-      "variant_id": "v-character_study-001",
-      "tone": "character_study",
-      "thread_focus": "skyler_agency",
-      "emotional_valence": {"dread": 0.7, "empathy": 0.6, "tension": 0.3},
-      "text": "Skyler pushes back against Walter's secrecy..."
-    }
-  ],
-  "narrative_threads": [
-    {
-      "id": "walter_coverup",
-      "label": "Walter's Cover-Up",
-      "weight": 0.4,
-      "genre_tags": ["crime", "thriller"]
-    },
-    {
-      "id": "skyler_agency",
-      "label": "Skyler's Agency",
-      "weight": 0.3,
-      "genre_tags": ["drama", "family"]
-    },
-    {
-      "id": "hank_investigation",
-      "label": "Hank's Investigation",
-      "weight": 0.2,
-      "genre_tags": ["crime", "mystery"]
-    }
-  ],
-  "emotional_profile": {
-    "dominant_emotion": "tension",
-    "emotion_vector": {"tension": 0.85, "dread": 0.7, "relief": 0.1, "empathy": 0.3},
-    "intensity": 0.78,
-    "trajectory": "escalating"
-  },
-  "character_focus": {
-    "primary": "walter",
-    "secondary": ["skyler", "hank"],
-    "weights": {"walter": 0.4, "skyler": 0.3, "hank": 0.2, "jesse": 0.1}
-  },
-  "spoiler_risk_score": 0.15
-}
-```
-
-### Contract Rules
-
-1. **Versioning**: All schema changes are backward-compatible. New fields added; none removed. Clients must ignore unknown fields.
-2. **Availability**: Recap metadata is written within 30 minutes of pipeline completion.
-3. **Freshness**: Metadata is updated when a new script version is processed (incremental diff).
-4. **Language**: Each locale gets its own `RecapMetadata` instance. The `locale` field is required.
-5. **Blocking**: If `spoiler_risk_score > 0.40`, the metadata is not available until editorial sign-off.
-
----
-
-## Editorial UI Data Contract
-
-The React editorial dashboard consumes these endpoints. All real-time updates use WebSocket.
-
-### WebSocket Events
+`GET /ws` (same bearer token, sent as the `Sec-WebSocket-Protocol` bearer subprotocol).
 
 | Event | Payload | Trigger |
 |-------|---------|---------|
-| `pipeline.started` | `{pipeline_run_id, show_id, season, episode}` | Pipeline begins processing |
-| `pipeline.agent_completed` | `{pipeline_run_id, agent, flag_count, duration_seconds}` | Individual agent finishes |
-| `pipeline.completed` | `{pipeline_run_id, total_flags, total_recaps, duration_seconds}` | Full pipeline completes |
-| `flag.disposition_updated` | `{flag_id, action, user, timestamp}` | Human reviews a flag |
-| `kg.correction_applied` | `{correction_id, entity_id, user, timestamp}` | Human corrects KG |
-
-### Dashboard Views
-
-| View | Data Source | Refresh |
-|------|-----------|---------|
-| Episode list with flag counts | `GET /episodes/{show_id}/{season}/{episode}` | On `pipeline.completed` |
-| Flag detail panel | `GET /flags/{flag_id}` | On `flag.disposition_updated` |
-| Recap preview with variant selector | `GET /recaps/{show_id}/{season}/{episode}` | On `pipeline.agent_completed` (recap_agent) |
-| KG violation panel | `GET /kg/{show_id}/constraints/violations` | On `kg.correction_applied` |
-| Version diff view | `GET /episodes/{show_id}/{season}/{episode}/diff` | Manual trigger |
+| `run.started` | `{run_id, plan_id, mode}` | Run begins |
+| `run.stage_progress` | `{run_id, stage, done, total}` | At most once per second per stage |
+| `run.completed` | `{run_id, status, counts, gaps}` | Run ends (`completed` or `completed_with_gaps`) |
+| `run.failed` | `{run_id, error}` | Unrecoverable failure |
+| `plan.amended` | `{run_id, slot, from, to, reason}` | OOM downgrade or node change |
+| `flag.dispositioned` | `{flag_id, action, actor}` | Review action |
+| `fact.corrected` | `{fact, correction_id, reevaluating_flags}` | Fact correction |
+| `flags.reevaluated` | `{flag_ids, results}` | Re-evaluation after a correction finishes |
 
 ---
 
-## Error Responses
+## Review UI Contract
 
-All endpoints use standard error format:
+| View | Data | Refresh on |
+|------|------|-----------|
+| Episode list (counts per tier, coverage) | `GET /shows/{show}/episodes`, report summaries | `run.completed` |
+| Report (ranked sections, filters by agent/tier/lang) | `GET …/report` | `run.completed`, `flag.dispositioned` |
+| Flag detail: evidence player (video seeks to frame), source/target subtitles side by side, crops, cited facts | `GET /flags/{id}` | `flag.dispositioned`, `flags.reevaluated` |
+| Clearance report (occurrence table, thumbnails, CSV export) | `GET …/clearance-report` | `run.completed` |
+| Fact queue (confirm / edit / retract) | `GET /shows/{show}/fact-queue` | `fact.corrected` |
+| Run view (stages, Plan, amendments, coverage gaps) | `GET /runs/{id}`, `GET /runs/{id}/plan` | `run.stage_progress`, `plan.amended` |
+| Diff view (new / resolved / unchanged) | `GET /runs/{id}/diff` | Manual |
+
+---
+
+## Errors
 
 ```json
 {
   "error": {
-    "code": "PIPELINE_FAILED",
-    "message": "Pipeline run pr-uuid-001 failed during script_critic agent execution",
-    "details": {
-      "agent": "script_critic",
-      "stage": "kg_traversal",
-      "retry_count": 3
-    }
+    "code": "RUN_FAILED",
+    "message": "Run run_912 failed: object storage unreachable",
+    "details": {"stage": "timeline.keyframes", "retry_count": 3}
   }
 }
 ```
 
-| Code | HTTP Status | Meaning |
-|------|-------------|---------|
-| `PIPELINE_QUEUED` | 202 | Pipeline run accepted and queued |
-| `PIPELINE_RUNNING` | 200 | Pipeline in progress |
-| `PIPELINE_COMPLETED` | 200 | Pipeline finished successfully |
-| `PIPELINE_FAILED` | 500 | Pipeline encountered an unrecoverable error |
-| `RECAP_BLOCKED` | 403 | Recap publish blocked by unresolved flags |
-| `KG_CORRECTION_INVALID` | 400 | KG correction refers to non-existent entity |
-| `VERSION_NOT_FOUND` | 404 | Script version has no pipeline run |
-| `UNAUTHORIZED` | 401 | Missing or invalid OIDC token |
-| `FORBIDDEN` | 403 | Insufficient permissions |
+| Code | HTTP | Meaning |
+|------|------|---------|
+| `VALIDATION_FAILED` | 400 | Request body invalid |
+| `OVERRIDE_NOTE_REQUIRED` | 400 | Override without a note |
+| `UNAUTHORIZED` | 401 | Missing or invalid token |
+| `FORBIDDEN` | 403 | Role lacks permission (e.g. non-legal user dispositioning a clearance flag) |
+| `NOT_FOUND` | 404 | Unknown show, episode, run, flag, or fact |
+| `RUN_CONFLICT` | 409 | Episode already has an active run |
+| `INPUT_REJECTED` | 422 | Source file failed validation |
+| `NO_RUNNABLE_AGENTS` | 422 | Registered inputs don't activate any requested agent |
+| `RUN_FAILED` | 500 | Unrecoverable pipeline failure |
+| `CLUSTER_UNAVAILABLE` | 503 | Ray cluster unreachable or has no usable resources |

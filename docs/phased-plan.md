@@ -1,220 +1,156 @@
 # Phased Build Plan
 
-## Timeline: 12 Months to Full Production
+## Summary
+
+**8 weeks, 2 people, 4 two-week phases.** Each phase ends with a demo and benchmark numbers ([Evaluation](evaluation.md)).
 
 ```
-P1: Foundation (M1-3) ──→ P2: Text Agents (M4-6) ──→ P3: Visual Pipeline (M7-9) ──→ P4: Scale & Depth (M10-12)
-     │                       │                          │                            │
-     ▼                       ▼                          ▼                            ▼
-  KG + constraints       Plot holes + recaps       Visual continuity           BDI + multilingual + LoRA
+P1 Foundation (W1–2) ─→ P2 Knowledge + rules (W3–4) ─→ P3 Vision + LLM checks (W5–6) ─→ P4 Review + scale-out (W7–8)
+   walking skeleton        first benchmark numbers        all 4 agents verified          same commit: laptop & cloud
 ```
 
----
+### Roles
 
-## Phase 1: Foundation (Months 1–3)
+| Person | Owns |
+|--------|------|
+| **A — Text & Knowledge** | Script and subtitle ingest, timecode library, fact extraction and consolidation, Script Critic, Localization Auditor, verification, review UI |
+| **B — Media & Runtime** | Hardware probe, catalog, planner, Ray/vLLM serving, scheduler, media pipeline (shots, keyframes, speech-to-text, OCR, detection), Clearance Scanner, Continuity Inspector, deployment (Compose, Helm/KubeRay), monitoring |
 
-### Objective
+Shared: contracts (`nip/contracts`), database schema, evaluation harness, weekly benchmark run.
 
-Build the infrastructure and data pipeline that all subsequent phases depend on. By end of P1, the system can ingest a script, construct a knowledge graph, and run deterministic constraint checks.
+### Working rules
 
-### Deliverables
-
-| # | Deliverable | Description |
-|---|------------|-------------|
-| 1.1 | Docker Compose infrastructure | All services defined, health checks, networking, volumes |
-| 1.2 | Script parser | Accepts .fdx, .pdf, .fountain → canonical `EpisodeDocument` |
-| 1.3 | Temporal alignment engine | SMPTE timecode join logic across script + transcript + keyframes |
-| 1.4 | NER + relation extraction | GLiNER baseline (zero-shot) + fine-tuning pipeline for per-genre models |
-| 1.5 | Neo4j KG builder | Entity/relation ingestion with timecoded properties |
-| 1.6 | Deterministic constraint engine | Graph constraint checks: location, alive/dead, prop ownership, secret knowledge |
-| 1.7 | Qdrant vector index | Scene-level chunking + embedding for RAC layer |
-| 1.8 | MinIO storage pipeline | Scripts, video, keyframes, artifacts stored with versioning |
-| 1.9 | Dagster orchestration | Basic DAG: ingest → extract → build KG → run constraints |
-| 1.10 | Prometheus + Grafana | Base monitoring: GPU utilization, service health, pipeline run status |
-
-### Entry Criteria
-
-- Development environment with GPU hardware available
-- 2-3 sample scripts with known continuity issues for validation
-
-### Exit Criteria
-
-- Can ingest a .fdx or .pdf script and produce a populated KG
-- Deterministic constraint engine catches >90% of known hard violations on test scripts
-- All Docker services healthy and communicating
-- NER extraction accuracy >80% (zero-shot baseline)
-
-### Validation
-
-Run against 5 test scripts with injected continuity errors (dead character speaks, prop appears before introduction, character in two places at once). System must catch >90% of deterministic violations.
+- **Walking skeleton first.** By the end of week 2, one real check runs end-to-end (ingest → timeline → check → verification → report) on real content.
+- **Contracts before code.** Flag, Evidence, Fact, Plan, and HardwareInventory models are agreed on day 2 and change only by joint decision.
+- **Benchmark every Friday** from week 3, on the laptop Plan; from week 7 also on a cloud Plan.
+- **Stubs keep people unblocked.** Person A develops checks against stub model backends while Person B brings up real serving.
 
 ---
 
-## Phase 2: Text Agents (Months 4–6)
+## Phase 1 — Foundation (Weeks 1–2)
 
-### Objective
+**Goal:** the platform exists and one real check runs through it.
 
-Build the Script Critic and Recap Agent. By end of P2, the system can detect plot holes and generate English recaps — ready for internal pilot on 2 shows.
+| # | Owner | Deliverable |
+|---|-------|-------------|
+| 1.1 | Both | Repo scaffolding, CI (lint, types, unit tests on the `cpu` profile), contracts v1, schema v1 + migrations |
+| 1.2 | A | Timecode library: rational frame rates, drop-frame SMPTE, ms↔frame conversion, property-based tests |
+| 1.3 | A | Parsers + validation: Fountain, FDX, PDF scripts; SRT, WebVTT, TTML subtitles; `bible.yaml`, glossary CSV, clearance log CSV |
+| 1.4 | A | Script-estimate timeline; flag emission; minimal report JSON |
+| 1.5 | B | `compose.yaml`: Postgres + pgvector, object storage, Ray head, API skeleton, Keycloak |
+| 1.6 | B | Hardware probe, model catalog loader, planner v1 (pure function) with simulated inventories |
+| 1.7 | B | Ray Serve model deployments with deploy/teardown (staged mode) on the laptop; stub backends |
+| 1.8 | B | Media probe, shot detection, keyframe extraction |
+| 1.9 | Both | Corpus manifest + downloader; injector framework skeleton |
+| 1.10 | A | Walking-skeleton check: `loc.readability` end-to-end |
 
-### Deliverables
-
-| # | Deliverable | Description |
-|---|------------|-------------|
-| 2.1 | Script Critic Layer 1: KG traversal | Query KG for temporal constraint violations |
-| 2.2 | Script Critic Layer 2: RAC retrieval | Retrieve context windows for motivational/emotional gap detection |
-| 2.3 | Recap Agent: base generator | Scene-level recap drafting from KG nodes |
-| 2.4 | Recap Agent: variant engine | 3-5 tonal/thematic variants per recap |
-| 2.5 | Recap Agent: structured metadata | Thread labels, emotional valence, character arc weights, spoiler risk score |
-| 2.6 | Recap Agent: spoiler control | KG reveals-Until timecode enforcement |
-| 2.7 | LLM-as-Judge compliance | Llama 3.1 8B validates recaps against KG for zero hallucination |
-| 2.8 | Confidence threshold gating | Tiered flag routing: auto-escalate >0.90, review 0.70-0.90, suppress <0.70 |
-| 2.9 | Pre-Live Report generation | Unified output format merging all agent results |
-| 2.10 | Pilot deployment on 2 shows | Internal validation with real editorial teams |
-
-### Entry Criteria
-
-- P1 exit criteria met
-- vLLM serving Llama 3.1 70B operational
-- 2 pilot shows identified (1 drama, 1 sci-fi/comedy)
-
-### Exit Criteria
-
-- Script Critic catches >75% of known plot holes in test scripts (factual + motivational combined)
-- Recap Agent produces recaps rated ≥7/10 by editorial team on 2 pilot shows
-- LLM-as-Judge blocks >95% of hallucinated recap content
-- End-to-end latency <15 minutes per episode (text-only, no video)
-
-### Validation
-
-Blind test: provide 10 episodes with known plot holes. Script Critic must identify >75%. Provide 5 episodes to editorial team for recap quality rating.
-
-### Pilot Shows
-
-| Slot | Genre | Purpose |
-|------|-------|---------|
-| Pilot Show 1 | Long-running drama (TBD) | Validate multi-season KG, emotional arc analysis, drama recap tone |
-| Pilot Show 2 | Sci-fi or comedy anthology (TBD) | Validate genre generalization, lightweight KG, comedy/genre recap tone |
+**Exit criteria**
+- A corpus film + script + Spanish subtitles ingest into a timeline with shots and keyframes.
+- `loc.readability` flags appear in the report JSON with resolvable evidence.
+- The planner produces the expected Plan for three simulated inventories (1× 8 GB, 1× 48 GB, 8× 80 GB) — table-driven tests.
+- CI green without a GPU.
 
 ---
 
-## Phase 3: Visual Pipeline (Months 7–9)
+## Phase 2 — Knowledge + Deterministic Checks (Weeks 3–4)
 
-### Objective
+**Goal:** the knowledge layer is populated and every rule-based check works.
 
-Add video ingestion, ASR, and the full Continuity Inspector. By end of P3, the system processes final cuts end-to-end and flags visual + textual continuity errors.
+| # | Owner | Deliverable |
+|---|-------|-------------|
+| 2.1 | A | Fact extraction (JSON-schema output, grounding validator), entity resolution, consolidation into timed facts |
+| 2.2 | A | Story order and story-day derivation (rules + LLM for ambiguous transitions + bible overrides) |
+| 2.3 | A | Script Critic Layer 1 rules (`plot.knowledge_order`, `plot.dead_acts`, `plot.two_places`, `plot.prop_provenance`) |
+| 2.4 | A | Source↔target cue alignment; `loc.term`, `loc.shot_change`, `loc.drift`, `loc.offset` |
+| 2.5 | B | Speech-to-text + script↔transcript alignment (picture timeline replaces estimates) |
+| 2.6 | B | OCR channel + parsers (`clr.phone`, `clr.url`, `clr.email`, `clr.address`, `clr.plate`, `clr.brand_text`) |
+| 2.7 | B | Clearance-log matching, occurrence grouping, prominence scoring, clearance CSV |
+| 2.8 | B | Scene vector index (text embedder), hybrid retrieval |
+| 2.9 | Both | Injectors for localization-deterministic, clearance-text, and plot-Layer-1 errors; stage cache + incremental re-runs |
 
-### Deliverables
-
-| # | Deliverable | Description |
-|---|------------|-------------|
-| 3.1 | Video ingestion | Keyframe extraction (1 fps) from final cuts |
-| 3.2 | Whisper ASR pipeline | Timestamped transcripts from audio tracks |
-| 3.3 | SMPTE alignment: video track | Timecode alignment of keyframes + transcripts with script |
-| 3.4 | CV pipeline: Detectron2 + DeepSORT | Object detection + actor re-identification across keyframes |
-| 3.5 | Contrastive pre-filter | Embed adjacent keyframes, flag anomalous pairs for VLM routing |
-| 3.6 | VLM continuity inference | Qwen2-VL 72B analyzes flagged keyframe pairs for visual continuity breaks |
-| 3.7 | Continuity Inspector: deterministic | KG constraint checks on visual features (prop in wrong hand, wardrobe change) |
-| 3.8 | Continuity Inspector: visual | CV + VLM pipeline for precise visual continuity flagging |
-| 3.9 | VLM continuity fine-tune | Fine-tune Qwen2-VL on synthetic continuity examples |
-| 3.10 | End-to-end multimodal pipeline | Full pipeline: script + video → flags + recaps |
-
-### Entry Criteria
-
-- P2 exit criteria met
-- 2x A100 available for VLM serving
-- Final cut video samples available for testing
-
-### Exit Criteria
-
-- Contrastive pre-filter reduces VLM inference calls by >70% vs. brute-force
-- Continuity Inspector catches >60% of known visual continuity errors in test clips
-- VLM flag precision >0.75 (minimize false positives that erode editorial trust)
-- Full pipeline latency <45 minutes per episode (including video processing)
-
-### Validation
-
-Create 10 test clips with injected visual continuity errors (prop swaps, wardrobe changes, wound disappearance). Continuity Inspector must catch >60% with precision >0.75.
+**Exit criteria**
+- Benchmark v1 published for all deterministic checks ([targets](evaluation.md#mvp-targets)).
+- Incremental re-run demo: edit one scene → only units that read it re-run (shown in `GET /runs/{id}/diff`).
 
 ---
 
-## Phase 4: Scale & Depth (Months 10–12)
+## Phase 3 — Vision + LLM Checks (Weeks 5–6)
 
-### Objective
+**Goal:** all four agents produce verified flags.
 
-Add BDI simulation, multilingual recaps, per-show LoRA fine-tuning, editorial UI, and incremental re-runs. Full production spec.
+| # | Owner | Deliverable |
+|---|-------|-------------|
+| 3.1 | A | `loc.gender`, `loc.formality`, `loc.spoiler` with es/fr/de rule packs |
+| 3.2 | A | Script Critic Layer 2: `plot.motivation`, `plot.unresolved_setup` |
+| 3.3 | A | Verification pipeline: evidence resolver, rule re-check, LLM judge, routing, dedup |
+| 3.4 | B | Open-vocabulary detector + vision-model channel (`clr.logo`, `clr.artwork`); `clr.dialogue_ref` via NER |
+| 3.5 | B | Continuity text rules (`cont.wardrobe_text`, `cont.injury_text`, `cont.prop_text`) |
+| 3.6 | B | `cont.visual`: setup clustering, same-setup pre-filter, vision-model verification, per-episode call cap |
+| 3.7 | Both | Injectors for LLM-localization, logos/artwork, plot Layer 2, and visual continuity errors |
 
-### Deliverables
-
-| # | Deliverable | Description |
-|---|------------|-------------|
-| 4.1 | BDI simulation engine | Character Belief-Desire-Intention models for motivational consistency checking |
-| 4.2 | BDI calibration per show | Character model setup for pilot shows. **MVP stretch — ships behind feature flag.** |
-| 4.3 | Per-genre NER fine-tune | Drama, sci-fi, comedy GLiNER models with >95% entity extraction |
-| 4.4 | Per-show recap LoRA | Fine-tune Llama 3.1 8B on show's prior recaps for voice match. **MVP stretch.** |
-| 4.5 | Multilingual recaps — English | Base locale (already operational from P2) |
-| 4.6 | Multilingual recaps — Spanish | Native generation with ES recap corpus |
-| 4.7 | Multilingual recaps — Portuguese | Native generation with PT recap corpus |
-| 4.8 | Multilingual recaps — Korean | Native generation with KO recap corpus |
-| 4.9 | Multilingual recaps — Japanese | Native generation with JA recap corpus |
-| 4.10 | Editorial UI | React dashboard: flag review, recap preview, KG correction, audit trail |
-| 4.11 | Incremental re-runs | Scene-level diff → partial re-processing on script version changes |
-| 4.12 | API + personalization contract | Publish versioned REST API spec for recommendation engine integration |
-| 4.13 | Audit trail | Full disposition logging: every AI flag + human response |
-| 4.14 | Kubernetes migration | Migrate Docker Compose → K8s for multi-node scaling |
-
-### Entry Criteria
-
-- P3 exit criteria met
-- Multilingual training data available (ES, PT, KO, JA recap corpora)
-- Editorial team available for UI testing
-
-### Exit Criteria
-
-- BDI simulation catches motivational inconsistencies not found by Layers 1+2 (measured on pilot shows)
-- Per-genre NER accuracy >95% across all 3 genres
-- Multilingual recaps rated ≥7/10 by locale-speaking editorial reviewers
-- Editorial UI adoption: >80% of editorial team using the dashboard for flag review
-- Incremental re-run reduces processing time by >60% vs. full re-run on draft changes
-- Full pipeline processing <500 episodes/month on 8x A100
-
-### Validation
-
-- Run BDI simulation on pilot shows; compare against Layer 1+2 results to confirm additive value
-- Native-speaker editorial review of multilingual recaps for 2 episodes per locale
-- Load test: 50 episodes in parallel, <2hr per episode average
+**Exit criteria**
+- Every check ID in [Data Model › Check IDs](data-model.md#check-ids) produces verified flags on the benchmark.
+- Full benchmark report generated; clean-run (un-injected) triage started.
 
 ---
 
-## MVP Stretch Goals
+## Phase 4 — Review, Scale-out, Hardening (Weeks 7–8)
 
-These components are in the plan but are **not blocking** for MVP launch. They ship behind feature flags and can be deferred without affecting core pipeline functionality.
+**Goal:** people can use it, and it runs at full capacity on cloud hardware without changes.
 
-| Component | Phase | Defer Impact | Feature Flag |
-|-----------|-------|-------------|--------------|
-| BDI simulation (Script Critic Layer 3) | P4 | Script Critic operates with Layers 1+2 only — misses motivational inconsistencies | `ENABLE_BDI_SIMULATION` |
-| Per-show LoRA fine-tuning (Recap Agent) | P4 | Recaps use prompted-only approach — lower tonal match quality but functional | `ENABLE_PER_SHOW_LORA` |
-| VLM continuity fine-tune | P3 | Base Qwen2-VL used — lower precision on continuity cases (~0.65 vs 0.85) | `ENABLE_VLM_CONTINUITY_FT` |
+| # | Owner | Deliverable |
+|---|-------|-------------|
+| 4.1 | A | Review UI: report, flag detail with evidence player, clearance report, fact queue, run view, diff view |
+| 4.2 | A | Dispositions with fingerprint carry-forward; fact corrections → flag re-evaluation; audit trail views |
+| 4.3 | B | Helm chart (KubeRay RayCluster + API + UI) and GPU worker autoscaling |
+| 4.4 | B | Cloud validation on rented multi-GPU capacity: benchmark on a resident, multi-replica Plan |
+| 4.5 | B | OOM amendment path, coverage-gap reporting, Prometheus metrics + Grafana dashboards |
+| 4.6 | B | `nip models pull` / `nip models mirror` (download only what the Plan needs; mirror to internal storage) |
+| 4.7 | Both | Threshold tuning on the benchmark; per-Plan comparison report; demo script |
+
+**Exit criteria**
+- **Same commit, laptop and cloud:** the release tag runs the benchmark on the laptop and on the cloud cluster with **no code or config edits** — only environment values (endpoints, credentials, autoscaling limit) differ.
+- Per-Plan benchmark table published (quality, GPU-seconds, wall time per episode).
+- MVP targets met on the cloud Plan, or misses documented with cause.
+- Demo recorded: upload → run → review → fix & re-run → diff.
 
 ---
 
-## Key Milestones
+## Cut Order
 
-| Month | Milestone | Stakeholder Impact |
-|-------|----------|-------------------|
-| M3 | Foundation complete — KG operational, constraint engine catching errors | Engineering: infrastructure validated |
-| M6 | Internal pilot — 2 shows, plot holes + English recaps | Editorial: first feedback cycle |
-| M9 | Visual continuity operational — full multimodal pipeline | Production: can process final cuts |
-| M12 | Full spec delivered — all capabilities live, all locales | Organization: rollout to all new Netflix originals |
+Eight weeks leaves no slack. If a phase slips by more than three working days, cut in this order:
+
+1. `cont.visual` (keep the continuity text rules).
+2. Judge from a different model family (use same-family judge everywhere).
+3. Helm/KubeRay (prove scale-out on one large multi-GPU cloud machine with `compose.yaml` instead).
+4. German rule pack for `loc.formality` and `loc.gender` (keep Spanish and French).
+
+**Never cut:** any of the four agents' deterministic checks, verification, the benchmark, and coverage-gap reporting.
+
+---
+
+## Milestones
+
+| End of | Milestone | Demo |
+|--------|-----------|------|
+| Week 2 | Walking skeleton | Readability flags on a corpus film, planner decisions for three machines |
+| Week 4 | Knowledge + rules | Benchmark v1; incremental re-run |
+| Week 6 | All agents | Verified flags from all four agents; full benchmark |
+| Week 8 | MVP | Review UI; same commit on laptop and cloud; per-Plan comparison |
 
 ---
 
 ## Risk Register
 
-| Risk | Probability | Impact | Mitigation |
-|------|------------|--------|-----------|
-| NER extraction accuracy <95% on zero-shot baseline | High | P1 blocked | Budget for per-genre fine-tune in P1; add human correction loop early |
-| VLM continuity precision <0.75 (too many false positives) | Medium | P3 delayed | Aggressive contrastive pre-filter + higher confidence threshold; accept lower recall |
-| No multilingual training data available for P4 locales | Medium | P4 delayed | Start data collection in P2; fallback to translate-from-English if no native corpus |
-| BDI simulation adds <5% value over Layers 1+2 | Medium | P4 scope reduced | Measure on pilot shows first; decommission if no additive value |
-| Single-node Docker Compose cannot handle scale | Low | P4 K8s migration accelerates | Docker Compose is fine for <100 episodes/month; K8s migration planned in P4 |
-| Open-weight LLMs (Llama 70B) insufficient quality for recaps | Medium | P2 delayed | Accept lower quality in MVP + invest in per-show LoRA; consider upgrading to larger model when available |
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|-----------|
+| 8 GB VRAM too tight for the vision model at useful resolution | High | Continuity/clearance quality on the laptop | Staged mode, smaller variant, keyframe downscaling; judge quality on the cloud Plan; report per Plan |
+| vLLM in Docker on WSL2 misbehaves on the laptop GPU | Medium | P1 serving delayed | Stub backends keep A unblocked; the serving layer runs any OpenAI-compatible server as a process, so another engine can be substituted for a variant without code changes elsewhere |
+| The pinned vLLM lags a newly released model | Medium | Can't adopt a better model | Catalog validation excludes variants whose `min_vllm` is newer than the image; bump vLLM deliberately with a benchmark run |
+| PaddlePaddle and PyTorch CUDA libraries conflict in the single image | Medium | OCR channel delayed | Fall back to RapidOCR (ONNX Runtime) for the `ocr` slot |
+| Small-model extraction quality too low for Script Critic Layer 2 | Medium | Low recall on the laptop Plan | Constrained decoding, narrow per-scene prompts, grounding validator; evaluate targets on the cloud Plan |
+| Corpus lacks multi-episode content with scripts | Medium | Weak cross-episode Script Critic evaluation | Supplement with synthetic multi-episode scripts with planted holes ([Evaluation](evaluation.md#corpus)) |
+| Open-vocabulary detector misses logos | Medium | Low `clr.logo` recall | Planner can switch to vision-model-first sampling when throughput allows; tune prompts on injected logos |
+| Cloud GPU cost | Low | Budget | Short benchmark windows, spot/preemptible capacity, autoscale to zero between runs |
+| Scope creep | High | Missed week-8 exit | Cut order above; weekly benchmark as the forcing function |
+| Corpus licensing | Low | Can't publish results | Manifest records license and attribution per title; injected real-brand material stays in private test data |

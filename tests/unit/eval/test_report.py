@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import mlflow
 import pytest
 from typer.testing import CliRunner
 
@@ -93,8 +94,6 @@ def test_load_flags_jsonl(tmp_path: Path) -> None:
 
 
 def test_run_logs_plan_tags(files: tuple[Path, Path, Path]) -> None:
-    import mlflow
-
     fp, labels, tmp = files
     plan = tmp / "plan.json"
     plan.write_text(json.dumps({

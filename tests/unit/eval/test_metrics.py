@@ -22,6 +22,7 @@ def flag(
     tier: str = "must_review",
     episode: str = "E1",
     judge: str = "n/a",
+    ctx_frames: tuple[int, int] | None = (100, 200),
 ) -> Flag:
     agent, category = OWNER[check.split(".")[0]]
     ev: dict[str, Any] = {"kind": "subtitle_cue", "ref": ref, "role": "claim", "scene": scene}
@@ -40,7 +41,7 @@ def flag(
             "tier": tier,
             "title": "t",
             "explanation": "e",
-            "evidence": [ev, {**ev, "ref": "other", "role": "context"}],
+            "evidence": [ev, {**ev, "ref": "other", "role": "context", "frames": ctx_frames}],
             "produced_by": {"model_variant": None, "plan_id": "p"},
             "verification": {"judge": judge},
         }
@@ -125,3 +126,27 @@ def test_evaluate_shown_vs_all_and_verification_noise() -> None:
 def test_evaluate_empty() -> None:
     assert evaluate([], [])["verification/fp_dropped_rate"] == 0.0
     assert evaluate([], [label()])["all/recall/all"] == 0.0
+
+
+def test_ref_does_not_bypass_iou_and_context_evidence_is_ignored() -> None:
+    timed = label(frames=(100, 200), refs=("r",))
+    assert overlap(flag(frames=(500, 600), ref="r"), timed) == 0.0  # same ref, disjoint frames
+    assert overlap(flag(frames=None, ref="r"), timed) == 0.0  # no frames: IoU cannot be checked
+    # claim evidence elsewhere, context evidence sitting on the label's frames / ref
+    assert overlap(flag(frames=(500, 600), ctx_frames=(100, 200)), timed) == 0.0
+    scripted = label("plot.prop_provenance", None, refs=("other",), lang=None)
+    assert overlap(flag("cont.prop_text", None, ref="x", lang=None), scripted) == 0.0
+
+
+def test_equivalence_match_is_attributed_per_side() -> None:
+    f = flag("cont.prop_text", None, scene="E1/scene/4", lang=None)
+    lb = label("plot.prop_provenance", None, refs=("E1/scene/4",), lang=None)
+    m = evaluate([f], [lb])
+    # precision is booked against the flag's check, recall against the label's check
+    assert m["all/tp/check/cont.prop_text"] == 1 and m["all/precision/check/cont.prop_text"] == 1.0
+    assert m["all/recall/check/cont.prop_text"] == 0.0
+    assert m["all/found/check/plot.prop_provenance"] == 1
+    assert m["all/recall/check/plot.prop_provenance"] == 1.0
+    assert m["all/tp/check/plot.prop_provenance"] == 0
+    assert m["all/precision/check/plot.prop_provenance"] == 0.0
+    assert m["all/precision/all"] == 1.0 and m["all/recall/all"] == 1.0

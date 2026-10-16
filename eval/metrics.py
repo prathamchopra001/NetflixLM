@@ -10,7 +10,7 @@ from typing import Any
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from nip.contracts import Flag, Tier
+from nip.contracts import EvidenceRole, Flag, Tier
 
 IOU_MIN = 0.3
 # Checks that may match each other (docs: "a small equivalence map"); value = canonical class.
@@ -53,7 +53,7 @@ def load_labels(path: Path) -> list[Label]:
 
 def _iou(a: tuple[int, int], b: tuple[int, int]) -> float:
     inter = min(a[1], b[1]) - max(a[0], b[0])
-    return max(inter, 0) / (max(a[1], b[1]) - min(a[0], b[0]))
+    return max(inter, 0) / max(max(a[1], b[1]) - min(a[0], b[0]), 1)
 
 
 def _canon(check: str) -> str:
@@ -70,10 +70,12 @@ def overlap(flag: Flag, label: Label) -> float:
         return 0.0
     best = 0.0
     for ev in flag.evidence:
-        if label.frames and ev.frames:
-            iou = _iou(ev.frames, label.frames)
-            best = max(best, iou if iou >= IOU_MIN else 0.0)
-        if {ev.ref, ev.scene} & set(label.refs):
+        if ev.role is EvidenceRole.CONTEXT:
+            continue  # only primary evidence (claim, contradiction, ...) may match a label
+        if label.frames:  # timed target: the IoU rule is always enforced
+            if ev.frames and (iou := _iou(ev.frames, label.frames)) >= IOU_MIN:
+                best = max(best, iou)
+        elif {ev.ref, ev.scene} & set(label.refs):  # script target: shared scene/line ref
             best = 1.0
     return best
 
@@ -106,9 +108,10 @@ def match(flags: Sequence[Flag], labels: Sequence[Label]) -> list[tuple[int, int
 
 @dataclass
 class Counts:
-    tp: int = 0
+    tp: int = 0  # matched flags, booked under the flag's check/lang (precision side)
     native_tp: int = 0  # flags that hit a native (already-present) error: precision only
     fp: int = 0
+    found: int = 0  # matched labels, booked under the label's check/lang (recall side)
     fn: int = 0
 
 
@@ -121,9 +124,10 @@ class Scored:
 def score(flags: Sequence[Flag], labels: Sequence[Label], native: Sequence[Label] = ()) -> Scored:
     """Count TP/FP/FN. Scope keys: "all", "check/<id>", "lang/<code>".
 
-    A matched pair is a TP under the label's check and language; an unmatched flag is a FP under
-    its own; an unmatched label is a FN under its own. Unmatched flags are then matched against
-    native labels, which turn them into native TPs instead of FPs.
+    A matched pair is a TP under the flag's check/language (precision) and a found label under the
+    label's (recall); they differ only for equivalence-mapped checks. An unmatched flag is a FP
+    under its own; an unmatched label is a FN under its own. Unmatched flags are then matched
+    against native labels, which turn them into native TPs (flag's check) instead of FPs.
     """
     res = Scored()
     res.outcomes = ["fp"] * len(flags)
@@ -135,7 +139,8 @@ def score(flags: Sequence[Flag], labels: Sequence[Label], native: Sequence[Label
     pairs = match(flags, labels)
     for i, j in pairs:
         res.outcomes[i] = "tp"
-        bump(labels[j].check, labels[j].lang, "tp")
+        bump(flags[i].check, flags[i].lang, "tp")
+        bump(labels[j].check, labels[j].lang, "found")
     for j in set(range(len(labels))) - {j for _, j in pairs}:
         bump(labels[j].check, labels[j].lang, "fn")
     rest = [i for i, o in enumerate(res.outcomes) if o == "fp"]
@@ -152,7 +157,7 @@ def score(flags: Sequence[Flag], labels: Sequence[Label], native: Sequence[Label
 def prf(c: Counts) -> dict[str, float]:
     """Precision, recall, F1; a zero denominator gives 0.0."""
     p = (c.tp + c.native_tp) / d if (d := c.tp + c.native_tp + c.fp) else 0.0
-    r = c.tp / d if (d := c.tp + c.fn) else 0.0
+    r = c.found / d if (d := c.found + c.fn) else 0.0
     return {"precision": p, "recall": r, "f1": 2 * p * r / (p + r) if p + r else 0.0}
 
 
@@ -180,7 +185,14 @@ def evaluate(
     all_sc = score(flags, labels, native)
     for subset, sc in (("shown", shown_sc), ("all", all_sc)):
         for scope, c in sc.counts.items():
-            for k, v in {**prf(c), "tp": c.tp, "fp": c.fp, "fn": c.fn}.items():
+            for k, v in {
+                **prf(c),
+                "tp": c.tp,
+                "native_tp": c.native_tp,
+                "fp": c.fp,
+                "found": c.found,
+                "fn": c.fn,
+            }.items():
                 out[f"{subset}/{k}/{scope}"] = float(v)
 
     def dropped(outcome: str) -> float:

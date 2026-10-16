@@ -43,6 +43,7 @@ class Variant(BaseModel):
     images_per_prompt: int | None = None  # vlm: vLLM --limit-mm-per-prompt.image
     weights_gb: float | None = None  # vllm
     overhead_gb: float = 0.0  # vllm
+    startup_peak_gb: float | None = None  # vllm: per-GPU peak while starting, before KV exists
     kv_mb_per_1k_tokens: float | None = None  # vllm
     context: Context | None = None  # vllm
     tp_options: list[int] = [1]

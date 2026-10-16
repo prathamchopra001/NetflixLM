@@ -26,7 +26,7 @@ dependencies = [
     # runtime
     "nvidia-ml-py==13.615.71",
     "hf-mem",
-    "openai",  # model clients (vLLM's OpenAI-compatible API); unpinned: the vLLM image's own
+    "openai",  # model clients (vLLM's OpenAI API); unpinned so the vLLM image keeps its version
     # timeline (shot detection, frame decoding); torch pinned to the vLLM 0.30.0 image's version
     "torch==2.13.0",
     "torchcodec==0.17.0",

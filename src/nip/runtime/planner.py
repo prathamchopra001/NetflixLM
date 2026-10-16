@@ -2,7 +2,13 @@
 
 docs/hardware-adaptation.md › The Planner. Memory is budgeted per GPU in GiB:
 usable = min(utilization × total, free − margin); an LLM/VLM replica at tensor-parallel degree tp
-needs weights/tp + KV(context × CONCURRENCY)/tp + overhead on each of its tp GPUs.
+needs weights/tp + KV(context × CONCURRENCY)/tp + overhead on each of its tp GPUs, and at least
+the variant's measured startup peak (the transient before its KV cache exists), if catalogued.
+
+Single-GPU engines get an exact KV budget (vLLM --kv-cache-memory-bytes; EXP-001 ruling): everything
+their GPU has left after the group is packed (free VRAM comes from the inventory's probe), minus
+weights and overhead, capped at KV(default context × CONCURRENCY). gpu_memory_utilization then only
+gates vLLM's startup check (under WSL2, CUDA reports a fixed 6.93 GiB free on the 8 GB laptop).
 """
 
 import math
@@ -129,7 +135,7 @@ _Deps = dict[str, tuple[_Cand, list[Slot]]]  # variant id -> (how it's deployed,
 
 def _replicas(
     cluster: _Cluster, deps: _Deps, where: dict[str, list[int]], workload: dict[Slot, int]
-) -> dict[str, int]:
+) -> tuple[dict[str, int], dict[str, set[int]]]:
     """With one replica each placed, add more, one at a time, to the deployment with the highest
     demand (units × cost_hint) per replica that still fits. At most one replica of a deployment
     per GPU, and never more replicas than work units."""
@@ -145,7 +151,13 @@ def _replicas(
                 reps[vid] += 1
                 break
         else:
-            return reps
+            return reps, used
+
+
+def _kv_gb(v: Variant, ctx: int) -> float:
+    """KV cache for CONCURRENCY sequences of `ctx` tokens, GiB."""
+    assert v.kv_mb_per_1k_tokens is not None
+    return v.kv_mb_per_1k_tokens * ctx / 1024 * CONCURRENCY / 1024
 
 
 def _placements(v: Variant, gpus: list[_Gpu]) -> list[_Cand]:
@@ -162,8 +174,9 @@ def _placements(v: Variant, gpus: list[_Gpu]) -> list[_Cand]:
     cands = []
     for ctx in contexts:
         for tp in sorted(v.tp_options):
-            kv = v.kv_mb_per_1k_tokens * ctx / 1024 * CONCURRENCY / 1024
-            c = _Cand(v, tp, ctx, (v.weights_gb + kv) / tp + v.overhead_gb)
+            kv = _kv_gb(v, ctx)
+            per_gpu = max((v.weights_gb + kv) / tp + v.overhead_gb, v.startup_peak_gb or 0.0)
+            c = _Cand(v, tp, ctx, per_gpu)
             if _Cluster(gpus).place(c) is not None:
                 cands.append(c)
                 break
@@ -337,7 +350,11 @@ def plan(
         packed = _pack(gpus, [c for c, _ in deps.values()])
         assert packed is not None
         cluster, where = packed
-        reps = _replicas(cluster, deps, where, workload)
+        reps, used = _replicas(cluster, deps, where, workload)
+        engines_on = [
+            sum(i in used[vid] for vid, (c, _) in deps.items() if c.variant.engine == "vllm")
+            for i in range(len(gpus))
+        ]
 
         for vid, (c, slots) in deps.items():
             total = gpus[where[vid][0]].total if where[vid] else 1.0
@@ -348,6 +365,16 @@ def plan(
                 main.context = c.context
                 main.gpu_memory_utilization = fraction
                 main.gpu_fraction = fraction if c.tp == 1 else None
+                if c.tp == 1:  # ponytail: tp>1 keeps gmu sizing until a multi-GPU EXP measures it
+                    # A GPU's leftover goes to its engine's KV only if no other engine shares it.
+                    room = min(
+                        c.per_gpu + (cluster.free[i] if engines_on[i] == 1 else 0.0)
+                        for i in used[vid]
+                    )
+                    v = c.variant
+                    assert v.weights_gb is not None and v.context
+                    kv = min(room - v.weights_gb - v.overhead_gb, _kv_gb(v, v.context.default))
+                    main.kv_cache_bytes = math.floor(round(kv * 1024, 6)) * 2**20
                 assert c.variant.context and c.context
                 default = c.variant.context.default
                 if c.context < default:

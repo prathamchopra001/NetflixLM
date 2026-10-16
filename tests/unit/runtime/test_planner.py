@@ -82,7 +82,7 @@ LAPTOP_STAGED = (
     "staged",
     ["timeline", "vision_prep", "text_prep", "vlm+llm", "judge"],
     {
-        "text_llm": "qwen3.5-4b-awq x1 tp1 ctx8192 gmu0.77",
+        "text_llm": "qwen3.5-4b-awq x1 tp1 ctx16384 gmu0.79",  # startup peak 6.25 GiB
         "vlm": "qwen3.5-4b-awq (shared)",
         "judge_llm": "ministral-3-3b-fp8 x1 tp1 ctx8192 gmu0.82",
         "asr": "faster-whisper-large-v3-int8 x1 frac0.38",
@@ -93,7 +93,7 @@ LAPTOP_STAGED = (
         "ner": "gliner-x-large x1 frac0.47",
         "shot_detector": "transnetv2 x1 frac0.07",
     },
-    ["text_llm context reduced 32768 -> 8192", "judge_llm context reduced 16384 -> 8192"],
+    ["text_llm context reduced 32768 -> 16384", "judge_llm context reduced 16384 -> 8192"],
 )
 
 CASES = [
@@ -209,6 +209,53 @@ def test_expected_plan(
     assert (p.inventory_fingerprint, p.catalog_sha256) == (inv.fingerprint, CATALOG.sha256)
     assert Plan.model_validate_json(p.model_dump_json()) == p  # contract round-trip
     assert plan(inv, CATALOG, EPISODE, Objective(objective)) == p  # deterministic
+
+
+@pytest.mark.parametrize(
+    ("free", "context", "kv_mib"),
+    [
+        (7.15, 16384, 2170),  # usable 6.65 - weights 4.0 - overhead 0.53 = 2.12 GiB
+        (7.6, 16384, 2631),  # idle desktop: more free VRAM, more KV, same context
+        (8.0, 16384, 2734),  # usable capped by 0.90 x 8.0 = 7.2
+    ],
+)
+def test_laptop_llm_gets_an_exact_kv_budget_from_free_vram(
+    free: float, context: int, kv_mib: int
+) -> None:
+    inv = _inv(1, "NVIDIA GeForce RTX 4060 Laptop GPU", 8.0, free, "8.9", 16)
+    text = plan(inv, CATALOG, EPISODE).decisions[Slot.TEXT_LLM]
+    assert (text.context, text.gpu_memory_utilization) == (context, 0.79)
+    assert text.kv_cache_bytes == kv_mib * 2**20
+
+
+def test_laptop_below_the_startup_peak_gets_no_llm() -> None:
+    busy = _inv(1, "NVIDIA GeForce RTX 4060 Laptop GPU", 8.0, 6.6, "8.9", 16)  # usable 6.1 < 6.25
+    p = plan(busy, CATALOG, EPISODE)
+    assert {Slot.TEXT_LLM, Slot.VLM} <= set(p.skipped_slots)
+
+
+def test_kv_budget_is_capped_at_default_context_times_concurrency() -> None:
+    gpu24 = _inv(1, "NVIDIA GeForce RTX 4090", 24.0, 23.5, "8.9", 16)
+    text = plan(gpu24, CATALOG, EPISODE, Objective.THROUGHPUT).decisions[Slot.TEXT_LLM]
+    assert (text.variant, text.context) == ("qwen3.5-4b-awq", 32768)
+    assert text.kv_cache_bytes == int(44.6 * 32 * 2) * 2**20  # 2.79 GiB, not the 18 GiB left
+
+
+def test_engines_sharing_a_gpu_get_only_their_own_kv() -> None:
+    gpu86 = _inv(1, "big", 86.0, 85.5, "8.9", 32)
+    p = plan(gpu86, CATALOG, EPISODE, Objective.THROUGHPUT)
+    assert p.mode is Mode.RESIDENT and p.decisions[Slot.JUDGE_LLM].independent_family
+    for s in (Slot.TEXT_LLM, Slot.JUDGE_LLM):
+        d = p.decisions[s]
+        v = next(v for v in CATALOG.variants if v.id == d.variant)
+        assert v.kv_mb_per_1k_tokens and d.context and d.kv_cache_bytes
+        own = v.kv_mb_per_1k_tokens * d.context / 1024 * 2  # MiB for 2 sequences
+        assert d.kv_cache_bytes == int(own) * 2**20
+
+
+def test_tensor_parallel_engines_keep_gmu_sizing() -> None:
+    text = plan(H100X8, CATALOG, EPISODE).decisions[Slot.TEXT_LLM]
+    assert text.gpus_per_replica == 8 and text.kv_cache_bytes is None
 
 
 def test_script_only_run_needs_no_vision_or_audio_slots() -> None:

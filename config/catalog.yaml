@@ -9,7 +9,8 @@
 #   vram_gb (actors)     tech-stack.md for whisper; otherwise hf-mem weights + 0.5 GiB
 #                        activations (estimate), or a plain estimate where hf-mem can't read the
 #                        repo (PaddleOCR, TransNetV2 are not safetensors repos)
-#   overhead_gb          starting estimates
+#   overhead_gb          starting estimates (qwen3.5-4b-awq: measured, EXP-001)
+#   startup_peak_gb      optional: per-GPU peak while the engine starts, before its KV cache exists
 # Estimates are replaced by measured peaks after a variant's first load (variant_calibration).
 # A new variant may omit weights_gb / kv_mb_per_1k_tokens / vram_gb: the loader asks hf-mem.
 
@@ -20,10 +21,13 @@ variants:
     family: qwen
     engine: vllm
     base_model: Qwen/Qwen3.5-4B
+    checkpoint: cyankiwi/Qwen3.5-4B-AWQ-4bit  # compressed-tensors W4A16 g32, 3.78 GiB (no official AWQ)
     quant: awq-int4
     weights_gb: 4.0
-    overhead_gb: 1.2
-    kv_mb_per_1k_tokens: 60
+    # Measured, EXP-001 (RTX 4060 Laptop, vLLM 0.30, 8k, enforce-eager, 2 images x 589,824 px):
+    overhead_gb: 0.53        # steady non-KV 4.53 GiB = NVML peak - vLLM KV, max over gmu 0.80-0.86
+    kv_mb_per_1k_tokens: 44.6  # 1.56 GiB / 35,746 tok (gmu 0.75), 0.94 GiB / 21,597 tok (exact KV)
+    startup_peak_gb: 6.25    # NVML peak before KV allocation: 6,397-6,400 MiB at KV 0.94 and 1.56 GiB
     context: {default: 32768, min: 8192}
     tp_options: [1]
     min_vllm: "0.30"

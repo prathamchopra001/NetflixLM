@@ -16,7 +16,8 @@ SERVE_URL = "http://127.0.0.1:8000"  # Serve's HTTP proxy runs on every Ray node
 
 
 def _image_part(data: bytes) -> dict[str, Any]:
-    mime = "image/png" if data.startswith(b"\x89PNG") else "image/jpeg"
+    magic = {b"\x89PNG": "image/png", b"GIF8": "image/gif", b"RIFF": "image/webp"}
+    mime = magic.get(data[:4], "image/jpeg")
     url = f"data:{mime};base64,{base64.b64encode(data).decode()}"
     return {"type": "image_url", "image_url": {"url": url}}
 

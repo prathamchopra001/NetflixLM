@@ -12,17 +12,15 @@ from enum import StrEnum
 import pytest
 from pydantic import BaseModel
 
-from nip.contracts import Autoscaling, Gpu, HardwareInventory, Node, Slot, StageGroup
+from nip.contracts import Slot, StageGroup
 from nip.runtime.catalog import load_catalog
 from nip.runtime.clients import SERVE_URL, llm
 from nip.runtime.planner import plan
+from nip.runtime.probe import probe
 from nip.runtime.serving import App, apps, deploy, gpu_used_mib, ray_serve, run, teardown
 
 pytest.importorskip("ray")
 pytestmark = pytest.mark.integration
-
-# The catalog has no checkpoint for qwen3.5-4b-awq yet (proposal in notes/1.7.md).
-CHECKPOINT = "cyankiwi/Qwen3.5-4B-AWQ-4bit"
 
 
 def test_placeholder_app_answers_and_is_deleted() -> None:
@@ -47,27 +45,20 @@ class Answer(BaseModel):
 
 @pytest.mark.gpu
 def test_laptop_staged_plan_loads_each_group_and_returns_vram_to_idle() -> None:
-    """The laptop Plan without the judge (its weights aren't downloaded): actor groups as
-    placeholders, then the shared qwen model answers structured vlm/text_llm calls."""
+    """The Plan for this machine's probe (stock catalog, exact KV budget) without the judge (its
+    weights aren't downloaded): actor groups as placeholders, then the shared qwen model answers
+    structured vlm/text_llm calls."""
     from PIL import Image
 
-    base = load_catalog()
-    catalog = base.model_copy(
-        update={
-            "variants": [
-                v.model_copy(update={"checkpoint": CHECKPOINT}) if v.id == "qwen3.5-4b-awq" else v
-                for v in base.variants
-            ]
-        }
-    )
-    gpu = Gpu(index=0, name="g", vram_total_gb=8.0, vram_free_gb=7.15, compute_capability="8.9")
-    inv = HardwareInventory(
-        fingerprint="laptop",
-        nodes=[Node(node_id="n0", cpus=6, ram_gb=27.0, gpus=[gpu])],
-        autoscaling=Autoscaling(enabled=False, max_gpu_nodes=0),
-    )
+    catalog = load_catalog()
+    inv = probe()  # free VRAM as NVML reports it, Windows desktop included
     p = plan(inv, catalog, {s: 10 for s in Slot if s is not Slot.JUDGE_LLM})
-    assert [g.name for g in p.groups] == ["timeline", "vision_prep", "text_prep", "vlm+llm"]
+    if Slot.TEXT_LLM in p.skipped_slots:
+        pytest.skip(f"not enough free VRAM for the LLM right now: {p.warnings}")
+    assert {Slot.TEXT_LLM, Slot.VLM} <= set(p.groups[-1].slots)
+    [qwen] = [a for a in apps(p, catalog, inv, p.groups[-1].slots) if a.vllm_args]
+    assert qwen.vllm_args[0] == "cyankiwi/Qwen3.5-4B-AWQ-4bit"
+    assert "--kv-cache-memory-bytes" in qwen.vllm_args
     serve = ray_serve()
     png = io.BytesIO()
     Image.new("RGB", (64, 64), (220, 20, 20)).save(png, "PNG")

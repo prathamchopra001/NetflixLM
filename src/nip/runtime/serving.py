@@ -58,8 +58,10 @@ class App:
 def vllm_args(v: Variant, d: SlotDecision, vlm: SlotDecision | None, *, eager: bool) -> list[str]:
     """`vllm serve` arguments from the Plan decision (hardware-adaptation.md › Serving).
 
-    `--kv-cache-dtype fp8` is left to EXP-018 (KV-cache precision on the laptop)."""
-    assert v.repo and d.context and d.gpu_memory_utilization
+    With an exact KV budget (`kv_cache_bytes`), gpu_memory_utilization only gates vLLM's startup
+    check. `--kv-cache-dtype fp8` is left to EXP-018 (KV-cache precision on the laptop)."""
+    if not (v.repo and d.context and d.gpu_memory_utilization):
+        raise ServingError(f"{v.id}: the Plan decision lacks a repo, context or gmu: {d}")
     args = [
         v.repo,
         "--served-model-name", v.id,
@@ -67,6 +69,8 @@ def vllm_args(v: Variant, d: SlotDecision, vlm: SlotDecision | None, *, eager: b
         "--max-model-len", str(d.context),
         "--gpu-memory-utilization", str(d.gpu_memory_utilization),
     ]  # fmt: skip
+    if d.kv_cache_bytes:
+        args += ["--kv-cache-memory-bytes", str(d.kv_cache_bytes)]
     if eager:
         args.append("--enforce-eager")
     if vlm and vlm.images_per_prompt is not None:
@@ -110,6 +114,19 @@ def _free_port() -> int:
         return int(s.getsockname()[1])
 
 
+def _group_running(pgid: int) -> bool:
+    """A non-zombie process in the group. Zombies don't count: the container's PID 1 (`ray`)
+    never reaps the orphaned EngineCore, and a zombie holds no GPU memory."""
+    for stat in Path("/proc").glob("[0-9]*/stat"):
+        try:
+            fields = stat.read_text().rsplit(")", 1)[1].split()  # state, ppid, pgrp, ...
+        except OSError:
+            continue
+        if fields[0] != "Z" and int(fields[2]) == pgid:
+            return True
+    return False
+
+
 class VllmServer:
     """Serve replica: `vllm serve` on this replica's GPUs, requests forwarded over localhost."""
 
@@ -146,15 +163,22 @@ class VllmServer:
         except OSError:
             return False
 
-    def stop(self) -> None:
-        if self.proc.poll() is not None:
-            return
-        os.kill(-self.proc.pid, signal.SIGTERM)  # the whole process group
+    def stop(self, timeout_s: float = 30.0) -> None:
+        """SIGTERM the whole process group, SIGKILL whatever still runs after `timeout_s`. Done even
+        when `vllm serve` itself has exited: its EngineCore child can outlive it and hold VRAM."""
+        pgid = self.proc.pid  # start_new_session: the group id is the leader's pid
+        deadline = time.monotonic() + timeout_s
         try:
-            self.proc.wait(30)
-        except subprocess.TimeoutExpired:
-            os.kill(-self.proc.pid, 9)  # SIGKILL (name absent on Windows)
-            self.proc.wait()
+            os.kill(-pgid, signal.SIGTERM)
+            while _group_running(pgid):
+                self.proc.poll()  # reap the leader
+                if time.monotonic() >= deadline:
+                    os.kill(-pgid, 9)  # SIGKILL (the name is absent on Windows)
+                    break
+                time.sleep(0.2)
+        except ProcessLookupError:
+            pass
+        self.proc.poll()
 
     def __del__(self) -> None:  # Serve calls this on graceful replica shutdown
         if hasattr(self, "proc"):
@@ -301,7 +325,12 @@ def run(
         try:
             loads = deploy(group, serve)
             work(g)
-        finally:
-            unload_s = teardown(group, serve, idle, used_mib)
+        except BaseException as e:  # tear down, but keep the original error as the cause
+            try:
+                teardown(group, serve, idle, used_mib)
+            except ServingError as t:
+                e.add_note(f"teardown after this failure also failed: {t}")
+            raise
+        unload_s = teardown(group, serve, idle, used_mib)
         out.append({"group": g.name, "load_s": loads, "unload_s": unload_s})
     return out

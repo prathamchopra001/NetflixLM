@@ -1,12 +1,14 @@
 """Serve applications from the laptop Plan; deploy/teardown/staged loop against a fake Serve."""
 
 import json
+import signal
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from nip.contracts import Autoscaling, Gpu, HardwareInventory, Node, Slot, StageGroup
+from nip.runtime import serving
 from nip.runtime.catalog import load_catalog
 from nip.runtime.planner import plan
 from nip.runtime.serving import (
@@ -18,6 +20,7 @@ from nip.runtime.serving import (
     deploy,
     run,
     teardown,
+    vllm_args,
 )
 
 CATALOG = load_catalog(Path(__file__).parents[3] / "config" / "catalog.yaml")
@@ -71,12 +74,13 @@ def test_laptop_llm_group_is_one_shared_vllm_app() -> None:
     [a] = apps(PLAN, CATALOG, LAPTOP, [Slot.VLM, Slot.TEXT_LLM])
     assert (a.name, a.route_prefix) == ("nip-qwen3.5-4b-awq", "/models/qwen3.5-4b-awq")
     assert a.slots == (Slot.VLM, Slot.TEXT_LLM) and a.replicas == 1
-    assert a.num_gpus == PLAN.decisions[Slot.TEXT_LLM].gpu_fraction == 0.77
+    assert a.num_gpus == PLAN.decisions[Slot.TEXT_LLM].gpu_fraction == 0.79
     args = list(a.vllm_args)
-    assert args[0] == "Qwen/Qwen3.5-4B"
+    assert args[0] == "cyankiwi/Qwen3.5-4B-AWQ-4bit"  # the AWQ checkpoint, not the bf16 base
     opt = {k: v for k, v in zip(args, args[1:], strict=False) if k.startswith("--")}
     assert opt["--served-model-name"] == "qwen3.5-4b-awq"
-    assert opt["--max-model-len"] == "8192" and opt["--gpu-memory-utilization"] == "0.77"
+    assert opt["--max-model-len"] == "16384" and opt["--gpu-memory-utilization"] == "0.79"
+    assert opt["--kv-cache-memory-bytes"] == str(2170 * 2**20)  # the Plan's exact KV budget
     assert opt["--tensor-parallel-size"] == "1" and opt["--limit-mm-per-prompt.image"] == "2"
     assert json.loads(args[args.index("--mm-processor-kwargs") + 1]) == {"max_pixels": 589824}
     assert "--enforce-eager" in args  # 8 GB is a small GPU
@@ -149,3 +153,74 @@ def test_failed_deploy_still_tears_down_the_group() -> None:
     with pytest.raises(ServingError):
         run(PLAN, CATALOG, LAPTOP, lambda g: None, serve, used_mib=lambda: 1500)
     assert serve.running == {}
+
+
+def test_vllm_args_reject_an_incomplete_decision() -> None:
+    v = next(v for v in CATALOG.variants if v.id == "qwen3.5-4b-awq")
+    d = PLAN.decisions[Slot.TEXT_LLM].model_copy(update={"context": None})
+    with pytest.raises(ServingError, match="lacks"):
+        vllm_args(v, d, None, eager=True)
+
+
+class _Proc:
+    pid = 4242
+
+    def poll(self) -> int | None:
+        return 0
+
+
+def _stop(monkeypatch: pytest.MonkeyPatch, running_checks: int) -> list[int]:
+    """stop() against a group that still runs for `running_checks` liveness checks."""
+    sent: list[int] = []
+    checks = iter([True] * running_checks + [False])
+
+    def kill(pid: int, sig: int) -> None:
+        assert pid == -4242  # always the process group, never just the leader
+        sent.append(sig)
+
+    monkeypatch.setattr(serving.os, "kill", kill)
+    monkeypatch.setattr(serving, "_group_running", lambda pgid: next(checks))
+    monkeypatch.setattr(serving.time, "sleep", lambda s: None)
+    srv = VllmServer.__new__(VllmServer)
+    srv.proc = _Proc()  # type: ignore[assignment]
+    try:
+        srv.stop(timeout_s=0.0 if running_checks > 5 else 60.0)
+    finally:
+        del srv.proc  # keep __del__ from signalling for real
+    return sent
+
+
+def test_stop_kills_the_group_even_after_vllm_serve_exited(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The leader has exited (poll() == 0), EngineCore runs on for two checks, then exits.
+    assert _stop(monkeypatch, running_checks=2) == [signal.SIGTERM]
+
+
+def test_stop_sigkills_a_group_that_ignores_sigterm(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert _stop(monkeypatch, running_checks=10) == [signal.SIGTERM, 9]
+
+
+def test_group_running_ignores_zombies_and_other_groups(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    for pid, stat in {"7": "7 (python3) Z 1 794 794", "8": "8 (ray) S 0 1 1"}.items():
+        (tmp_path / pid).mkdir()
+        (tmp_path / pid / "stat").write_text(stat)
+    real_path = serving.Path
+    monkeypatch.setattr(serving, "Path", lambda p: tmp_path if p == "/proc" else real_path(p))
+    assert not serving._group_running(794)  # only a zombie left
+    assert serving._group_running(1)
+
+
+def test_run_keeps_the_deploy_error_when_teardown_also_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = iter(range(0, 10**9, 60))  # each reading 60 s later: teardown's 120 s wait ends fast
+    monkeypatch.setattr(serving.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(serving.time, "sleep", lambda s: None)
+    serve = FakeServe(fail=("nip-faster-whisper-large-v3-int8",))
+    readings = iter([1500] + [9000] * 10**6)  # idle, then VRAM never comes back
+    with pytest.raises(ServingError, match="failed to deploy") as e:
+        run(PLAN, CATALOG, LAPTOP, lambda g: None, serve, used_mib=lambda: next(readings))
+    assert any("after teardown" in n for n in e.value.__notes__)

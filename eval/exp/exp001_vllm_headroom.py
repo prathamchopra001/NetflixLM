@@ -8,6 +8,7 @@ trial: gpu_memory_utilization 0.75 / 0.80 / 0.83 / 0.86, and an exact KV budget
   host:      uv run python -m eval.exp.exp001_vllm_headroom drive --trials 10
              (waits until no other compute process holds the GPU, then runs each trial in ray-head)
   ray-head:  python3 -m eval.exp.exp001_vllm_headroom trial --setting gmu-0.80 --trial 1
+             (--setting plan: probe -> planner -> serving.apps, the shipped path with no overrides)
   host:      uv run python -m eval.exp.exp001_vllm_headroom table   (results from MLflow)
 Stack:  docker compose -f compose.yaml -f eval/exp/exp001.compose.yaml up -d --wait ray-head mlflow
 """
@@ -29,13 +30,11 @@ import typer
 
 from nip.contracts import Slot, SlotDecision
 from nip.runtime.catalog import load_catalog
-from nip.runtime.planner import CONCURRENCY
 
 app = typer.Typer(no_args_is_help=True)
 
 EXP = "EXP-001"
 VARIANT = "qwen3.5-4b-awq"
-CHECKPOINT = "cyankiwi/Qwen3.5-4B-AWQ-4bit"  # the catalog has no checkpoint for this variant yet
 CONTEXT = 8192
 SETTINGS = ["gmu-0.75", "gmu-0.80", "gmu-0.83", "gmu-0.86", "kv-planner"]
 KV_GATE_GMU = 0.5  # with --kv-cache-memory-bytes, gmu only gates vLLM's free-memory check
@@ -53,10 +52,9 @@ PROMPTS = [
 MAX_TOKENS = 128  # with ignore_eos every request generates exactly this many tokens
 
 
-def _kv_bytes() -> int:
-    v = next(v for v in load_catalog().variants if v.id == VARIANT)
-    assert v.kv_mb_per_1k_tokens is not None
-    return int(v.kv_mb_per_1k_tokens * CONTEXT / 1024 * CONCURRENCY * 2**20)
+# The planner's KV estimate when the 66 trials ran (60 MiB/1k x 8k x 2 sequences = 0.94 GiB). Fixed
+# here: the catalog now holds the measured 44.6 MiB/1k, which would change the variant's meaning.
+KV_PLANNER_BYTES = 1_006_632_960
 
 
 class _Vram:
@@ -158,27 +156,49 @@ def trial(
     """One start/bench/teardown inside ray-head; logs an MLflow run."""
     import mlflow
 
-    from nip.runtime.serving import App, ServingError, deploy, ray_serve, teardown, vllm_args
+    from nip.runtime.planner import plan
+    from nip.runtime.probe import probe
+    from nip.runtime.serving import (
+        App,
+        ServingError,
+        apps,
+        deploy,
+        ray_serve,
+        teardown,
+        vllm_args,
+    )
 
-    v = next(v for v in load_catalog().variants if v.id == VARIANT)
-    v = v.model_copy(update={"checkpoint": CHECKPOINT})
-    kv = setting == "kv-planner"
-    gmu = KV_GATE_GMU if kv else float(setting.removeprefix("gmu-"))
-    d = SlotDecision(
-        variant=VARIANT,
-        replicas=1,
-        gpus_per_replica=1,
-        context=CONTEXT,
-        gpu_memory_utilization=gmu,
-        gpu_fraction=gmu,
-    )
-    vlm = SlotDecision(
-        variant=VARIANT, max_pixels=v.max_pixels, images_per_prompt=v.images_per_prompt
-    )
-    args = vllm_args(v, d, vlm, eager=True) + (
-        ["--kv-cache-memory-bytes", str(_kv_bytes())] if kv else []
-    )
-    a = App(VARIANT, (Slot.TEXT_LLM, Slot.VLM), 1, gmu, tuple(args))
+    catalog = load_catalog()
+    v = next(v for v in catalog.variants if v.id == VARIANT)
+    if setting == "plan":  # the shipped path: probe -> planner -> serving.apps, nothing overridden
+        inv = probe()
+        p = plan(inv, catalog, {Slot.TEXT_LLM: 1, Slot.VLM: 1})
+        if Slot.TEXT_LLM in p.skipped_slots:
+            typer.echo(f"planner skipped text_llm at this free VRAM: {p.warnings}", err=True)
+            raise typer.Exit(1)
+        [a] = apps(p, catalog, inv, p.groups[0].slots)
+        d = p.decisions[Slot.TEXT_LLM]
+        assert d.gpu_memory_utilization and d.context
+        gmu, context, kv_bytes = d.gpu_memory_utilization, d.context, d.kv_cache_bytes
+        args = list(a.vllm_args)
+    else:
+        kv = setting == "kv-planner"
+        gmu, context = KV_GATE_GMU if kv else float(setting.removeprefix("gmu-")), CONTEXT
+        kv_bytes = KV_PLANNER_BYTES if kv else None
+        d = SlotDecision(
+            variant=VARIANT,
+            replicas=1,
+            gpus_per_replica=1,
+            context=context,
+            gpu_memory_utilization=gmu,
+            gpu_fraction=gmu,
+            kv_cache_bytes=kv_bytes,
+        )
+        vlm = SlotDecision(
+            variant=VARIANT, max_pixels=v.max_pixels, images_per_prompt=v.images_per_prompt
+        )
+        args = vllm_args(v, d, vlm, eager=True)
+        a = App(VARIANT, (Slot.TEXT_LLM, Slot.VLM), 1, gmu, tuple(args))
 
     serve = ray_serve()
     vram = _Vram()
@@ -188,7 +208,7 @@ def trial(
         "exp": EXP + "-pilot" * pilot,
         "variant": setting + (f"@{note}" if note else ""),
         "trial": str(trial),
-        "checkpoint": CHECKPOINT,
+        "checkpoint": v.repo or "",
     }
     log_dir = Path(os.environ.get("NIP_VLLM_LOG_DIR", "/tmp/nip-vllm"))
     before = set(log_dir.glob("*.log")) if log_dir.exists() else set()
@@ -196,10 +216,14 @@ def trial(
     try:
         metrics["load_s"] = deploy([a], serve)[a.name]
         metrics["started"] = 1
-        metrics["tokens_per_s"] = round(_bench("http://127.0.0.1:8000"), 1)
     except ServingError as e:
         metrics["started"] = 0
         tags["error"] = str(e)[-4000:]
+    if metrics["started"]:
+        try:
+            metrics["tokens_per_s"] = round(_bench("http://127.0.0.1:8000"), 1)
+        except Exception as e:  # a failed benchmark must not skip teardown and logging
+            tags["bench_error"] = repr(e)[-2000:]
     try:
         metrics["unload_s"] = teardown([a], serve, idle_mib=used0)
         metrics["returned_to_idle"] = 1
@@ -223,8 +247,8 @@ def trial(
         mlflow.log_params(
             {
                 "gpu_memory_utilization": gmu,
-                "max_model_len": CONTEXT,
-                "kv_cache_memory_bytes": _kv_bytes() if kv else "none",
+                "max_model_len": context,
+                "kv_cache_memory_bytes": kv_bytes or "none",
                 "vllm_args": " ".join(args),
             }
         )

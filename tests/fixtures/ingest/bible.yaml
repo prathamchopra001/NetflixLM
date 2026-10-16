@@ -1,0 +1,30 @@
+show: harbor-lights
+characters:
+  - id: maya
+    name: Maya Reyes
+    aliases: [May, Detective Reyes]
+    gender: female
+    pronouns: {en: she/her}
+  - id: leo
+    name: Leo Park
+    gender: male
+  - id: ada
+    name: Ada Kovač
+    aliases: ["the informant"]
+    gender: female
+    identity_hidden_until: S01E08
+relationships:
+  - between: [maya, leo]
+    timeline:
+      - {from: S01E01, kind: strangers}
+      - {from: S01E04, kind: partners, register: {es: T, fr: T, de: T}}
+secrets:
+  - id: ada_is_informant
+    description: Ada is the police informant
+    revealed_on_screen: S01E08
+fictional:
+  brands: [Brightwave Energy, Kappa Cola]
+  orgs: [Harbor City PD]
+  places: [Harbor Warehouse]
+story_overrides:
+  - {scene: S01E05/sc/3, markers: [flashback], story_day: 0}

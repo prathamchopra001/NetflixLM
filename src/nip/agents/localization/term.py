@@ -7,26 +7,34 @@ there is none. Matching is by word: casefolded, short words (articles) ignored, 
 differ by a 1-3 letter ending (inflection); a proper noun, or an accent changed, may not. A word
 that is missing but resembles one in the target (rapidfuzz) is a misspelling.
 
-Confidence: approved rendering missing 0.80, misspelled 0.92; observed standard missing 0.55 (below
-0.70, so suppressed: the name may be dropped for a pronoun, an LLM adjudicates in Phase 3),
-misspelled 0.85; any finding in a group of more than 2 source or 2 target cues 0.65 (alignment
-less sure).
+Confidence: approved rendering missing 0.80, misspelled 0.92. Observed standard (no approved
+rendering): the most frequent rendering of the name over the whole show, i.e. this episode and the
+other episodes of the show as persisted by `cue_align.stage`. Missing it is 0.80 when the episode
+switches (the standard carries >= 90% of the mentions elsewhere and <= 20% here: "Wren" rendered
+"Reyezuelo" in E3), 0.55 otherwise (below 0.70, so suppressed: the name may be dropped for a
+pronoun, an LLM adjudicates in Phase 3), 0.85 when a word of the target resembles it. Any finding in
+a group of more than 2 source or 2 target cues is capped at 0.65 (alignment less sure).
 
-`ponytail:` the observed standard is the name kept verbatim, in the cues of one episode; a name
-that is translated every time has no standard and nothing is checked. Occurrences are written per
-episode run (`stage`), the table has no episode column.
+`ponytail:` the rendering of a one-word name is the target word that best singles out the cues
+mentioning it (share of those cues minus share of the others); a multi-word name is its own
+standard (kept verbatim). A name rendered by several words, or by a word of under 4 letters, has no
+standard and nothing is checked. Other episodes are read as one (source cues, target cue) pair per
+target cue, so a rendering in the other half of a split target counts as missing there. Episodes of
+a run are checked in order: the first sees only episodes aligned by earlier runs; run again to
+converge.
 """
 
 import logging
 import re
 import unicodedata
+from collections import Counter
 from collections.abc import Collection, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from rapidfuzz import fuzz
-from sqlalchemy import Connection, select
+from sqlalchemy import Connection, delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from nip.agents.base import Check, Finding, Input, WorkUnit, cue_windows
@@ -40,7 +48,7 @@ from nip.timeline.cue_align import Group, aligned, groups
 log = logging.getLogger(__name__)
 
 APPROVED_MISSING, APPROVED_MISSPELLED = 0.80, 0.92
-OBSERVED_MISSING, OBSERVED_MISSPELLED = 0.55, 0.85
+OBSERVED_MISSING, OBSERVED_MISSPELLED, OBSERVED_SWITCHED = 0.55, 0.85, 0.80
 COMPLEX_GROUP = 0.65
 SHOULD_FIX, MINOR = 3, 2
 SHORT_RATIO = 85  # near-miss ratio for words under 5 letters (short words resemble many others)
@@ -64,6 +72,48 @@ class Entry:
     @property
     def key(self) -> str:
         return self.surface.casefold()
+
+
+@dataclass
+class Pair:
+    """The words (casefolded, in order) of an aligned group of source cues and of target cues."""
+
+    src: list[str]
+    tgt: list[str]
+
+
+@dataclass
+class Standard:
+    """The observed rendering of a name over the show."""
+
+    rendering: str  # one casefolded word, or the whole surface of a multi-word name
+    kept: int  # mentions of the name (show-wide) whose target carries it
+    n: int  # mentions of the name (show-wide)
+    switched: bool  # this episode drops it where the other episodes keep it
+
+
+def load_others(
+    conn: Connection, show: str, episode: str, source_lang: str, lang: str
+) -> dict[str, list[Pair]]:
+    """Pairs of the other episodes of `show` for target language `lang`, by episode ref: each
+    target cue with the source cues persisted in its `aligned_source_cue_ids`."""
+    ep, tr, cue, sh = schema.episode, schema.subtitle_track, schema.subtitle_cue, schema.show
+    rows = conn.execute(
+        select(ep.c.ref, tr.c.lang, tr.c.role, cue.c.id, cue.c.idx, cue.c.text,
+               cue.c.aligned_source_cue_ids)
+        .join(tr, tr.c.episode_id == ep.c.id)
+        .join(cue, cue.c.track_id == tr.c.id)
+        .join(sh, sh.c.id == ep.c.show_id)
+        .where(sh.c.slug == show, ep.c.ref != episode, tr.c.lang.in_([lang, source_lang]))
+        .order_by(ep.c.ref, cue.c.idx)
+    ).all()  # fmt: skip
+    src = {r.id: words(r.text) for r in rows if r.lang == source_lang and r.role == "source"}
+    out: dict[str, list[Pair]] = {}
+    for r in rows:
+        if r.lang == lang and r.role == "target" and r.aligned_source_cue_ids:
+            ws = [w for i in r.aligned_source_cue_ids for w in src.get(i, [])]
+            out.setdefault(r.ref, []).append(Pair(ws, words(r.text)))
+    return out
 
 
 def load_registry(conn: Connection, show: str) -> list[Entry]:
@@ -149,13 +199,14 @@ def near_miss(rendering: str, have: list[str], ratio: float, common: bool) -> st
     return None
 
 
-def mentions(surface: str, have: Collection[str]) -> bool:
-    """The source side: the surface's content words, loosely (any 1-3 letter ending)."""
+def mentions(surface: str, have: Collection[str], common: bool = False) -> bool:
+    """The source side: the surface's content words; a common noun loosely (any 1-3 letter ending,
+    as `has_word` does), a name exactly."""
 
     def seen(w: str) -> bool:
         return w in have or (
-            len(w) >= 4 and any(_plain(h).startswith(_plain(w)) and len(h) - len(w) <= 3
-                                for h in have)
+            common and len(w) >= 4 and any(_plain(h).startswith(_plain(w)) and len(h) - len(w) <= 3
+                                           for h in have)
         )  # fmt: skip
 
     return all(seen(w) for _, w in core(surface))
@@ -189,6 +240,8 @@ class Term(Check):
         show: str | None = None,
         registry: list[Entry] | None = None,
         root: Path | None = None,
+        episode: str | None = None,
+        others: dict[str, dict[str, list[Pair]]] | None = None,
     ):
         self.source_lang = source_lang
         self.langs = list(langs)
@@ -201,34 +254,75 @@ class Term(Check):
         if not registry:
             log.warning("loc.term: no registry (bible or glossary rows): nothing to check")
         self.registry = registry
-        self._memo: dict[str, tuple[Timeline, list[Group], set[str]]] = {}
+        self.conn, self.show, self.episode = conn, show, episode
+        self._others = others  # target language -> episode ref -> pairs; None: read from the store
+        self._memo: dict[str, tuple[Timeline, list[Group], dict[str, Standard]]] = {}
 
     def params(self) -> dict[str, Any]:
         reg = [(e.surface, sorted(e.renderings.items())) for e in self.registry]
         return {"source_lang": self.source_lang, "rules": self.rules, "registry": reg}
 
-    def _context(self, tl: Timeline, lang: str) -> tuple[list[Group], set[str]]:
-        """(groups of aligned cues, keys of entries whose observed standard exists in `lang`)."""
+    def _context(self, tl: Timeline, lang: str) -> tuple[list[Group], dict[str, Standard]]:
+        """(groups of aligned cues, observed standards by entry key) of target language `lang`."""
         hit = self._memo.get(lang)
         if hit is None or hit[0] is not tl:
             gs = groups(aligned(tl, self.source_lang, lang))
             hit = self._memo[lang] = (tl, gs, self._standards(tl, gs, lang))
         return hit[1], hit[2]
 
-    def _standards(self, tl: Timeline, gs: list[Group], lang: str) -> set[str]:
-        """Entries without an approved rendering whose name is kept verbatim in most groups."""
+    def _other_pairs(self, lang: str) -> dict[str, list[Pair]]:
+        if self._others is not None:
+            return self._others.get(lang, {})
+        if self.conn is None or self.show is None or self.episode is None:
+            return {}
+        return load_others(self.conn, self.show, self.episode, self.source_lang, lang)
+
+    def _standards(self, tl: Timeline, gs: list[Group], lang: str) -> dict[str, Standard]:
+        """Entries without an approved rendering that have an observed standard over the show."""
         r = self.rules[lang]
-        out = set()
+        here = [Pair(self._words(tl, g.sources), self._words(tl, g.targets)) for g in gs]
+        other = [p for ps in self._other_pairs(lang).values() for p in ps]
+        pairs = [*here, *other]
+        df = Counter(w for p in pairs for w in set(p.tgt))  # pairs whose target has the word
+        out = {}
         for e in self.registry:
             if tag_renderings(e, lang):
                 continue
-            n = kept = 0
-            for g in gs:
-                if mentions(e.surface, self._words(tl, g.sources)):
-                    n += 1
-                    kept += has_all(e.surface, self._words(tl, g.targets), e.common)
-            if n >= r["observed_min_cues"] and kept / n >= r["observed_min_share"]:
-                out.add(e.key)
+            seen = [p for p in pairs if mentions(e.surface, p.src, e.common)]
+            if len(seen) < r["observed_min_cues"]:
+                continue
+            rendering = e.surface
+            if len(core(e.surface)) == 1:  # the target word that singles out the mentions
+                with_w = Counter(w for p in seen for w in set(p.tgt) if len(w) >= 4)
+                rest = max(len(pairs) - len(seen), 1)
+                lift = {w: k / len(seen) - (df[w] - k) / rest for w, k in with_w.items()}
+                if not lift:
+                    continue
+                own = core(e.surface)[0][1]  # a name kept verbatim is the standard if it qualifies
+                kept_own = with_w[own] / len(seen) if own in with_w else 0.0
+                if (
+                    lift.get(own, 0.0) >= r["observed_min_lift"]
+                    and kept_own >= r["observed_min_share"]
+                ):
+                    rendering = own
+                else:
+                    rendering = max(lift, key=lambda w: (lift[w], w))
+                    if lift[rendering] < r["observed_min_lift"]:
+                        continue
+            kept = [has_all(rendering, p.tgt, e.common) for p in seen]
+            if sum(kept) / len(seen) < r["observed_min_share"]:
+                continue
+            mine = [has_all(rendering, p.tgt, e.common) for p in here
+                    if mentions(e.surface, p.src, e.common)]  # fmt: skip
+            theirs = [has_all(rendering, p.tgt, e.common) for p in other
+                      if mentions(e.surface, p.src, e.common)]  # fmt: skip
+            switched = (
+                len(mine) >= r["observed_min_cues"]
+                and sum(mine) / len(mine) <= r["observed_switch_here"]
+                and len(theirs) >= r["observed_min_cues"]
+                and sum(theirs) / len(theirs) >= r["observed_switch_others"]
+            )
+            out[e.key] = Standard(rendering, sum(kept), len(seen), switched)
         return out
 
     @staticmethod
@@ -258,31 +352,43 @@ class Term(Check):
             f for g in gs if g.targets[0] in mine for f in self.findings(g, lang, tl, standards)
         ]
 
-    def findings(self, g: Group, lang: str, tl: Timeline, standards: set[str]) -> list[Finding]:
+    def findings(
+        self, g: Group, lang: str, tl: Timeline, standards: dict[str, Standard]
+    ) -> list[Finding]:
         src, tgt = self._words(tl, g.sources), self._words(tl, g.targets)
         ratio = float(self.rules[lang]["near_miss_ratio"])
         out = []
         for e in self.registry:
-            if not mentions(e.surface, src):
+            if not mentions(e.surface, src, e.common):
                 continue
             approved = tag_renderings(e, lang)
-            if not approved and e.key not in standards:
+            st = standards.get(e.key)
+            if not approved and st is None:
                 continue
-            expected = approved or [e.surface]
+            expected = approved or [st.rendering if st else e.surface]
             if any(has_all(r, tgt, e.common) for r in expected):
                 continue
             miss = next((m for r in expected if (m := near_miss(r, tgt, ratio, e.common))), None)
-            conf = (APPROVED_MISSPELLED if miss else APPROVED_MISSING) if approved else (
-                OBSERVED_MISSPELLED if miss else OBSERVED_MISSING)  # fmt: skip
+            if approved:
+                conf = APPROVED_MISSPELLED if miss else APPROVED_MISSING
+            elif miss:
+                conf = OBSERVED_MISSPELLED
+            else:
+                conf = OBSERVED_SWITCHED if st and st.switched else OBSERVED_MISSING
             if len(g.sources) > MAX_SIDE or len(g.targets) > MAX_SIDE:
                 conf = min(conf, COMPLEX_GROUP)
-            out.append(self._finding(e, expected, miss, bool(approved), conf, g, lang, tl))
+            shown = [e.surface if r == core(e.surface)[0][1] else r for r in expected]
+            out.append(self._finding(e, shown, miss, bool(approved), conf, g, lang, tl, st))
         return out
 
     def _finding(self, e: Entry, expected: list[str], miss: str | None, approved: bool,
-                 conf: float, g: Group, lang: str, tl: Timeline) -> Finding:  # fmt: skip
+                 conf: float, g: Group, lang: str, tl: Timeline,
+                 st: Standard | None = None) -> Finding:  # fmt: skip
         want = " / ".join(f'"{r}"' for r in expected)
         kind = "approved" if approved else "observed standard"
+        if st is not None:
+            kind += f" ({st.kept} of {st.n} mentions in the show"
+            kind += ", which this episode drops)" if st.switched else ")"
         what = f'"{miss}" is a near miss of {want}' if miss else f"{want} is missing"
         cues = [c for ref in g.targets if (c := tl.resolve(ref)) is not None]
         srcs = [c for ref in g.sources if (c := tl.resolve(ref)) is not None]
@@ -319,41 +425,52 @@ class Term(Check):
             for f in self.findings(g, flag.lang, tl, standards)
         )
 
-    def observed(self, tl: Timeline) -> list[tuple[Entry, str, int]]:
-        """(entry, lang, groups that keep the name) for every observed standard."""
+    def observed(self, tl: Timeline) -> list[tuple[Entry, str, Standard]]:
+        """(entry, lang, standard) for every observed standard."""
         out = []
         for lang in self.langs:
-            gs, standards = self._context(tl, lang)
-            for e in self.registry:
-                if e.key in standards:
-                    n = sum(
-                        has_all(e.surface, self._words(tl, g.targets), e.common)
-                        for g in gs
-                        if mentions(e.surface, self._words(tl, g.sources))
-                    )
-                    out.append((e, lang, n))
+            _, standards = self._context(tl, lang)
+            out += [(e, lang, standards[e.key]) for e in self.registry if e.key in standards]
         return out
 
 
 def stage(ep: Any) -> None:
-    """Pipeline stage (`add_stage("loc.observed", term.stage, before="checks")`): record each
-    observed standard as an `observed_rendering` alias with its occurrences."""
+    """Pipeline stage (`add_stage("loc.observed", term.stage, before="checks")`): record the
+    observed standards of the show as `observed_rendering` aliases whose `occurrences` is the
+    show-wide count of mentions that carry them. The rows are recomputed, not accumulated, so a
+    re-run gives the same numbers; a standard that no longer holds is deleted."""
     term = next((c for c in ep.checks if isinstance(c, Term)), None)
     if term is None:
         return
+    al = schema.entity_alias
     with ep.unit("loc.observed", ep.episode):
+        ids = [eid for e in term.registry if not e.renderings for eid in e.entity_ids]
+        if ids and term.langs:
+            ep.conn.execute(
+                delete(al).where(
+                    al.c.entity_id.in_(ids),
+                    al.c.lang.in_(term.langs),
+                    al.c.kind == "observed_rendering",
+                )
+            )
         rows = [
-            {"entity_id": eid, "lang": lang, "alias": e.surface, "kind": "observed_rendering",
-             "occurrences": n}
-            for e, lang, n in term.observed(ep.timeline)
+            {
+                "entity_id": eid,
+                "lang": lang,
+                "alias": e.surface if st.rendering == core(e.surface)[0][1] else st.rendering,
+                "kind": "observed_rendering",
+                "occurrences": st.kept,
+            }
+            for e, lang, st in term.observed(ep.timeline)
             for eid in e.entity_ids
-        ]  # fmt: skip
+        ]
         if rows:
-            ins = pg_insert(schema.entity_alias)
+            ins = pg_insert(al)
             ep.conn.execute(
                 ins.on_conflict_do_update(
                     index_elements=["entity_id", "lang", "alias"],
                     set_={"occurrences": ins.excluded.occurrences},
+                    where=al.c.kind == "observed_rendering",
                 ),
                 rows,
             )

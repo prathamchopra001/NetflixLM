@@ -37,7 +37,13 @@ term:
   # A rendering token that is not in the target cue but resembles one (rapidfuzz ratio, 0-100)
   # is reported as a misspelling.
   near_miss_ratio: 75
-  # No approved rendering: the observed standard is the name kept verbatim, when it appears in at
-  # least this share of at least `observed_min_cues` aligned cue groups that mention the name.
+  # No approved rendering: the observed standard is the rendering that carries at least this share
+  # of at least `observed_min_cues` mentions of the name over the whole show, and singles the
+  # mentions out (its share of the mentions minus its share of the other cues >= observed_min_lift).
   observed_min_share: 0.6
   observed_min_cues: 3
+  observed_min_lift: 0.5
+  # An episode that switches the standard: it carries >= others share of the mentions in the other
+  # episodes but <= here share in this one (with at least observed_min_cues mentions each).
+  observed_switch_others: 0.9
+  observed_switch_here: 0.2

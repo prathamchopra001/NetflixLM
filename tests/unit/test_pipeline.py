@@ -26,9 +26,9 @@ ES = (
 )
 
 
-# 2.4's checks that need more than script + subtitles: loc.term (bible or glossary), the others
-# the picture (shot changes, and the drift / offset rate and frames)
-NEEDS_MORE = ["loc.term", "loc.shot_change", "loc.drift", "loc.offset"]
+# 2.4's checks that need more than script + subtitles: loc.term (bible or glossary) and
+# loc.shot_change (picture); drift and offset run on subtitles alone
+NEEDS_MORE = ["loc.term", "loc.shot_change"]
 
 
 def _files(tmp_path: Path, script: str = SCRIPT) -> dict[str, Path]:
@@ -54,6 +54,8 @@ def test_script_and_subtitles_run_end_to_end(tmp_path: Path) -> None:
         "picture",
         "timeline",
         "loc.readability",
+        "loc.drift",
+        "loc.offset",
         "verification",
         "report",
     ]
@@ -78,7 +80,8 @@ def test_without_source_track_the_check_is_skipped(tmp_path: Path) -> None:
     s = run_pipeline(
         episode="E1", script=f["script"], subs={"es": f["es"]}, source_lang="en", out_dir=tmp_path
     )
-    assert s["skipped"] == ["loc.readability", *NEEDS_MORE] and s["flags_kept"] == 0
+    assert s["skipped"] == ["loc.readability", *NEEDS_MORE, "loc.drift", "loc.offset"]
+    assert s["flags_kept"] == 0
 
 
 def test_duplicate_scene_numbers_are_rejected(tmp_path: Path) -> None:
@@ -150,17 +153,20 @@ def test_cli_picture_must_be_a_file(tmp_path: Path) -> None:
 
 def test_checks_come_from_agent_packages_and_activation() -> None:
     subs = {Input.SOURCE_SUBS, Input.TARGET_SUBS}
-    ctx = {"langs": ["es"], "conn": None, "show": None}
+    ctx = {"langs": ["es"], "source_lang": "en", "conn": None, "show": None}
     checks, skipped = build_checks(subs, ctx)
-    assert [str(c.check) for c in checks] == ["loc.readability"] and skipped == NEEDS_MORE
-    assert build_checks({Input.TARGET_SUBS}, ctx) == ([], ["loc.readability", *NEEDS_MORE])
+    assert [str(c.check) for c in checks] == ["loc.readability", "loc.drift", "loc.offset"]
+    assert skipped == NEEDS_MORE
+    skipped_all = ["loc.readability", *NEEDS_MORE, "loc.drift", "loc.offset"]
+    assert build_checks({Input.TARGET_SUBS}, ctx) == ([], skipped_all)
     assert build_checks(subs, ctx, agents={Agent.SCRIPT_CRITIC}) == ([], [])
     with pytest.raises(InputRejected, match="no readability rule pack for language 'xx'"):
         build_checks(subs, ctx | {"langs": ["xx"]})
 
 
 def test_coverage_counts_done_units_per_agent() -> None:
-    checks, _ = build_checks({Input.SOURCE_SUBS, Input.TARGET_SUBS}, {"langs": ["es"]})
+    ctx = {"langs": ["es"], "source_lang": "en"}
+    checks, _ = build_checks({Input.SOURCE_SUBS, Input.TARGET_SUBS}, ctx)
     units = [{"stage": "loc.readability", "status": s} for s in ("done", "done", "failed", "done")]
     assert coverage(checks, [], units) == {Agent.LOCALIZATION_AUDITOR: 0.75}
     assert coverage(checks, [], []) == {Agent.LOCALIZATION_AUDITOR: 1.0}  # active, nothing to do

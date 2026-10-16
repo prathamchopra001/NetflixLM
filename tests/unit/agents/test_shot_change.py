@@ -53,6 +53,9 @@ def test_window_is_less_than_half_a_second_of_the_probed_rate() -> None:
         ((100, 235), ["out-point 5 frames before the cut at"]),
         ((100, 245), ["out-point 5 frames after the cut at"]),
         ((100, 240), []),  # ends on the cut
+        ((100, 238), []),  # ends 2 frames before it: the prescribed gap (the next cue starts on it)
+        ((100, 239), []),  # inside the gap
+        ((100, 237), ["out-point 3 frames before the cut at"]),  # one frame more than the gap
         ((100, 300), []),  # crosses a cut: not this rule
         ((243, 477), ["in-point 3 frames after", "out-point 3 frames before"]),
     ],
@@ -118,3 +121,12 @@ def test_unit_context_holds_the_cuts_of_the_window_only() -> None:
     assert [s.ref for s in u.context] == ["E1/shot/1", "E1/shot/2", "E1/shot/3"]
     assert check.units(tl([(100, 150)]))[0].context == ()
     assert [s.ref for s in check.units(tl([(230, 250)]))[0].context] == ["E1/shot/1"]
+
+
+def test_the_prescribed_pair_is_clean_for_readability_too() -> None:
+    """Out at cut - 2, next cue in on the cut: neither this check nor the gap rule flags it."""
+    from nip.agents.localization.readability import Readability
+
+    t = tl([(100, 238), (240, 300)])
+    assert titles(t) == []
+    assert [f.title for f in run_check(Readability(["es"]), t, "run_1", PB)] == []

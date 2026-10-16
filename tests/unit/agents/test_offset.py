@@ -60,5 +60,16 @@ def test_recheck_and_inputs() -> None:
     assert check.recheck(flag, t) is True
     assert check.recheck(flag, tl(N24)) is False
     assert Offset in CHECKS
-    assert not Offset.active({Input.SOURCE_SUBS, Input.TARGET_SUBS})
-    assert Offset.active({Input.SOURCE_SUBS, Input.TARGET_SUBS, Input.PICTURE})
+    assert Offset.active({Input.SOURCE_SUBS, Input.TARGET_SUBS})  # the picture is optional
+    assert not Offset.active({Input.SOURCE_SUBS})
+
+
+@pytest.mark.parametrize("shift", [-1.0, -0.5, 0.5, 1.0])
+@pytest.mark.parametrize("merge", [False, True])
+def test_offset_without_a_picture_is_stated_in_seconds_only(shift: float, merge: bool) -> None:
+    (flag,) = flags(tl(N24, shift=shift, merge=merge, picture=False))
+    assert flag.title == f"Track is {shift:+.3f} s off the source"
+    assert (
+        "frames" not in flag.title and flag.suggested_fix == f"Shift every cue by {-shift:+.3f} s."
+    )
+    assert flags(tl(N24, shift=0.2, picture=False)) == []

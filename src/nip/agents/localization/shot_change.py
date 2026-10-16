@@ -1,11 +1,14 @@
 """`loc.shot_change`: a cue in or out point 1..11 frames from a shot change.
 
 architecture.md > Rule pack defaults: cues starting within 1/2 s after a cut start on the cut, cues
-ending within 1/2 s before one extend to it; a point that is close to a cut but not on it is
-flagged, on either side of the cut. The window is `ceil(fps * timing.shot_change_window_s) - 1`
-frames of the probed rate (11 at 24 fps and at 24000/1001). A cue's out point is the exclusive end
-frame, a cut is the first frame of a shot. Needs the picture: without shots the check is not
-active (the pipeline reports it as skipped), it never passes silently.
+ending within 1/2 s before one extend to it "keeping the 2-frame gap"; a point that is close to a
+cut but not on it is flagged, on either side of the cut. An out point at the cut, or up to the
+readability pack's `min_gap_frames` before it, is the prescribed position (the next cue starts on
+the cut, so the gap rule asks for exactly that) and passes. The window is
+`ceil(fps * timing.shot_change_window_s) - 1` frames of the probed rate (11 at 24 fps and at
+24000/1001). A cue's out point is the exclusive end frame, a cut is the first frame of a shot.
+Needs the picture: without it the check is not active (the pipeline reports it as skipped), it
+never passes silently.
 """
 
 import math
@@ -40,7 +43,12 @@ class ShotChange(Check):
     version = "1"
 
     def __init__(self, langs: Iterable[str], root: Path | None = None):
-        self.window_s = {lang: rule_pack(lang, root).get("timing", {}) for lang in langs}
+        packs = {lang: rule_pack(lang, root) for lang in langs}
+        self.window_s = {lang: p.get("timing", {}) for lang, p in packs.items()}
+        self.min_gap = {
+            lang: int(p.get("readability", {}).get("min_gap_frames", 0))
+            for lang, p in packs.items()
+        }
         for lang, r in self.window_s.items():
             if "shot_change_window_s" not in r:
                 raise ValueError(f"no timing rule pack for language {lang!r}")
@@ -63,7 +71,7 @@ class ShotChange(Check):
         return out
 
     def params(self) -> dict[str, Any]:
-        return {"rules": self.window_s}
+        return {"rules": self.window_s, "min_gap": self.min_gap}
 
     def run(self, unit: WorkUnit, tl: Timeline) -> list[Finding]:
         fps = Fraction(*tl.fps)
@@ -80,7 +88,9 @@ class ShotChange(Check):
             near = [(abs(frame - c.frames[0]), c) for c in cuts if c.frames]
             d, c = min(near, key=lambda t: t[0], default=(w + 1, None))
             if 1 <= d <= w and c is not None and c.frames is not None:
-                found.append((edge, frame - c.frames[0], c))
+                before_gap = edge == "out" and 0 <= c.frames[0] - frame <= self.min_gap[cue.lang]
+                if not before_gap:  # out point at the cut or the gap before it: as prescribed
+                    found.append((edge, frame - c.frames[0], c))
         if not found:
             return None
         idx = refs.parse(cue.ref).id

@@ -6,7 +6,7 @@ import pytest
 
 from nip.agents.base import Input, run_check
 from nip.agents.localization import CHECKS
-from nip.agents.localization.term import Entry, Term, has_all, inflected, mentions
+from nip.agents.localization.term import Entry, Pair, Term, has_all, inflected, mentions
 from nip.contracts.flag import EvidenceKind, EvidenceRole, Flag, ProducedBy, Tier
 from nip.contracts.timeline import Span, Timeline
 
@@ -98,11 +98,14 @@ def test_correct_renderings_are_not_flagged(src: str, tgt: str, entry: Entry) ->
     assert one(src, tgt, entry) == []
 
 
-def test_source_side_is_loose_but_content_words_are_whole_words() -> None:
+def test_source_side_is_loose_for_common_nouns_and_exact_for_names() -> None:
     have = ["the", "dragons", "sleep"]
-    assert mentions("dragon", have) and mentions("Dragon", have)
-    assert not mentions("dragon", ["dragonflies"])  # 5 more letters: a different word
-    assert not mentions("dragon", ["the", "dragoon"])
+    assert mentions("dragon", have, True) and mentions("Dragon", have, True)
+    assert not mentions("dragon", ["dragonflies"], True)  # 5 more letters: a different word
+    assert not mentions("dragon", ["the", "dragoon"], True)
+    assert not mentions("dragon", have)  # a name: the exact word only
+    assert not mentions("Wren", ["a", "wrench"]) and not mentions("Thom", ["thomas"])
+    assert mentions("Wren", ["a", "wren"])
 
 
 def test_inflection_needs_a_stem_of_five_and_a_short_ending() -> None:
@@ -218,3 +221,59 @@ def test_units_follow_cue_windows_and_hold_the_aligned_source_cues() -> None:
     units = Term(["es"], "en", registry=[DRAGON]).units(tl(en, es))
     assert [u.key for u in units] == ["E1/es/1-20", "E1/es/21-25"]
     assert [s.ref for s in units[1].context] == [f"E1/en/{i}" for i in range(21, 26)]
+
+
+def _pairs(src: str, tgt: str, n: int) -> list[Pair]:
+    return [Pair(src.lower().split(), tgt.lower().split()) for _ in range(n)]
+
+
+def _wren_episode(tgt: str, n: int = 5) -> Timeline:
+    en = [(3 * i, 3 * i + 2, "Wren runs.") for i in range(n)]
+    return tl(en, [(3 * i, 3 * i + 2, tgt) for i in range(n)])
+
+
+def _show(filler: bool = False, **episodes: str) -> dict[str, dict[str, list[Pair]]]:
+    """Other episodes of the show: ref -> pairs of the es track (5 mentions of Wren each, and with
+    `filler` 10 cues that do not mention it but also say 'corre')."""
+    extra = _pairs("He runs", "Corre rapido", 10) if filler else []
+    return {"es": {ep: [*_pairs("Wren runs", t, 5), *extra] for ep, t in episodes.items()}}
+
+
+def test_observed_standard_is_the_show_wide_rendering_the_docs_example() -> None:
+    """architecture.md: 'Wren' rendered 'Reyezuelo' in E3, 'Wren' elsewhere."""
+    others = _show(E1="Wren corre", E2="Wren corre", E4="Wren corre")
+    t = _wren_episode("Reyezuelo corre.")
+    check = Term(["es"], "en", registry=[WREN], others=others)
+    fl = run_check(check, t, "run_1", PB)
+    assert len(fl) == 5  # every mention in E3
+    f = fl[0]
+    assert (f.confidence, f.tier, f.severity) == (0.80, Tier.REVIEW_RECOMMENDED, 2)
+    assert f.title == 'Cue 1: "Wren" should be "Wren"'
+    assert "15 of 20 mentions in the show, which this episode drops" in f.explanation
+    # alone, E3 has no standard (nothing kept in it): nothing to compare with
+    assert run_check(Term(["es"], "en", registry=[WREN], others={}), t, "run_1", PB) == []
+
+
+def test_observed_standard_can_be_a_translated_name() -> None:
+    """The show renders Wren as Reyezuelo (not verbatim); one episode keeps 'Wren'."""
+    others = _show(True, E1="Reyezuelo corre", E2="Reyezuelo corre", E4="Reyezuelo corre")
+    (flag, *rest) = run_check(
+        Term(["es"], "en", registry=[WREN], others=others), _wren_episode("Wren corre."), "r", PB
+    )
+    assert len(rest) == 4 and flag.title == 'Cue 1: "Wren" should be "reyezuelo"'
+    assert flag.confidence == 0.80
+
+
+def test_sporadic_miss_against_a_show_standard_stays_ambiguous() -> None:
+    others = _show(E1="Wren corre", E2="Wren corre")
+    en = [(3 * i, 3 * i + 2, "Wren runs.") for i in range(5)]
+    es = [(3 * i, 3 * i + 2, "Wren corre." if i else "Corre.") for i in range(5)]
+    (flag,) = run_check(Term(["es"], "en", registry=[WREN], others=others), tl(en, es), "r", PB)
+    assert flag.confidence == 0.55 and flag.tier is Tier.SUPPRESSED  # here: 4 of 5, not a switch
+
+
+def test_other_episodes_alone_make_the_standard_when_this_one_is_too_small() -> None:
+    others = _show(E1="Wren corre", E2="Wren corre")
+    en, es = [(0, 2, "Wren runs.")], [(0, 2, "Corre.")]
+    (flag,) = run_check(Term(["es"], "en", registry=[WREN], others=others), tl(en, es), "r", PB)
+    assert flag.confidence == 0.55  # 1 mention here: below observed_min_cues, no switch

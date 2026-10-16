@@ -25,8 +25,15 @@ def source(n: int = 150, seed: int = 5) -> list[tuple[float, float]]:
     return out
 
 
-def tl(fps: Fraction, ratio: float = 1.0, shift: float = 0.0, merge: bool = False) -> Timeline:
-    """en = `source()`; es = the same cues moved to ratio * t + shift (every 6th pair merged)."""
+def tl(
+    fps: Fraction,
+    ratio: float = 1.0,
+    shift: float = 0.0,
+    merge: bool = False,
+    picture: bool = True,
+) -> Timeline:
+    """en = `source()`; es = the same cues moved to ratio * t + shift (every 6th pair merged).
+    `picture`: the timeline has a shot (a probed rate); else `fps` is only an assumption."""
     src = source()
     tgt = []
     i = 0
@@ -36,7 +43,7 @@ def tl(fps: Fraction, ratio: float = 1.0, shift: float = 0.0, merge: bool = Fals
             b, i = src[i + 1][1], i + 1
         tgt.append((a, b))
         i += 1
-    spans = []
+    spans = [Span(kind=EvidenceKind.SHOT, ref="E1/shot/0", frames=(0, 10**5))] if picture else []
     for lang, cues, r, s in (("en", src, 1.0, 0.0), ("es", tgt, ratio, shift)):
         for k, (a, b) in enumerate(cues, 1):
             f = (round((r * a + s) * fps), round((r * b + s) * fps))
@@ -119,10 +126,33 @@ def test_recheck_and_inputs() -> None:
     assert check.recheck(flag, t) is True
     assert check.recheck(flag, tl(N24)) is False  # the drift is gone
     assert Drift in CHECKS
-    assert not Drift.active({Input.SOURCE_SUBS, Input.TARGET_SUBS})  # no picture: rate unknown
-    assert Drift.active({Input.SOURCE_SUBS, Input.TARGET_SUBS, Input.PICTURE})
+    assert Drift.active({Input.SOURCE_SUBS, Input.TARGET_SUBS})  # the picture is optional
+    assert not Drift.active({Input.TARGET_SUBS})
 
 
 def test_one_unit_per_target_track() -> None:
     (u,) = Drift(["es"], "en").units(tl(N24))
     assert u.key == "E1/es/sync" and len(u.spans) == 150 and len(u.context) == 150
+
+
+@pytest.mark.parametrize(
+    ("ratio", "cause"),
+    [
+        (25 / 24, "timing for 25 fps material read as 24 fps"),
+        (25025 / 24000, "timing for 25 fps material read as 23.976 fps"),
+        (1001 / 1000, "timing for 24 fps material read as 23.976 fps"),
+        (1000 / 1001, "timing for 23.976 fps material read as 24 fps"),
+    ],
+)
+@pytest.mark.parametrize("merge", [False, True])
+def test_drift_without_a_picture_is_measured_and_named_from_rate_pairs(
+    ratio: float, cause: str, merge: bool
+) -> None:
+    (flag,) = flags(tl(N24, ratio=ratio, merge=merge, picture=False))
+    assert flag.check == "loc.drift" and flag.confidence == 0.95
+    assert cause in flag.explanation and "no picture" in flag.explanation
+
+
+def test_clean_track_without_a_picture_is_not_flagged() -> None:
+    assert flags(tl(N24, shift=0.05, picture=False)) == []
+    assert flags(tl(N24, ratio=1.02, picture=False))[0].confidence == 0.9  # still unclassified

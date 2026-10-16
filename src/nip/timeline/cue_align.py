@@ -17,6 +17,8 @@ two tracks only; `stage` persists the links as `subtitle_cue.aligned_source_cue_
 from collections import defaultdict
 from dataclasses import dataclass
 from fractions import Fraction
+from functools import cache
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -65,11 +67,16 @@ class Group:
     targets: tuple[str, ...]
 
 
+@cache
+def _overlap_share(config: Path) -> float:
+    base = yaml.safe_load((config / "languages" / "_base.yaml").read_text(encoding="utf-8"))
+    return float(base["timing"]["align_min_overlap"])
+
+
 def min_overlap() -> float:
     """Overlap share (of the shorter cue) that links two cues: `timing.align_min_overlap` of the
-    base rule pack (the alignment is language-independent)."""
-    base = yaml.safe_load((config_dir() / "languages" / "_base.yaml").read_text(encoding="utf-8"))
-    return float(base["timing"]["align_min_overlap"])
+    base rule pack (the alignment is language-independent), read once per config directory."""
+    return _overlap_share(config_dir())
 
 
 def cue_idx(ref: str) -> int:

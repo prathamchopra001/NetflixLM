@@ -4,8 +4,10 @@ architecture.md > Agent 1 > Sync drift: regress (target start - source start) on
 (`nip.timeline.cue_align.Fit`). A slope near 4.2% means 25 fps timing on a 24 fps picture, near 0.1%
 SMPTE-24 timecode confused with 23.976 media time; a constant offset is a sync offset. Slopes are
 compared with `rate / picture fps - 1` for every rate in the rule pack's `timing.sync_rates`, never
-with a constant. Both flags are track-level (R12): they claim the first and the last cue of the
-track, so a label that lists every cue of the track matches either.
+with a constant. Without a picture (a timeline with no shots) the rate is not probed: the slope and
+the offset in seconds are measured all the same, the cause is looked up among the ratios of pairs of
+`sync_rates`, and the offset is not stated in frames. Both flags are track-level (R12): they claim
+the first and the last cue of the track, so a label listing every cue of the track matches either.
 """
 
 from collections.abc import Iterable
@@ -22,17 +24,27 @@ from nip.timeline.cue_align import Fit, aligned, track
 SEVERITY = 4  # must fix before release
 CONFIDENCE = 0.99  # a fitted line, not an inference about meaning
 UNCLASSIFIED = 0.9  # drift that matches no known confusion
+NO_PICTURE = 0.95  # classified against pairs of rates: several pairs can have the same ratio
 
 
 def rate(r: Fraction) -> str:
     return f"{float(r):.3f}".rstrip("0").rstrip(".")
 
 
-def confusions(fps: Fraction, rates: Iterable[Fraction]) -> list[tuple[float, str]]:
-    """(slope, cause) of every known frame-rate confusion for a picture of rate `fps`: a track
-    timed for `r` fps has slope r/fps - 1, one timed the other way round fps/r - 1."""
+def confusions(fps: Fraction | None, rates: Iterable[Fraction]) -> list[tuple[float, str]]:
+    """(slope, cause) of every known frame-rate confusion. For a picture of rate `fps`: a track
+    timed for `r` fps has slope r/fps - 1, one timed the other way round fps/r - 1. Without a
+    probed rate (`fps` None): the ratio of every ordered pair of `rates`."""
+    rs = list(rates)
+    if fps is None:
+        return [
+            (float(a / b - 1), f"timing for {rate(a)} fps material read as {rate(b)} fps")
+            for a in rs
+            for b in rs
+            if a != b
+        ]
     out = []
-    for r in rates:
+    for r in rs:
         if r != fps:
             out.append((float(r / fps - 1), f"timing for a {rate(r)} fps picture"))
             out.append(
@@ -42,11 +54,8 @@ def confusions(fps: Fraction, rates: Iterable[Fraction]) -> list[tuple[float, st
 
 
 class _Sync(Check):
-    # Both need the picture: the drift is classified against its probed rate, and an offset is
-    # reported in frames of it (without a picture the timeline's rate is only an assumed 24).
-    requires: ClassVar[frozenset[Input]] = frozenset(
-        {Input.SOURCE_SUBS, Input.TARGET_SUBS, Input.PICTURE}
-    )
+    # The picture is optional (architecture.md matrix): it only gives the probed rate.
+    requires: ClassVar[frozenset[Input]] = frozenset({Input.SOURCE_SUBS, Input.TARGET_SUBS})
     version = "1"
 
     def __init__(self, langs: Iterable[str], source_lang: str, root: Path | None = None):
@@ -78,10 +87,13 @@ class _Sync(Check):
         cues = track(tl, lang)
         if al.fit is None or not cues:
             return None
-        return self.judge(lang, al.fit, Fraction(*tl.fps), cues, self.rules[lang])
+        # a picture is what gives a timeline shots and a probed rate; without one `tl.fps` is 24 by
+        # assumption and must not name a cause or count frames
+        fps = Fraction(*tl.fps) if tl.of(EvidenceKind.SHOT) else None
+        return self.judge(lang, al.fit, fps, cues, self.rules[lang])
 
     def judge(
-        self, lang: str, fit: Fit, fps: Fraction, cues: list[Span], rules: dict[str, Any]
+        self, lang: str, fit: Fit, fps: Fraction | None, cues: list[Span], rules: dict[str, Any]
     ) -> Finding | None:
         raise NotImplementedError
 
@@ -117,7 +129,7 @@ class Drift(_Sync):
     check = CheckId.LOC_DRIFT
 
     def judge(
-        self, lang: str, fit: Fit, fps: Fraction, cues: list[Span], rules: dict[str, Any]
+        self, lang: str, fit: Fit, fps: Fraction | None, cues: list[Span], rules: dict[str, Any]
     ) -> Finding | None:
         if not significant_slope(fit, rules):
             return None
@@ -127,6 +139,8 @@ class Drift(_Sync):
         hit = abs(fit.slope - slope) <= tol * abs(slope)
         total = fit.slope * fit.span_s
         what = f"matches {cause}" if hit else "matches no known frame-rate confusion"
+        if fps is None:
+            what += " (no picture: the rate is not probed, ratios of pairs of rates compared)"
         return self.finding_for(
             lang,
             cues,
@@ -134,7 +148,7 @@ class Drift(_Sync):
             f"target start - source start grows {fit.slope * 100:+.3f}% per second of episode "
             f"time ({fit.n} matched cues); the slope {what}.",
             f"Retime the track by x{1 / (1 + fit.slope):.5f}.",
-            CONFIDENCE if hit else UNCLASSIFIED,
+            (CONFIDENCE if fps is not None else NO_PICTURE) if hit else UNCLASSIFIED,
         )
 
 
@@ -142,13 +156,23 @@ class Offset(_Sync):
     check = CheckId.LOC_OFFSET
 
     def judge(
-        self, lang: str, fit: Fit, fps: Fraction, cues: list[Span], rules: dict[str, Any]
+        self, lang: str, fit: Fit, fps: Fraction | None, cues: list[Span], rules: dict[str, Any]
     ) -> Finding | None:
         # With drift the constant term is the intercept; without it the median difference is the
         # steadier estimate.
         off = fit.intercept_s if significant_slope(fit, rules) else fit.median_s
         if abs(off) < float(Fraction(str(rules["offset_min_s"]))):
             return None
+        if fps is None:  # no probed rate: seconds only
+            return self.finding_for(
+                lang,
+                cues,
+                f"Track is {off:+.3f} s off the source",
+                f"target cues start {off:+.3f} s after their source cues ({fit.n} matched cues; "
+                "no picture, so no frame count).",
+                f"Shift every cue by {-off:+.3f} s.",
+                CONFIDENCE,
+            )
         frames = round(off * float(fps))
         return self.finding_for(
             lang,

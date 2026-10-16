@@ -310,7 +310,7 @@ def test_run_persists_flags_with_stable_fingerprints(pg: Engine, s3: Any, tmp_pa
         ["localization_auditor"],
     )
     ep = first["episodes"]["S01E01"]
-    assert ep["flags_kept"] == 2 and ep["units"] == {"done": 1} and ep["dropped"] == []
+    assert ep["flags_kept"] == 2 and ep["units"] == {"done": 3} and ep["dropped"] == []
     assert [s["stage"] for s in ep["stages"]] == [n for n, _ in pipeline.STAGES]
     f, ev, r, wu = schema.flag, schema.evidence, schema.run, schema.work_unit
     with pg.connect() as conn:
@@ -323,7 +323,11 @@ def test_run_persists_flags_with_stable_fingerprints(pg: Engine, s3: Any, tmp_pa
         assert len(runs[0].code_version.removesuffix("-dirty")) == 40  # git SHA (+ dirty tree)
         assert conn.execute(
             select(wu.c.stage, wu.c.unit_key, wu.c.status).where(wu.c.run_id == 1)
-        ).all() == [("loc.readability", "S01E01/es/1-3", "done")]
+        ).all() == [
+            ("loc.readability", "S01E01/es/1-3", "done"),
+            ("loc.drift", "S01E01/es/sync", "done"),
+            ("loc.offset", "S01E01/es/sync", "done"),
+        ]
         n_ev = conn.execute(select(func.count()).select_from(ev)).scalar_one()
         assert n_ev == 6  # (claim) + (claim + earlier cue as context), in each of the 2 runs
     report = json.loads(s3.objects["nip-artifacts", "runs/run_1/S01E01/report.json"])
@@ -361,11 +365,12 @@ def test_failed_unit_is_a_gap_and_a_crash_fails_the_run(
     monkeypatch.setattr(Readability, "run", boom)
     s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01"], plan=plan, inventory=inv)
     assert s["status"] == "completed_with_gaps" and s["episodes"]["S01E01"]["units"] == {
-        "failed": 1
+        "failed": 1,
+        "done": 2,  # loc.drift and loc.offset
     }
     report = json.loads(s3.objects["nip-artifacts", "runs/run_1/S01E01/report.json"])
     assert report["status"] == "completed_with_gaps"
-    assert report["coverage"] == {"localization_auditor": 0.0}
+    assert report["coverage"] == {"localization_auditor": 2 / 3}  # 1 of 3 units failed
 
     monkeypatch.setattr(pipeline, "STAGES", [*pipeline.STAGES[:1], ("crash", boom)])
     with pytest.raises(RuntimeError, match="boom"):
@@ -449,6 +454,8 @@ def test_content_stage_records_units_once_and_a_failed_unit_is_a_gap(
         ("knowledge.extract", "S01E01/sc/1", "done", "stub", None),
         ("knowledge.extract", "S01E01/sc/2", "failed", "stub", "TimeoutError: model timed out"),
         ("loc.readability", "S01E01/es/1-3", "done", None, None),
+        ("loc.drift", "S01E01/es/sync", "done", None, None),
+        ("loc.offset", "S01E01/es/sync", "done", None, None),
     ]
     report = json.loads(s3.objects["nip-artifacts", "runs/run_1/S01E01/report.json"])
     assert report["status"] == "completed_with_gaps"
@@ -524,7 +531,7 @@ def test_failed_unit_rolls_back_its_rows_and_does_not_poison_the_next(
     pipeline.add_stage("knowledge.story", story)
     s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01"], plan=plan, inventory=inv)
     assert s["status"] == "completed_with_gaps"
-    assert s["episodes"]["S01E01"]["units"] == {"failed": 2, "done": 2}
+    assert s["episodes"]["S01E01"]["units"] == {"failed": 2, "done": 4}
     assert s["episodes"]["S01E01"]["flags_kept"] == 2
     with pg.connect() as conn:
         seqs = conn.execute(select(sc.c.script_scene_no, sc.c.story_seq).order_by(sc.c.id)).all()
@@ -535,4 +542,4 @@ def test_failed_unit_rolls_back_its_rows_and_does_not_poison_the_next(
         )
     assert [tuple(r) for r in seqs] == [("1", None), ("2", 2)]
     assert errors[0] == "RuntimeError: bad transition" and "DivisionByZero" in errors[1]
-    assert errors[2:] == [None, None]
+    assert errors[2:] == [None] * 4

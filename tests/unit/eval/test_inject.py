@@ -6,6 +6,7 @@ import pytest
 
 from eval.injectors import REGISTRY, get, register, write_labels
 from eval.injectors.base import Injector
+from eval.metrics import load_labels
 
 SRT = "1\n00:00:10,000 --> 00:00:12,000\nHello\n\n2\n00:00:20,000 --> 00:00:22,500\nWorld\n"
 
@@ -53,3 +54,18 @@ def test_write_labels_jsonl(tmp_path: Path) -> None:
     write_labels(labels, out)
     row = json.loads(out.read_text().splitlines()[0])
     assert row["injector"] == "loc.offset.v1" and row["target"]["kind"] == "subtitle_file"
+
+
+def test_offset_labels_are_matchable(tmp_path: Path) -> None:
+    _, labels = run(tmp_path, 1)
+    out = tmp_path / "labels.jsonl"
+    write_labels(labels, out)
+    assert load_labels(out) == labels  # the reader validates what the writer wrote
+    assert labels[0].target.refs == [f"{tmp_path.name}/sintel/1", f"{tmp_path.name}/sintel/2"]
+
+
+def test_committed_labels_validate() -> None:
+    files = list((Path(__file__).parents[3] / "eval" / "labels").rglob("*.jsonl"))
+    assert files
+    for f in files:
+        assert load_labels(f)

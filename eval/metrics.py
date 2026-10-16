@@ -1,15 +1,15 @@
 """Flag-to-label matching and precision/recall/F1 (docs/evaluation.md > Scoring)."""
 
-import json
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import numpy as np
+from pydantic import ValidationError
 from scipy.optimize import linear_sum_assignment
 
+from eval.injectors.base import Label
 from nip.contracts import EvidenceRole, Flag, Tier
 
 IOU_MIN = 0.3
@@ -19,35 +19,15 @@ SHOWN = {Tier.MUST_REVIEW, Tier.REVIEW_RECOMMENDED}
 NO_LANG = "n/a"
 
 
-@dataclass(frozen=True)
-class Label:
-    label_id: str
-    episode: str | None
-    check: str
-    lang: str | None
-    refs: tuple[str, ...]
-    frames: tuple[int, int] | None  # half-open [in, out)
-
-
 def load_labels(path: Path) -> list[Label]:
-    """Read a label JSONL file (docs/evaluation.md > Label format)."""
+    """Read and validate a label JSONL file (docs/evaluation.md > Label format)."""
     out = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        d: dict[str, Any] = json.loads(line)
-        target = d.get("target", {})
-        frames = target.get("frames")
-        out.append(
-            Label(
-                label_id=d["label_id"],
-                episode=d.get("episode"),
-                check=d["check"],
-                lang=d.get("lang"),
-                refs=tuple(target.get("refs", ())),
-                frames=(frames[0], frames[1]) if frames else None,
-            )
-        )
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if line.strip():
+            try:
+                out.append(Label.model_validate_json(line))
+            except ValidationError as e:
+                raise ValueError(f"{path}:{n}: invalid label: {e}") from e
     return out
 
 
@@ -72,10 +52,10 @@ def overlap(flag: Flag, label: Label) -> float:
     for ev in flag.evidence:
         if ev.role is EvidenceRole.CONTEXT:
             continue  # only primary evidence (claim, contradiction, ...) may match a label
-        if label.frames:  # timed target: the IoU rule is always enforced
-            if ev.frames and (iou := _iou(ev.frames, label.frames)) >= IOU_MIN:
+        if label.target.frames:  # timed target: the IoU rule is always enforced
+            if ev.frames and (iou := _iou(ev.frames, label.target.frames)) >= IOU_MIN:
                 best = max(best, iou)
-        elif {ev.ref, ev.scene} & set(label.refs):  # script target: shared scene/line ref
+        elif {ev.ref, ev.scene} & set(label.target.refs):  # script target: shared scene/line ref
             best = 1.0
     return best
 

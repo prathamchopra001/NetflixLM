@@ -3,8 +3,11 @@
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+
+from nip.contracts import refs
 
 
 class Target(BaseModel):
@@ -14,11 +17,15 @@ class Target(BaseModel):
 
 
 class Label(BaseModel):
-    """One planted error; one JSON line of eval/labels/<set>/<title>.jsonl."""
+    """One planted error; one JSON line of eval/labels/<set>/<title>.jsonl.
+
+    The one label model: injectors write it and `eval.metrics.load_labels` reads it, so a label
+    that could never match a flag (no episode, no target, a ref outside its episode) is refused.
+    """
 
     label_id: str
     title: str
-    episode: str | None = None
+    episode: str
     check: str
     lang: str | None = None
     target: Target
@@ -26,6 +33,19 @@ class Label(BaseModel):
     injector: str  # "<name>.v<N>"
     seed: int
     reviewed: bool = False
+
+    @model_validator(mode="after")
+    def _matchable(self) -> Self:
+        if not (self.target.refs or self.target.frames):
+            raise ValueError("a label needs target refs or frames")
+        for r in self.target.refs:
+            try:
+                ep = refs.parse(r).episode
+            except ValueError as e:
+                raise ValueError(f"target ref {r!r} is not an evidence ref") from e
+            if ep != self.episode:
+                raise ValueError(f"target ref {r!r} is outside episode {self.episode!r}")
+        return self
 
 
 class Injector(ABC):

@@ -1,8 +1,11 @@
+import json
+from pathlib import Path
 from typing import Any
 
 import pytest
 
-from eval.metrics import Label, evaluate, match, overlap, score
+from eval.injectors.base import Target
+from eval.metrics import Label, evaluate, load_labels, match, overlap, score
 from nip.contracts import Flag
 
 OWNER = {
@@ -56,7 +59,17 @@ def label(
     lang: str | None = "es",
     episode: str = "E1",
 ) -> Label:
-    return Label("l", episode, check, lang, refs, frames)
+    return Label(
+        label_id="l",
+        title="t",
+        episode=episode,
+        check=check,
+        lang=lang,
+        target=Target(kind="subtitle_cue", refs=list(refs), frames=frames),
+        description="d",
+        injector="test.v1",
+        seed=0,
+    )
 
 
 def test_overlap_rules() -> None:
@@ -129,12 +142,12 @@ def test_evaluate_empty() -> None:
 
 
 def test_ref_does_not_bypass_iou_and_context_evidence_is_ignored() -> None:
-    timed = label(frames=(100, 200), refs=("r",))
-    assert overlap(flag(frames=(500, 600), ref="r"), timed) == 0.0  # same ref, disjoint frames
-    assert overlap(flag(frames=None, ref="r"), timed) == 0.0  # no frames: IoU cannot be checked
+    timed = label(frames=(100, 200), refs=("E1/es/1",))
+    assert overlap(flag(frames=(500, 600), ref="E1/es/1"), timed) == 0.0  # same ref, disjoint
+    assert overlap(flag(frames=None, ref="E1/es/1"), timed) == 0.0  # no frames: no IoU
     # claim evidence elsewhere, context evidence sitting on the label's frames / ref
     assert overlap(flag(frames=(500, 600), ctx_frames=(100, 200)), timed) == 0.0
-    scripted = label("plot.prop_provenance", None, refs=("other",), lang=None)
+    scripted = label("plot.prop_provenance", None, refs=("E1/sc/9",), lang=None)
     assert overlap(flag("cont.prop_text", None, ref="x", lang=None), scripted) == 0.0
 
 
@@ -150,3 +163,24 @@ def test_equivalence_match_is_attributed_per_side() -> None:
     assert m["all/tp/check/plot.prop_provenance"] == 0
     assert m["all/precision/check/plot.prop_provenance"] == 0.0
     assert m["all/precision/all"] == 1.0 and m["all/recall/all"] == 1.0
+
+
+@pytest.mark.parametrize(
+    ("row", "error"),
+    [
+        ({"episode": None}, "episode"),  # never in the same match block as a flag
+        ({"target": {"kind": "subtitle_file"}}, "refs or frames"),
+        ({"target": {"kind": "subtitle_file", "refs": ["sintel_en.srt"]}}, "not an evidence ref"),
+        ({"target": {"kind": "subtitle_cue", "refs": ["E2/es/4"]}}, "outside episode"),
+    ],
+)
+def test_load_labels_refuses_labels_that_can_never_match(
+    tmp_path: Path, row: dict[str, Any], error: str
+) -> None:
+    good = label(refs=("E1/es/4",)).model_dump(mode="json")
+    p = tmp_path / "l.jsonl"
+    p.write_text(json.dumps(good) + "\n" + json.dumps({**good, **row}) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=rf"l\.jsonl:2: invalid label(.|\n)*{error}"):
+        load_labels(p)
+    p.write_text(json.dumps(good) + "\n", encoding="utf-8")
+    assert load_labels(p) == [label(refs=("E1/es/4",))]

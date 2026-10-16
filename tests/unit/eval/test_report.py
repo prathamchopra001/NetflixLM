@@ -28,8 +28,9 @@ def _cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 def lab(lid: str, frames: tuple[int, int], check: str = "loc.gender") -> str:
     return json.dumps(
-        {"label_id": lid, "episode": "E1", "check": check, "lang": "es",
-         "target": {"kind": "subtitle_cue", "refs": [lid], "frames": list(frames)}}
+        {"label_id": lid, "title": "t", "episode": "E1", "check": check, "lang": "es",
+         "target": {"kind": "subtitle_cue", "frames": list(frames)},
+         "description": "d", "injector": "test.v1", "seed": 0}
     )  # fmt: skip
 
 

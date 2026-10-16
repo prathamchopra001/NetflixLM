@@ -1,12 +1,12 @@
 """Label Studio helpers for hand-labelled shot cuts (EXP-002).
 
 Flow: `prepare` cuts a film into frame-exact, all-intra preview clips -> `push` creates the project
-and tasks -> a person labels -> `pull` writes eval/labels/cuts/<title>.jsonl.
+and tasks -> a person labels -> `pull` writes eval/labeling/labels/<title>_cuts.json.
 
 Frame conventions: Label Studio numbers frames from 1; we store 0-based global frame indexes of the
 FIRST frame of the new shot (a cut at frame N means frames N-1 and N are in different shots).
 Clips overlap by one frame so a cut on a clip boundary is still visible; that overlap frame
-(frame 1 of every clip after the first) is never a cut of that clip.
+(frame 1 of every clip) is never a cut of that clip.
 """
 
 import json
@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Any
 
 import typer
+
+from nip.ingest.media import probe
 
 CONFIG = Path(__file__).with_name("cuts.xml")
 CLIP_FRAMES = 1440  # 60 s at 24 fps
@@ -40,25 +42,17 @@ def parse_fps(text: str) -> tuple[int, int]:
 
 
 def probe_fps(video: Path) -> tuple[int, int]:
-    """Exact frame rate of the first video stream, from ffprobe's r_frame_rate."""
-    out = subprocess.run(
-        [
-            "ffprobe",
-            "-v",
-            "error",
-            "-select_streams",
-            "v:0",
-            "-show_entries",
-            "stream=r_frame_rate",
-            "-of",
-            "csv=p=0",
-            str(video),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    return parse_fps(out)
+    """Exact frame rate of a video file (nip.ingest.media.probe)."""
+    f = probe(video).fps
+    return f.numerator, f.denominator
+
+
+def common_fps(files: list[Path]) -> tuple[int, int]:
+    """The one exact frame rate of all files; refuses mixed rates."""
+    rates = {probe_fps(f) for f in files}
+    if len(rates) != 1:
+        raise ValueError(f"expected exactly one frame rate, got {sorted(rates)}")
+    return rates.pop()
 
 
 def count_frames(video: Path) -> int:
@@ -180,30 +174,53 @@ def make_verify_clip(
     _encode(inp, dst, fps, f"scale=640:-2,{text}", [])
 
 
-def parse_cuts(tasks: list[dict[str, Any]]) -> list[int]:
-    """Global 0-based cut frames from a Label Studio JSON export (latest annotation per task)."""
+def parse_cuts(tasks: list[dict[str, Any]]) -> tuple[list[int], list[str]]:
+    """(global 0-based cut frames, names of clips without a finished annotation).
+
+    Uses the latest non-cancelled annotation per task; the verify task is ignored.
+    """
     cuts: set[int] = set()
+    unlabelled: list[str] = []
     for t in tasks:
+        if t["data"].get("verify"):
+            continue
         anns = [a for a in t.get("annotations", []) if not a.get("was_cancelled")]
         if not anns:
+            unlabelled.append(t["data"]["clip"])
             continue
         ann = max(anns, key=lambda a: a.get("updated_at", ""))
         offset = t["data"]["offset_frames"]
         for r in ann["result"]:
             for rng in r["value"].get("ranges", []):
                 f = rng["start"]  # 1-based Label Studio frame
-                if offset > 0 and f == 1:
-                    continue  # overlap frame belongs to the previous clip
+                if f == 1:
+                    continue  # never a cut (clip 0: film start; others: overlap frame)
                 cuts.add(offset + f - 1)
-    return sorted(cuts)
+    return sorted(cuts), sorted(unlabelled)
 
 
-def write_cuts(title: str, cuts: list[int], out: Path, labelled_by: str) -> None:
+def task_fps(tasks: list[dict[str, Any]]) -> str:
+    rates = {t["data"]["fps"] for t in tasks}
+    if len(rates) != 1:
+        raise ValueError(f"tasks carry different frame rates: {sorted(rates)}")
+    return str(rates.pop())
+
+
+def write_cuts(
+    title: str, cuts: list[int], fps: str, out: Path, labeller: str, unlabelled: list[str]
+) -> None:
+    """Cuts label file, documented in README.md (one JSON object)."""
     out.parent.mkdir(parents=True, exist_ok=True)
-    rows = (
-        {"title": title, "check": "shot.cut", "frame": f, "labelled_by": labelled_by} for f in cuts
-    )
-    out.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    doc = {
+        "title": title,
+        "check": "shot.cut",
+        "fps": fps,
+        "labeller": labeller,
+        "frame_convention": "0-based index in the whole film of the first frame of the new shot",
+        "unlabelled_clips": unlabelled,
+        "cuts": cuts,
+    }
+    out.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
 
 
 class LabelStudio:
@@ -230,74 +247,121 @@ class LabelStudio:
         return json.loads(raw) if raw else None
 
 
-def make_tasks(title: str, clips: list[Path], root: str = "labeling") -> list[dict[str, Any]]:
-    """Task payloads; video URLs use Label Studio's local-files serving (see README)."""
-    return [
-        {
-            "data": {
-                "video": f"/data/local-files/?d={root}/{title}/{c.name}",
-                "offset_frames": clip_offset(k),
-                "clip": c.name,
-            }
-        }
-        for k, c in enumerate(clips)
-    ]
+VERIFY = "_verify.mp4"
+
+
+def make_tasks(
+    title: str, clips: list[Path], fps: str, verify: bool = True, root: str = "labeling"
+) -> list[dict[str, Any]]:
+    """Task payloads (the frame-number verify clip first); videos use local-files serving."""
+
+    def task(name: str, offset: int, **extra: Any) -> dict[str, Any]:
+        url = f"/data/local-files/?d={root}/{title}/{name}"
+        return {"data": {"video": url, "offset_frames": offset, "clip": name, "fps": fps, **extra}}
+
+    head = [task(VERIFY, 0, verify=True)] if verify else []
+    return head + [task(c.name, clip_offset(k)) for k, c in enumerate(clips)]
 
 
 def _client(url: str) -> LabelStudio:
     return LabelStudio(url, os.environ["LABEL_STUDIO_TOKEN"])
 
 
+def _clips(data_dir: Path, title: str) -> list[Path]:
+    d = data_dir / "labeling" / title
+    clips = sorted(d.glob(f"{title}_[0-9]*.mp4"))
+    if not clips or not (d / VERIFY).exists():
+        raise typer.BadParameter(f"no clips or {VERIFY} in {d}: run `prepare` first")
+    return clips
+
+
+def _project_fps(data_dir: Path, title: str) -> tuple[int, int]:
+    """Probed rate of every clip and the verify clip; mixed rates are an error."""
+    files = [*_clips(data_dir, title), data_dir / "labeling" / title / VERIFY]
+    try:
+        return common_fps(files)
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+
+
 @app.command()
 def prepare(title: str = "sintel", data_dir: Path = Path("data")) -> None:
-    """Cut data/corpus/<title>'s picture into labelling clips under data/labeling/<title>/."""
+    """Cut data/corpus/<title>'s picture into labelling clips + the frame-number verify clip."""
     src = next(p for p in (data_dir / "corpus" / title).iterdir() if p.suffix in {".mkv", ".mov"})
-    clips = make_clips(src, data_dir / "labeling" / title, count_frames(src))
-    typer.echo(f"{len(clips)} clips in {data_dir / 'labeling' / title}")
+    out = data_dir / "labeling" / title
+    clips = make_clips(src, out, count_frames(src))
+    make_verify_clip(out / VERIFY, probe_fps(src), src=src)
+    typer.echo(f"{len(clips)} clips + {VERIFY} in {out}")
 
 
 @app.command("verify-clip")
 def verify_clip(
     out: Path = Path("data/labeling/verify_24.mp4"), fps: str = "24/1", src: Path | None = None
 ) -> None:
-    """Write the burned-in frame-number clip (fps like 24/1 or 24000/1001)."""
+    """Write a stand-alone burned-in frame-number clip (fps like 24/1 or 24000/1001)."""
     make_verify_clip(out, parse_fps(fps), src=src)
     typer.echo(str(out))
+
+
+@app.command()
+def config(title: str = "sintel", data_dir: Path = Path("data")) -> None:
+    """Print the Label Studio project config exactly as `push` will send it."""
+    typer.echo(render_config(_project_fps(data_dir, title)))
 
 
 @app.command()
 def push(
     project: str = "cuts-sintel",
     title: str = "sintel",
-    fps: str = "24/1",
     url: str = "http://localhost:8081",
     data_dir: Path = Path("data"),
 ) -> None:
-    """Create the Label Studio project (cuts config + local-files storage) and one task per clip."""
-    clips = sorted((data_dir / "labeling" / title).glob("*.mp4"))
+    """Create the project (config from the clips' probed frame rate), storage and tasks.
+
+    Task 1 is the burned-in frame-number verify clip; one task per clip follows.
+    """
+    clips = _clips(data_dir, title)
+    fps = _project_fps(data_dir, title)
     ls = _client(url)
-    p = ls.call(
-        "POST", "/api/projects", {"title": project, "label_config": render_config(parse_fps(fps))}
-    )
+    p = ls.call("POST", "/api/projects", {"title": project, "label_config": render_config(fps)})
     ls.call(
         "POST",
         "/api/storages/localfiles",
         {"project": p["id"], "title": title, "path": f"/label-studio/files/labeling/{title}"},
     )
-    ls.call("POST", f"/api/projects/{p['id']}/import", make_tasks(title, clips))
-    typer.echo(f"project {p['id']}: {len(clips)} tasks")
+    ls.call(
+        "POST", f"/api/projects/{p['id']}/import", make_tasks(title, clips, f"{fps[0]}/{fps[1]}")
+    )
+    typer.echo(f"project {p['id']}: verify task + {len(clips)} clip tasks, fps {fps[0]}/{fps[1]}")
 
 
 @app.command()
 def pull(
     project_id: int,
     title: str = "sintel",
-    labelled_by: str = "human",
+    labeller: str = "human",
+    allow_partial: bool = typer.Option(False, help="Write the file even if clips are unlabelled."),
     url: str = "http://localhost:8081",
-    out_dir: Path = Path("eval/labels/cuts"),
+    out_dir: Path = Path("eval/labeling/labels"),
 ) -> None:
-    """Export finished annotations to eval/labels/cuts/<title>.jsonl."""
-    tasks = _client(url).call("GET", f"/api/projects/{project_id}/export?exportType=JSON")
-    cuts = parse_cuts(tasks)
-    write_cuts(title, cuts, out_dir / f"{title}.jsonl", labelled_by)
-    typer.echo(f"{len(cuts)} cuts -> {out_dir / f'{title}.jsonl'}")
+    """Export finished annotations to eval/labeling/labels/<title>_cuts.json.
+
+    Fails if any clip has no finished annotation (a missing clip would read as "no cuts").
+    A non-human labeller writes <title>_cuts.provisional.json.
+    """
+    tasks = _client(url).call(
+        "GET", f"/api/projects/{project_id}/export?exportType=JSON&download_all_tasks=true"
+    )
+    cuts, unlabelled = parse_cuts(tasks)
+    total = sum(1 for t in tasks if not t["data"].get("verify"))
+    typer.echo(f"{total - len(unlabelled)}/{total} clips labelled")
+    if unlabelled and not allow_partial:
+        typer.echo(f"unlabelled clips: {', '.join(unlabelled)} (finish them or --allow-partial)")
+        raise typer.Exit(1)
+    out = out_dir / f"{title}_cuts{'' if labeller == 'human' else '.provisional'}.json"
+    write_cuts(title, cuts, task_fps(tasks), out, labeller, unlabelled)
+    typer.echo(f"{len(cuts)} cuts -> {out}")
+
+
+if __name__ == "__main__":
+    app()

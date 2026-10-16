@@ -1,0 +1,6 @@
+# Files bind-mounted into or built inside Linux containers must stay LF on Windows checkouts
+# (core.autocrlf=true would otherwise give postgres-init.sh CRLF and the mlflow DB is never created).
+*.sh text eol=lf
+*Dockerfile text eol=lf
+compose.yaml text eol=lf
+deploy/keycloak/*.json text eol=lf

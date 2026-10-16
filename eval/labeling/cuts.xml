@@ -1,5 +1,6 @@
-<!-- Label Studio config for shot cuts. {framerate} is filled in by push: 24 for Sintel,
-     23.976023976 for NTSC media (never the string 24000/1001: Label Studio reads it as 24). -->
+<!-- Label Studio config for shot cuts. The framerate attribute is filled in by push from the
+     clips' probed rate: 24 for Sintel, 23.976023976 for NTSC media (never the string 24000/1001:
+     Label Studio reads it as 24). -->
 <View>
   <Header value="Mark the FIRST frame of every new shot. Ignore the first frame of the clip."/>
   <Video name="video" value="$video" framerate="{framerate}" timelineHeight="80"/>

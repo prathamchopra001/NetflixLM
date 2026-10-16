@@ -14,17 +14,18 @@ from typing import Any
 import yaml
 
 from nip.agents.base import Check, Finding, Input, WorkUnit, cue_windows
+from nip.config import config_dir
 from nip.contracts.flag import CheckId, Evidence, EvidenceKind, EvidenceRole, Flag
 from nip.contracts.timeline import Span, Timeline
 
-LANGUAGES = Path(__file__).resolve().parents[4] / "config" / "languages"
 CONFIDENCE = 1.0  # pure rules: a violation is certain
 SHOULD_FIX = 3  # breaks the style guide (data-model.md: 3 = should fix)
 MINOR = 2  # a gap that should be closed
 
 
-def rule_pack(lang: str, root: Path = LANGUAGES) -> dict[str, Any]:
+def rule_pack(lang: str, root: Path | None = None) -> dict[str, Any]:
     """Merged rule pack for `lang`: _base, then each tag prefix (es-ES -> _base, es, es-ES)."""
+    root = root or config_dir() / "languages"
     parts = lang.split("-")
     pack: dict[str, Any] = {}
     for tag in ["_base", *("-".join(parts[: i + 1]) for i in range(len(parts)))]:
@@ -77,7 +78,7 @@ class Readability(Check):
     check = CheckId.LOC_READABILITY
     requires = frozenset({Input.SOURCE_SUBS, Input.TARGET_SUBS})
 
-    def __init__(self, langs: Iterable[str], audience: str = "adult", root: Path = LANGUAGES):
+    def __init__(self, langs: Iterable[str], audience: str = "adult", root: Path | None = None):
         self.audience = audience
         self.rules = {lang: rule_pack(lang, root).get("readability", {}) for lang in langs}
         for lang, r in self.rules.items():

@@ -386,7 +386,7 @@ def plan_cmd(
     objective: Objective = Objective.QUALITY,
     simulate: Annotated[Path | None, typer.Option(help="HardwareInventory JSON")] = None,
     units: Annotated[int, typer.Option(help="Work units assumed per slot")] = 100,
-    catalog: Path = Path("config/catalog.yaml"),
+    catalog: Annotated[Path | None, typer.Option(help="Default: <config dir>/catalog.yaml")] = None,
 ) -> None:
     """Show the Plan for this hardware, or for a simulated inventory."""
     inv = HardwareInventory.model_validate_json(simulate.read_text()) if simulate else probe()

@@ -60,11 +60,14 @@ def test_lines_and_line_length(text: str, expected: str | None) -> None:
 
 
 def test_reading_speed_counts_spaces_not_line_breaks() -> None:
-    # 17 characters in 24 frames = 17 CPS: allowed; 18 = 18 CPS: flagged
-    assert _titles(_tl([(0, 24, "abcdefgh\nij lmnop")])) == []
-    assert _titles(_tl([(0, 24, "abcdefgh ij lmnopq")])) == [
-        "Cue 1: reading speed 18.0 CPS (max 17); duration 1.00 s (min 5/6 s)"
-    ][:0] or ["Cue 1: reading speed 18.0 CPS (max 17)"]
+    # 1 s cues. 17 visible characters + a line break: 17 CPS, allowed (18 if the break counted).
+    text = "abcdefgh\nij lmnopq"
+    assert len(text.replace("\n", "")) == 17
+    assert _titles(_tl([(0, 24, text)])) == []
+    # 18 characters including a space: 18 CPS, flagged (17 if the space did not count).
+    text = "abcdefgh ij lmnopq"
+    assert len(text) == 18
+    assert _titles(_tl([(0, 24, text)])) == ["Cue 1: reading speed 18.0 CPS (max 17)"]
 
 
 def test_reading_speed_uses_language_pack() -> None:

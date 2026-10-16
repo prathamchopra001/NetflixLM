@@ -7,9 +7,9 @@ from typing import Annotated, Any
 import typer
 import yaml
 
+from nip.config import config_dir
 from nip.ingest.media import MediaRejected, probe
 from nip.timeline.keyframes import extract_keyframes
-from nip.timeline.shots import detect_shots
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -19,10 +19,8 @@ def timeline() -> None:
     """Timeline stages."""
 
 
-_CONFIG = Path(__file__).resolve().parents[3] / "config" / "pipeline.yaml"
-
-
-def timeline_config(path: Path = _CONFIG) -> dict[str, Any]:
+def timeline_config(path: Path | None = None) -> dict[str, Any]:
+    path = path or config_dir() / "pipeline.yaml"
     return yaml.safe_load(path.read_text())["timeline"]  # type: ignore[no-any-return]
 
 
@@ -30,16 +28,18 @@ def analyze_picture(
     video: Path, out_dir: Path, cfg: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     """Frame axis, shot ranges and keyframe images (written under `out_dir/keyframes`)."""
+    from nip.timeline import shots  # torch: imported only when a picture is analysed
+
     cfg = cfg or timeline_config()
     info = probe(video)
-    shots = detect_shots(video, threshold=cfg["shots"]["threshold"])
-    kf = extract_keyframes(video, shots, info.fps, out_dir / "keyframes", **cfg["keyframes"])
+    ranges = shots.detect_shots(video, threshold=cfg["shots"]["threshold"])
+    kf = extract_keyframes(video, ranges, info.fps, out_dir / "keyframes", **cfg["keyframes"])
     return {
         "fps": [info.fps.numerator, info.fps.denominator],
         "duration_frames": info.duration_frames,
         "start_tc_frames": info.start_tc_frames,
         "drop_frame": info.drop_frame,
-        "shots": [list(s) for s in shots],
+        "shots": [list(s) for s in ranges],
         "keyframes": kf,
     }
 

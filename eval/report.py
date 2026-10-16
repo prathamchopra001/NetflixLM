@@ -12,11 +12,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
-import mlflow
 import typer
-from mlflow import MlflowClient
 
-from eval.metrics import evaluate, load_labels
 from nip.contracts import Flag, Plan
 
 app = typer.Typer(no_args_is_help=True, help="Benchmark scoring, MLflow logging, comparisons.")
@@ -97,6 +94,8 @@ def run(
     out_dir: Annotated[Path, typer.Option()] = Path("eval"),
 ) -> None:
     """Score a flags file against labels, write the report, log the run to MLflow."""
+    from eval.metrics import evaluate, load_labels  # scipy: ~1 s to import
+
     files = [f for p in labels for f in (sorted(p.glob("*.jsonl")) if p.is_dir() else [p])]
     inj = [lb for f in files if not f.name.endswith(".native.jsonl") for lb in load_labels(f)]
     nat = [lb for f in files if f.name.endswith(".native.jsonl") for lb in load_labels(f)]
@@ -166,6 +165,8 @@ def run(
     if plan:
         (out / "plan.json").write_text(plan.read_text(encoding="utf-8"), encoding="utf-8")
 
+    import mlflow  # ~4 s to import: only when a run is logged
+
     if tracking_uri:
         mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment(set_)
@@ -229,6 +230,8 @@ def compare(
     """Comparison table from MLflow runs; runs sharing a variant tag are seeds of one column."""
     if bool(exp) == bool(runs):
         raise typer.BadParameter("give exactly one of --exp or --runs")
+    from mlflow import MlflowClient
+
     client = MlflowClient(tracking_uri)
     if exp:
         ids = [e.experiment_id for e in client.search_experiments()]

@@ -66,11 +66,10 @@ def test_picture_cli_writes_json(
 
     from typer.testing import CliRunner
 
-    from nip.timeline import picture
+    from nip.timeline import picture, shots
 
-    monkeypatch.setattr(
-        picture, "detect_shots", lambda v, **k: detect_shots(v, model=_FrameDiffModel())
-    )
+    real = shots.detect_shots
+    monkeypatch.setattr(shots, "detect_shots", lambda v, **k: real(v, model=_FrameDiffModel()))
     res = CliRunner().invoke(picture.app, ["picture", str(cut_clip), "--out-dir", str(tmp_path)])
     assert res.exit_code == 0, res.output
     out = json.loads((tmp_path / "picture.json").read_text())

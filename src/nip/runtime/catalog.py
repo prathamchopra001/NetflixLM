@@ -13,9 +13,9 @@ from typing import Literal, Self
 import yaml
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from nip.config import config_dir
 from nip.contracts import Slot
 
-CATALOG_PATH = Path("config/catalog.yaml")
 GIB = 2**30
 
 # repo -> (weights_gb, kv_mb_per_1k_tokens or None)
@@ -106,11 +106,12 @@ def _fill(v: Variant, estimate: Estimator, cache: dict[str, list[float | None]])
 
 
 def load_catalog(
-    path: Path = CATALOG_PATH,
+    path: Path | None = None,
     estimate: Estimator = hf_mem_estimate,
     cache_path: Path | None = None,
 ) -> Catalog:
     """Variants without a size get an hf-mem estimate, cached per repo in `cache_path`."""
+    path = path or config_dir() / "catalog.yaml"
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     cache_path = cache_path or _cache_path()
     cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}

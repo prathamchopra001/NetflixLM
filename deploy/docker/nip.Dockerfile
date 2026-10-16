@@ -14,6 +14,7 @@ COPY pyproject.toml README.md alembic.ini ./
 COPY src ./src
 COPY eval ./eval
 COPY config ./config
+ENV NIP_CONFIG_DIR=/app/config
 # System Python (the one vLLM lives in); uv keeps already-installed matching versions (torch, vllm).
 ENV UV_SYSTEM_PYTHON=1 UV_BREAK_SYSTEM_PACKAGES=1
 RUN --mount=type=cache,target=/root/.cache/uv \

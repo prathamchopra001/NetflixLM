@@ -86,6 +86,8 @@ def test_laptop_llm_group_is_one_shared_vllm_app() -> None:
     assert opt["--tensor-parallel-size"] == "1" and opt["--limit-mm-per-prompt.image"] == "2"
     assert json.loads(args[args.index("--mm-processor-kwargs") + 1]) == {"max_pixels": 589824}
     assert "--enforce-eager" in args  # 8 GB is a small GPU
+    so = json.loads(opt["--structured-outputs-config"])  # 2.1 whitespace runaway (W-int)
+    assert so == {"backend": "xgrammar", "disable_any_whitespace": True}
 
 
 def test_big_gpu_keeps_cuda_graphs_and_actor_apps_get_fractions() -> None:

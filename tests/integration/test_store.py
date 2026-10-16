@@ -403,6 +403,9 @@ def test_cli_ingest_and_run(
     monkeypatch.setenv("NIP_DATABASE_URL", pg.url.render_as_string(hide_password=False))
     monkeypatch.setattr(objects, "client", lambda: s3)
     monkeypatch.setattr(pipeline, "current_plan", lambda workload: stub_plan())
+    # `nip run` wires every Phase 2 stage and agent (W-int); keep that out of the other tests
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    monkeypatch.setattr(pipeline, "AGENTS", list(pipeline.AGENTS))
     files = [f"{t}={p}" if t else str(p) for t, p in episode_files(tmp_path)]
     runner = CliRunner()
     res = runner.invoke(app, ["ingest", "--show", "demo", "--episode", "S01E01", *files])
@@ -416,7 +419,10 @@ def test_cli_ingest_and_run(
     )
     res = runner.invoke(app, ["run", "--show", "demo", "--episodes", "S01E01"])
     assert res.exit_code == 0, res.output
-    assert json.loads(res.output)["episodes"]["S01E01"]["flags_kept"] == 2
+    ep = json.loads(res.output)["episodes"]["S01E01"]
+    assert ep["flags_kept"] == 2
+    assert [s["stage"] for s in ep["stages"]] == [n for n, _ in pipeline.STAGES]
+    assert "timeline.asr" in [s["stage"] for s in ep["stages"]]  # the wired pipeline ran
     res = runner.invoke(app, ["run", "--show", "demo", "--episodes", "S01E02"])
     assert res.exit_code == 1 and "INPUT_REJECTED: no episode S01E02" in res.output
 

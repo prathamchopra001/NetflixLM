@@ -75,7 +75,9 @@ def test_synthetic_show_extracts_on_the_cpu_profile(
     assert len(kept) >= 0.8 * len(first)
     with pg.connect() as conn:
         tl = load_timeline(conn, SHOW, "S01E01")
-        assert all(tl.resolve(f"fact/{i}") is not None for i in kept)
+        # kept and superseded facts both resolve, so S01E01's fact evidence stays checkable (W-int)
+        assert all(tl.resolve(f"fact/{i}") is not None for i in first)
+        assert first - kept, "S01E02 closes at least one S01E01 fact"
         for old in first - kept:  # closed by an S01E02 event: superseded, with a successor
             succ = conn.execute(select(fa.c.id).where(fa.c.supersedes == old)).first()
             status = conn.execute(select(fa.c.status).where(fa.c.id == old)).scalar_one()

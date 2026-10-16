@@ -11,7 +11,9 @@ import unicodedata
 
 from rapidfuzz import fuzz
 
-THRESHOLD = 90.0  # proposed pipeline.yaml key knowledge.grounding.threshold; EXP-006 sets it
+from nip.config import pipeline_config
+
+THRESHOLD = float(pipeline_config()["knowledge"]["grounding"]["threshold"])  # EXP-006
 _MARKS = str.maketrans({"‘": "'", "’": "'", "‚": "'", "‛": "'", "“": '"', "”": '"',
                         "„": '"', "‟": '"', "«": '"', "»": '"', "–": "-", "—": "-"})  # fmt: skip
 

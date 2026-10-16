@@ -20,9 +20,10 @@ from typing import Any
 from rapidfuzz import fuzz, utils
 from sqlalchemy import Connection, insert, select
 
+from nip.config import pipeline_config
 from nip.store import schema
 
-RESOLVE_THRESHOLD = 90.0  # proposed pipeline.yaml key knowledge.resolve.threshold
+RESOLVE_THRESHOLD = float(pipeline_config()["knowledge"]["resolve"]["threshold"])
 UNKNOWN = "UNKNOWN"
 # kind of a new candidate, by its role in the event (a guess the reviewer can correct)
 SUBJECT_KIND = {"setup": "prop", "payoff": "prop"}

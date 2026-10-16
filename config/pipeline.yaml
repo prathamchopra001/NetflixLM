@@ -9,28 +9,26 @@ timeline:
     interval_s: 2.0
     jpeg_quality: 90
   asr:
-    # EXP-003 round 2 (3 runs each, both films, same decoding config for both variants):
-    # at fb-p50 turbo-int8 has WER 0.543 vs 0.555 for large-v3-int8 (-1.2 points; the bar is
-    # +1.0), substitutions+deletions 0.124 vs 0.149, RTF 0.022 vs 0.070 (3.2x faster) and peak
-    # VRAM 1.6 vs 3.4 GiB. Under temperature 0 only (novad-p50) it is 2.4x faster and 24 points
-    # better, because large-v3 loops; under plain fallback without the probability filter (fb)
-    # it is 4.3 points worse. So the decoding config below matters as much as the model.
+    # EXP-003 (3 runs per arm, Sintel + Tears of Steel vs the official SRT): turbo-int8 is the
+    # default. Under the shipped decoding below its WER is 0.606 vs 0.604 for large-v3-int8 (bar:
+    # within +1.0 point) at RTF 0.0161 vs 0.0372 (2.3x faster).
     variant: faster-whisper-large-v3-turbo-int8
     lang: en
     # faster-whisper 1.2.1's VAD pass dropped short lines and mis-timed segments by up to 234 s.
     vad: false
-    # Segments whose mean word probability is below this are dropped (music hallucinations such
-    # as "No!" at p 0.05-0.15). It does not catch confident repetition loops (p 0.9+): those are
-    # what the temperature fallback below is for.
-    min_prob: 0.5
-    # Extra faster-whisper arguments for every variant (`decode_by_variant: {<variant>: {...}}`
-    # adds to them). The fallback retries a segment at a higher temperature when its compression
-    # ratio is above 2.4 or its average log-probability below -1.0. Without it large-v3 repeats
-    # lines ("We're out of time" x5 at p 0.91-0.99; Tears of Steel insertions 117 vs 33). Sampling
-    # at temperature > 0 makes a retried segment, and so a transcript, vary run to run (WER SD
-    # 0.002-0.018 over 3 runs).
+    # Segments whose mean word probability is below this are dropped (0 = keep all).
+    min_prob: 0.0
+    # Controller ruling (W-int, after the 2.5 re-review): the deterministic `novad-hst` arm,
+    # temperature 0 only plus faster-whisper's hallucination_silence_threshold 2 s. Turbo:
+    # substitutions+deletions 0.115 (fb-p50 0.124), Tears of Steel insertions 38 (fb-p50 37),
+    # RTF 0.0161 (fb-p50 0.0219), WER SD 0 over 3 runs, so a transcript is the same every run
+    # (cacheable, reproducible re-runs). fb-p50 (temperature fallback + min_prob 0.5) has the
+    # lower WER (0.543) but samples retried segments (WER SD up to 0.018). Cost: a confident
+    # repetition loop is not retried. `decode_by_variant: {<variant>: {...}}` adds to `decode`
+    # per variant (e.g. the fallback tuple `temperature: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]`).
     decode:
-      temperature: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+      temperature: 0.0
+      hallucination_silence_threshold: 2.0
   align:
     # EXP-004: token-level monotonic alignment beats rapidfuzz line matching.
     variant: token
@@ -41,3 +39,21 @@ timeline:
     # A line's first word never starts earlier than this long before it ends (Whisper's first
     # word after silence starts early and runs long).
     first_word_cap_s: 0.3
+
+# Knowledge layer (2.1 extraction/grounding/resolution, 2.2 story order). Defaults as shipped.
+knowledge:
+  extract:
+    prompt_version: knowledge.extract.v1
+    max_tokens: 2048
+  grounding:
+    # rapidfuzz partial_ratio of the normalized quote vs its line (EXP-006: 85/90/95 tie).
+    threshold: 90
+  resolve:
+    # Name score an extracted name needs to resolve to a known entity.
+    threshold: 90
+  story:
+    # One transition verdict; the scene excerpts shown to the model are cut at excerpt_chars.
+    llm_max_tokens: 300
+    excerpt_chars: 600
+    # "N WEEKS LATER" and friends, in story days.
+    days_per_unit: {WEEK: 7, MONTH: 30, YEAR: 365}

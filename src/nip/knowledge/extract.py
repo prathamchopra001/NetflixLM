@@ -24,19 +24,20 @@ from typing import Annotated, Any, Literal
 from pydantic import AfterValidator, BaseModel, Field, ValidationInfo, create_model
 from sqlalchemy import Connection, delete, insert, select, update
 
-from nip.config import config_dir
+from nip.config import config_dir, pipeline_config
 from nip.contracts.fact import Predicate
 from nip.contracts.plan import Slot
 from nip.knowledge.entities import Resolver
 from nip.knowledge.grounding import THRESHOLD, grounded
 from nip.runtime.clients import LLMClient, StubLLM
-from nip.store import objects, schema
+from nip.store import schema
 
 log = logging.getLogger(__name__)
 
 STAGE = "knowledge.extract"
-PROMPT_VERSION = "knowledge.extract.v1"
-MAX_TOKENS = 2048  # proposed pipeline.yaml key knowledge.extract.max_tokens
+_CFG = pipeline_config()["knowledge"]["extract"]
+PROMPT_VERSION: str = _CFG["prompt_version"]
+MAX_TOKENS = int(_CFG["max_tokens"])
 UNKNOWN = "UNKNOWN"
 IDS_RULE = {
     True: "`subject` and `object` are registry keys (the first word of a registry line). For"
@@ -299,8 +300,7 @@ def stage_extract(ep: Any) -> None:
             kept, dropped = kept + k, dropped + d
     log.info("%s: %d events kept, %d dropped (grounding)", ep.episode, kept, dropped)
     body = "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in raw_all).encode()
-    key = objects.run_key(ep.run_id, ep.episode, "knowledge.events.raw.jsonl")
-    objects.put_bytes(ep.s3, objects.artifact_bucket(), key, body)
+    ep.artifacts["knowledge.events.raw.jsonl"] = body  # uploaded by `publish` after the commit
 
 
 def conn_show_id(conn: Connection, episode_id: int) -> int:

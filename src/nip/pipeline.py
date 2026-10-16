@@ -12,8 +12,9 @@ Store run (`run_store`; R8: synchronous and in-process, the queue and controller
    so a failed run leaves no report.
 
 Stage contract. A stage is `(name, fn)` with `fn(ep: EpisodeRun) -> None`; add one with
-`add_stage(name, fn, before="timeline")` (content stages: asr/align, cue_align, story,
-extract/consolidate, index, ocr; repeated calls keep their call order). A stage
+`add_stage(name, fn, before="timeline")` (repeated calls keep their call order); `wire()` adds
+Phase 2's content stages in order (asr, align, story, extract, consolidate, index; cue_align and
+loc.observed after `timeline`) and the script_critic and clearance packages. A stage
 - reads and fills `ep` and writes rows through `ep.conn` (the run's transaction);
 - reads the Plan as `ep.plan` (e.g. `ep.plan.decisions[Slot.TEXT_LLM].variant`, `ep.plan.plan_id`);
 - does each unit of work inside `with ep.unit(stage, key, model_variant=...):`. A unit that
@@ -70,7 +71,7 @@ from nip.store.db import database_url
 from nip.store.ingest import FORMATS, InputRejected, ingest
 from nip.store.load import episode_row, load_timeline
 from nip.timeline.estimate import build_timeline
-from nip.timeline.picture import analyze_picture
+from nip.timeline.picture import analyze_picture, timeline_config
 from nip.verification.verify import verify
 
 __all__ = ["FORMATS", "InputRejected", "ingest", "run_pipeline", "run_store"]
@@ -139,6 +140,8 @@ class EpisodeRun:
     dropped: list[tuple[Flag, str]] = field(default_factory=list)
     units: list[dict[str, Any]] = field(default_factory=list)  # work_unit rows, inserted once
     report: Report | None = None
+    # name -> body, uploaded to runs/{run_id}/{ep}/{name} by `publish`, after the commit
+    artifacts: dict[str, bytes] = field(default_factory=dict)
 
     @property
     def timeline(self) -> Timeline:
@@ -269,6 +272,32 @@ def add_stage(name: str, fn: Stage, before: str = "timeline") -> None:
     STAGES.insert([n for n, _ in STAGES].index(before), (name, fn))
 
 
+def wire() -> None:
+    """Add every content stage and agent package of Phase 2 (W-int), once.
+
+    Order: asr -> align -> story -> extract -> consolidate -> index, all before `timeline`
+    (`load_timeline` must see the aligned frames and the new `fact/{id}` rows), then cue_align
+    and loc.observed after it (both read `ep.timeline`), before `checks`. `nip run` calls this;
+    a direct `run_store` call (tests) keeps the core stages. Imports stay here so `nip --help`
+    does not load them."""
+    if "timeline.asr" in dict(STAGES):
+        return
+    from nip.agents import clearance, script_critic
+    from nip.agents.localization import term
+    from nip.knowledge import consolidate, extract, index, story
+    from nip.timeline import align, asr, cue_align
+
+    add_stage("timeline.asr", asr.stage)
+    add_stage("timeline.align", align.stage)
+    add_stage(story.STAGE, story.stage_story)
+    add_stage(extract.STAGE, extract.stage_extract)
+    add_stage(consolidate.STAGE, consolidate.stage_consolidate)
+    add_stage(index.STAGE, index.stage)
+    add_stage("timeline.cue_align", cue_align.stage, before="checks")
+    add_stage("loc.observed", term.stage, before="checks")
+    AGENTS.extend(p for p in (script_critic, clearance) if p not in AGENTS)
+
+
 def publish(s3: Any, plan: Plan, eps: list[EpisodeRun], out_dir: Path | None) -> None:
     """Artifacts of a committed run: plan.json, per-episode report.json, and `out_dir` files."""
     for ep in eps:
@@ -276,6 +305,9 @@ def publish(s3: Any, plan: Plan, eps: list[EpisodeRun], out_dir: Path | None) ->
         body = ep.report.model_dump_json(indent=2)
         key = objects.run_key(ep.run_id, ep.episode, "report.json")
         objects.put_bytes(s3, objects.artifact_bucket(), key, body.encode())
+        for name, data in ep.artifacts.items():
+            key = objects.run_key(ep.run_id, ep.episode, name)
+            objects.put_bytes(s3, objects.artifact_bucket(), key, data)
         if out_dir is not None:
             d = out_dir / ep.episode
             d.mkdir(parents=True, exist_ok=True)
@@ -400,8 +432,14 @@ def run_store(
     return summary
 
 
+MODEL_SLOTS = (Slot.ASR, Slot.TEXT_LLM, Slot.TEXT_EMBEDDER)  # the slots the wired stages call
+
+
 def current_plan(workload: dict[Slot, int]) -> tuple[Plan, HardwareInventory]:
-    """The Plan for this hardware (`nip plan`'s inputs); NIP_PROFILE=cpu gives the stub Plan."""
+    """The Plan for this hardware (`nip plan`'s inputs); NIP_PROFILE=cpu gives the stub Plan.
+
+    The asr slot is pinned to `timeline.asr.variant` of pipeline.yaml (EXP-003 picked turbo over
+    the planner's quality-ranked large-v3); NIP_PIN_ASR overrides it."""
     from nip.runtime import planner
     from nip.runtime.catalog import load_catalog, validate
     from nip.runtime.probe import probe as probe_hardware
@@ -411,7 +449,8 @@ def current_plan(workload: dict[Slot, int]) -> tuple[Plan, HardwareInventory]:
     except PackageNotFoundError:
         vllm = None
     inv = probe_hardware()
-    pins = {s: v for s in Slot if (v := os.environ.get(f"NIP_PIN_{s.upper()}", ""))}
+    pins = {Slot.ASR: timeline_config()["asr"]["variant"]}
+    pins |= {s: v for s in Slot if (v := os.environ.get(f"NIP_PIN_{s.upper()}", ""))}
     p = planner.plan(
         inv,
         validate(load_catalog(), vllm, licenses=None),
@@ -430,6 +469,7 @@ def run(
     agents: Annotated[str, typer.Option(help="auto, or comma-separated agent names")] = "auto",
     force: Annotated[bool, typer.Option(help="Ignore the stage cache (none until 2.9B)")] = False,
     out_dir: Annotated[Path | None, typer.Option(help="Also write per-episode JSON here")] = None,
+    dry_run: Annotated[bool, typer.Option(help="Print the stages and checks, run nothing")] = False,
 ) -> None:
     """Run the checks on ingested episodes; flags and the run are stored in Postgres."""
     eps = [e.strip() for x in episodes for e in x.split(",") if e.strip()]
@@ -437,7 +477,13 @@ def run(
         wanted = None if agents == "auto" else {Agent(a.strip()) for a in agents.split(",")}
     except ValueError as e:
         raise typer.BadParameter(f"--agents: {e}") from e
-    plan, inv = current_plan({})  # no check needs a model slot yet; wiring adds slot workloads
+    wire()
+    if dry_run:
+        checks = [str(c.check) for pkg in AGENTS for c in pkg.CHECKS]
+        typer.echo(json.dumps({"stages": [n for n, _ in STAGES], "checks": checks}, indent=2))
+        return
+    # ponytail: one unit per episode for each model slot; real counts only size replicas (multi-GPU)
+    plan, inv = current_plan({s: len(eps) for s in MODEL_SLOTS})
     engine = create_engine(database_url())
     try:
         summary = run_store(engine, objects.client(), show=show, episodes=eps, plan=plan,

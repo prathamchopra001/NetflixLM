@@ -40,7 +40,7 @@ from typing import TYPE_CHECKING, Any, Literal, Protocol
 from pydantic import BaseModel, Field
 from sqlalchemy import Connection, bindparam, select, update
 
-from nip.config import config_dir
+from nip.config import config_dir, pipeline_config
 from nip.contracts import refs
 from nip.contracts.plan import Slot
 from nip.ingest.bible import StoryOverride, parse_bible
@@ -62,7 +62,8 @@ _NUMBERS = {
     **{w: i for i, w in enumerate("ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT NINE TEN".split(), 1)},
     "A": 1, "AN": 1, "ANOTHER": 1, "TWELVE": 12,
 }  # fmt: skip
-_UNIT_DAYS = {"DAY": 1, "WEEK": 7, "MONTH": 30, "YEAR": 365}
+_CFG = pipeline_config()["knowledge"]["story"]
+_UNIT_DAYS = {"DAY": 1} | {k: int(v) for k, v in _CFG["days_per_unit"].items()}
 _REL = re.compile(
     rf"\b(?:(\d+|{'|'.join(_NUMBERS)})\s+)?(DAY|WEEK|MONTH|YEAR)S?\s+(LATER|EARLIER)\b"
 )  # "THREE YEARS EARLIER", "A WEEK LATER", "DAYS LATER"
@@ -250,7 +251,7 @@ def _swallow(key: str) -> Iterator[None]:
         log.exception("story unit %s failed; the rule default stands", key)
 
 
-def _excerpt(s: SceneIn, limit: int = 600) -> str:
+def _excerpt(s: SceneIn, limit: int = _CFG["excerpt_chars"]) -> str:
     body = "\n".join(t for _, t in s.elements)
     return f"{s.heading}\n{body[:limit]}"
 
@@ -409,7 +410,7 @@ class _Deriver:
             return self.memo[prompt]
         v: Verdict | None = None
         with self.unit(self.scenes[i].ref):
-            v = self.llm.complete(prompt, Verdict, max_tokens=300)
+            v = self.llm.complete(prompt, Verdict, max_tokens=_CFG["llm_max_tokens"])
             self.story.llm_calls += 1
         if v is not None:
             self.memo[prompt] = v

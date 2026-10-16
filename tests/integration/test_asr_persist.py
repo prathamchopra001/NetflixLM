@@ -209,3 +209,21 @@ def test_no_asr_decision_or_a_failing_backend_leaves_the_estimate(
         ).all()
     assert n == [] and src == "script_estimate"
     assert [r.stage for r in failed] == ["timeline.asr"] and "no CUDA" in failed[0].error
+
+
+def test_a_script_only_episode_with_an_asr_decision_records_no_unit(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """W-int: `nip run` asks for an asr slot for every run; a script-only episode is not a gap."""
+    script = tmp_path / "s.fountain"
+    script.write_text(SCRIPT, encoding="utf-8")
+    with pg.begin() as conn:
+        ingest_files(conn, s3, show="demo", episode="S01E01", files=[(None, script)])
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    pipeline.add_stage("timeline.asr", asr.stage)
+    pipeline.add_stage("timeline.align", align.stage)
+    s = run(pg, s3)
+    assert s["status"] == "completed"
+    assert not [u for u in s["episodes"]["S01E01"]["units"] if u != "done"]
+    with pg.connect() as c:
+        assert c.execute(select(schema.work_unit.c.stage)).scalars().all() == []

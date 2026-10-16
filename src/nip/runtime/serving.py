@@ -56,6 +56,9 @@ class App:
         return f"/models/{self.variant}"
 
 
+STRUCTURED_OUTPUTS = {"backend": "xgrammar", "disable_any_whitespace": True}
+
+
 def vllm_args(v: Variant, d: SlotDecision, vlm: SlotDecision | None, *, eager: bool) -> list[str]:
     """`vllm serve` arguments from the Plan decision (hardware-adaptation.md › Serving).
 
@@ -72,6 +75,10 @@ def vllm_args(v: Variant, d: SlotDecision, vlm: SlotDecision | None, *, eager: b
     ]  # fmt: skip
     if d.kv_cache_bytes is not None:
         args += ["--kv-cache-memory-bytes", str(d.kv_cache_bytes)]
+    # Compact guided JSON (2.1 proposal 6): with whitespace allowed between fields, ~5% of
+    # extraction scenes stopped mid-object and emitted spaces until max_tokens. xgrammar is one of
+    # the two backends that support it (vLLM 0.30 rejects it under "auto").
+    args += ["--structured-outputs-config", json.dumps(STRUCTURED_OUTPUTS)]
     if eager:
         args.append("--enforce-eager")
     if vlm and vlm.images_per_prompt is not None:

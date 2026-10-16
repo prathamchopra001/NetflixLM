@@ -94,7 +94,9 @@ def test_decoding_settings_come_from_pipeline_yaml_and_merge_per_variant():
 
     cfg = timeline_config()["asr"]
     got = asr_kwargs(cfg, cfg["variant"])
-    assert got["vad"] is False and got["min_prob"] == 0.5
-    assert got["temperature"][0] == 0.0 and len(got["temperature"]) > 1  # fallback on
-    extra = {**cfg, "decode_by_variant": {"v": {"temperature": 0.0}}}
-    assert asr_kwargs(extra, "v")["temperature"] == 0.0 and asr_kwargs(extra, "w") == got
+    # W-int ruling: the deterministic novad-hst arm (temperature 0 only, no fallback)
+    assert got == {"vad": False, "min_prob": 0.0, "temperature": 0.0,
+                   "hallucination_silence_threshold": 2.0}  # fmt: skip
+    fallback = [0.0, 0.2, 0.4]
+    extra = {**cfg, "decode_by_variant": {"v": {"temperature": fallback}}}
+    assert asr_kwargs(extra, "v")["temperature"] == fallback and asr_kwargs(extra, "w") == got

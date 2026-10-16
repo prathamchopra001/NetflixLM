@@ -164,16 +164,22 @@ def load_transcript(conn: Any, episode_id: int) -> list[TranscriptSegment]:
     ]
 
 
-def _fetch_video(ep: StageEpisode, dest: Path) -> Path:
-    """The episode's picture file from the media bucket, downloaded to `dest`."""
+def _video_key(ep: StageEpisode) -> str | None:
+    """Object key of the episode's ingested picture file; None for a script-only episode."""
     from sqlalchemy import select
 
-    from nip.store import objects, schema
+    from nip.store import schema
 
     sf = schema.source_file
-    key = ep.conn.execute(
+    return ep.conn.execute(  # type: ignore[no-any-return]
         select(sf.c.object_key).where(sf.c.episode_id == ep.episode_id, sf.c.kind == "picture")
-    ).scalar_one()
+    ).scalar_one_or_none()
+
+
+def _fetch_video(ep: StageEpisode, key: str, dest: Path) -> Path:
+    """The episode's picture file from the media bucket, downloaded to `dest`."""
+    from nip.store import objects
+
     out = dest / Path(key).name
     ep.s3.download_file(objects.media_bucket(), key, str(out))
     return out
@@ -189,12 +195,13 @@ def stage(ep: StageEpisode) -> None:
     from nip.contracts import Slot
 
     decision = ep.plan.decisions.get(Slot.ASR)
-    if decision is None:
+    key = _video_key(ep) if decision is not None else None
+    if decision is None or key is None:
         return
     cfg = timeline_config()["asr"]
     with ep.unit(STAGE, ep.episode, model_variant=decision.variant):
         with tempfile.TemporaryDirectory() as tmp:
-            video = _fetch_video(ep, Path(tmp))
+            video = _fetch_video(ep, key, Path(tmp))
             segs = transcribe_episode(video, backend(decision.variant), cfg["lang"])
         persist_transcript(ep.conn, ep.episode_id, segs)
 

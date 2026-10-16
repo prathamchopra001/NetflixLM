@@ -2,8 +2,10 @@
 
 Spans in this order, the first three exactly as `build_timeline` builds them from the same files:
 scenes (script order), shots then keyframes, subtitle cues per track (ingest order); then script
-lines `{ep}/line/{scene}.{seq}`, transcript segments `{ep}/asr/{id}`, the show's active facts
-`fact/{id}` (text = the source events' quotes, one per line; no frames) and clearance items
+lines `{ep}/line/{scene}.{seq}`, transcript segments `{ep}/asr/{id}`, the show's active and
+superseded facts `fact/{id}` (text = the source events' quotes, one per line; no frames; a
+superseded one so that an earlier episode's flag still resolves the fact a later consolidation
+closed) and clearance items
 `clr/{id}` (text = the item name; no frames), so `emit` and `verify` resolve those refs unchanged.
 
 Display: objects with frames get SMPTE `tc_in`/`tc_out`; scenes keep the script-estimate label
@@ -123,7 +125,7 @@ def load_timeline(conn: Connection, show: str, episode: str) -> Timeline:
             func.array_agg(aggregate_order_by(fe.c.quote, fe.c.id)).filter(fe.c.id.is_not(None)),
         )
         .outerjoin(fe, fe.c.id == fa.c.source_event_ids.any_())
-        .where(fa.c.show_id == ep.show_id, fa.c.status == "active")
+        .where(fa.c.show_id == ep.show_id, fa.c.status.in_(("active", "superseded")))
         .group_by(fa.c.id)
         .order_by(fa.c.id)
     ):

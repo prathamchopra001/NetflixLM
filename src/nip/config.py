@@ -2,6 +2,9 @@
 
 import os
 from pathlib import Path
+from typing import Any
+
+import yaml
 
 _SOURCE_TREE = Path(__file__).resolve().parents[2] / "config"  # src/nip/config.py -> repo/config
 
@@ -17,3 +20,9 @@ def config_dir() -> Path:
     if (_SOURCE_TREE / "pipeline.yaml").is_file():
         return _SOURCE_TREE
     return Path.cwd() / "config"
+
+
+def pipeline_config() -> dict[str, Any]:
+    """`config/pipeline.yaml` (thresholds and policies), read on every call."""
+    cfg: dict[str, Any] = yaml.safe_load((config_dir() / "pipeline.yaml").read_text("utf-8"))
+    return cfg

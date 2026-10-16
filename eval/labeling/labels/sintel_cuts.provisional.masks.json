@@ -1,0 +1,126 @@
+{
+ "title": "sintel",
+ "labeller": "agent-provisional",
+ "regions": [
+  {
+   "start": 8505,
+   "end": 8790,
+   "kind": "gradual-or-ambiguous",
+   "note": "chained dissolves: desert -> girl portrait (ghost ~8510-8700) -> moon (~8720-8790); events 322-335 are ghosting inside it, no cut labelled"
+  },
+  {
+   "start": 9040,
+   "end": 9125,
+   "kind": "gradual-or-ambiguous",
+   "note": "dissolve: desert + ghost of girl -> bamboo (9046-9102 ghosting)"
+  },
+  {
+   "start": 9240,
+   "end": 9275,
+   "kind": "gradual-or-ambiguous",
+   "note": "dissolve: bamboo -> canyon (9254)"
+  },
+  {
+   "start": 9425,
+   "end": 9460,
+   "kind": "gradual-or-ambiguous",
+   "note": "dissolve: canyon girl -> mountain + man (9429-9446)"
+  },
+  {
+   "start": 9730,
+   "end": 9770,
+   "kind": "gradual-or-ambiguous",
+   "note": "dissolve: staff man -> snow mountain/hand (ghosting 9737-9761)"
+  },
+  {
+   "start": 10060,
+   "end": 10135,
+   "kind": "gradual-or-ambiguous",
+   "note": "fade through lilac haze: crawling man -> blank haze (10088-10110) -> snowfield shot"
+  },
+  {
+   "start": 10443,
+   "end": 10466,
+   "kind": "gradual-or-ambiguous",
+   "note": "fade to white (10443-10447, ghost of the girl) then white -> black (10449-10462); no hard cut inside"
+  },
+  {
+   "start": 11305,
+   "end": 11350,
+   "kind": "gradual-or-ambiguous",
+   "note": "dissolve coin -> tree (ghost rings 11315-11345)"
+  },
+  {
+   "start": 11103,
+   "end": 11113,
+   "kind": "gradual-or-ambiguous",
+   "note": "black cloak sweeps across and fills the frame (11106-11110); girl re-emerges at a different position/zoom: likely a cut hidden by occlusion; AMBIGUOUS, excluded from scoring"
+  },
+  {
+   "start": 14111,
+   "end": 14115,
+   "kind": "gradual-or-ambiguous",
+   "note": "extreme motion blur (shoulder -> arm): cut or fast whip? AMBIGUOUS, excluded from scoring"
+  },
+  {
+   "start": 15040,
+   "end": 15383,
+   "kind": "gradual-or-ambiguous",
+   "note": "dragon shot dissolves into red tint (15042-15126), a girl fades up out of the red (15126-15174) and stays while the background dissolves through several scenes (15282, 15294-15318, 15366-15378): one continuous overlay montage; no cut labelled inside"
+  },
+  {
+   "start": 16164,
+   "end": 16168,
+   "kind": "gradual-or-ambiguous",
+   "note": "arm sweeps across the lens and a different dark face (16167) appears before the clear cut at 16169: probable hidden cut, AMBIGUOUS, excluded from scoring"
+  },
+  {
+   "start": 16222,
+   "end": 16227,
+   "kind": "gradual-or-ambiguous",
+   "note": "fur streaks and a black frame (16224) between two views of the same cave: same shot or hidden cut, AMBIGUOUS, excluded from scoring"
+  },
+  {
+   "start": 16238,
+   "end": 16425,
+   "kind": "gradual-or-ambiguous",
+   "note": "fur wipes frame to black (16240-16248), black to ~16332, very slow brightening fade-in of the root-world shot (16332-16425): no cut labelled inside"
+  },
+  {
+   "start": 1334,
+   "end": 1334,
+   "kind": "gradual-or-ambiguous",
+   "note": "framing jump inside the fight between two close views; cut vs very fast camera move: AMBIGUOUS, excluded from scoring"
+  },
+  {
+   "start": 2305,
+   "end": 2420,
+   "kind": "gradual-or-ambiguous",
+   "note": "SINTEL title card dissolves in over the mountain shot; not a cut"
+  },
+  {
+   "start": 2430,
+   "end": 2590,
+   "kind": "gradual-or-ambiguous",
+   "note": "slow fade-in from black after the cut to black at 2429: no cut labelled inside"
+  },
+  {
+   "start": 3495,
+   "end": 3650,
+   "kind": "gradual-or-ambiguous",
+   "note": "fade-out to black (#137-139, 3507-3539), black, fade-in of the city shot (#140-141, 3612-3649): no cut labelled"
+  },
+  {
+   "start": 5660,
+   "end": 5710,
+   "kind": "gradual-or-ambiguous",
+   "note": "dissolve: dark blue bed scene -> orange scene (#201-203), no cut labelled"
+  },
+  {
+   "start": 17858,
+   "end": 21312,
+   "kind": "end-credits",
+   "note": "title cards and scrolling credits, no picture shots"
+  }
+ ]
+}

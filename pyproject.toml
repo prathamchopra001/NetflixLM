@@ -40,6 +40,12 @@ dependencies = [
     "faster-whisper>=1.2.1",
     "rapidfuzz>=3.14.6",
     "instructor>=1.17.0",
+    "rapidocr>=3.10.0",
+    "onnxruntime-gpu>=1.31.0",
+    "presidio-analyzer>=2.2.364",
+    "gliner>=0.2.29",
+    "urlextract>=1.10.0",
+    "phonenumbers>=9.0.41",
 ]
 
 [project.optional-dependencies]

@@ -46,6 +46,8 @@ dependencies = [
     "gliner>=0.2.29",
     "urlextract>=1.10.0",
     "phonenumbers>=9.0.41",
+    "en-core-web-sm",
+    "de-core-news-sm",
 ]
 
 [project.optional-dependencies]
@@ -88,6 +90,8 @@ environments = ["sys_platform == 'win32'", "sys_platform == 'linux'"]
 [tool.uv.sources]
 # CUDA build on the Windows laptop; Linux takes PyPI's torch (the vLLM image's).
 torch = { index = "pytorch-cu130", marker = "sys_platform == 'win32'" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+de-core-news-sm = { url = "https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.8.0/de_core_news_sm-3.8.0-py3-none-any.whl" }
 
 [[tool.uv.index]]
 name = "pytorch-cu130"

@@ -86,11 +86,12 @@ class FasterWhisperASR:
         )
 
     def transcribe(self, audio: str | Path, lang: str | None = "en") -> list[Segment]:
-        """Segments with word timestamps. `condition_on_previous_text=False` stops one bad segment
-        poisoning the rest. `vad` is off by default: faster-whisper 1.2.1's VAD pass dropped short
-        exclamations and mis-timed whole segments on Sintel (EXP-003 notes). Whisper then
-        hallucinates over music with low word confidence, so segments whose mean word probability
-        is under `min_prob` are dropped."""
+        """Segments with word timestamps. Defaults (EXP-003): `condition_on_previous_text=False`
+        so one bad segment cannot poison the rest; temperature 0.0 (deterministic; pass a
+        `temperature` tuple in `opts` for faster-whisper's fallback, which large-v3 needs to avoid
+        repeating a line at high confidence); `vad` off, because faster-whisper 1.2.1's VAD pass
+        dropped short lines and mis-timed segments; segments whose mean word probability is under
+        `min_prob` (music hallucinations, p well below 0.6) are dropped."""
         kw: dict[str, Any] = {
             "language": lang,
             "word_timestamps": True,
@@ -145,7 +146,7 @@ class Actor:
         from nip.timeline.asr import asr_kwargs
         from nip.timeline.picture import timeline_config  # the pipeline's own settings
 
-        self.asr = FasterWhisperASR(variant, **asr_kwargs(timeline_config()["asr"]))
+        self.asr = FasterWhisperASR(variant, **asr_kwargs(timeline_config()["asr"], variant))
 
     async def __call__(self, request: Any) -> dict[str, Any]:
         body = await request.json()

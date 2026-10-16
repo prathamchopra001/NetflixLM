@@ -117,9 +117,12 @@ def transcribe_episode(
     return to_frames(segs, info.fps, lang)
 
 
-def asr_kwargs(cfg: dict[str, Any]) -> dict[str, Any]:
-    """FasterWhisperASR keyword arguments from the `timeline.asr` settings."""
-    return {"vad": cfg["vad"], "min_prob": cfg["min_prob"]} | dict(cfg.get("decode", {}))
+def asr_kwargs(cfg: dict[str, Any], variant: str) -> dict[str, Any]:
+    """FasterWhisperASR keyword arguments from the `timeline.asr` settings for one variant
+    (`decode` applies to all, `decode_by_variant[variant]` on top)."""
+    per_variant: dict[str, Any] = cfg.get("decode_by_variant", {}).get(variant, {})
+    base = {"vad": cfg["vad"], "min_prob": cfg["min_prob"]}
+    return base | dict(cfg.get("decode", {})) | per_variant
 
 
 @cache
@@ -127,7 +130,7 @@ def backend(variant: str) -> ASR:
     """The ASR backend of a catalog variant with the `timeline.asr` settings (stub: no model)."""
     from nip.runtime.catalog import load_catalog  # the catalog decides stub vs model
 
-    return make_asr(variant, load_catalog(), **asr_kwargs(timeline_config()["asr"]))
+    return make_asr(variant, load_catalog(), **asr_kwargs(timeline_config()["asr"], variant))
 
 
 def persist_transcript(conn: Any, episode_id: int, segments: list[TranscriptSegment]) -> None:

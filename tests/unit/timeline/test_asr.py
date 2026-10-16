@@ -86,3 +86,15 @@ def test_asr_cli_writes_transcript_json_and_merges_into_the_timeline_group(
     assert r.exit_code == 0, r.output
     (seg,) = json.loads(out.read_text())
     assert seg["frames"] == [12, 36] and seg["words"][0]["w"] == "hi"
+
+
+def test_decoding_settings_come_from_pipeline_yaml_and_merge_per_variant():
+    from nip.timeline.asr import asr_kwargs
+    from nip.timeline.picture import timeline_config
+
+    cfg = timeline_config()["asr"]
+    got = asr_kwargs(cfg, cfg["variant"])
+    assert got["vad"] is False and got["min_prob"] == 0.5
+    assert got["temperature"][0] == 0.0 and len(got["temperature"]) > 1  # fallback on
+    extra = {**cfg, "decode_by_variant": {"v": {"temperature": 0.0}}}
+    assert asr_kwargs(extra, "v")["temperature"] == 0.0 and asr_kwargs(extra, "w") == got

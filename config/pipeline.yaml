@@ -9,14 +9,28 @@ timeline:
     interval_s: 2.0
     jpeg_quality: 90
   asr:
-    # EXP-003: turbo-int8 is 2.4x faster than large-v3-int8 and its WER is lower (large-v3
-    # hallucinates more over music); the laptop and workstation default alike.
+    # EXP-003 round 2 (3 runs each, both films, same decoding config for both variants):
+    # at fb-p50 turbo-int8 has WER 0.543 vs 0.555 for large-v3-int8 (-1.2 points; the bar is
+    # +1.0), substitutions+deletions 0.124 vs 0.149, RTF 0.022 vs 0.070 (3.2x faster) and peak
+    # VRAM 1.6 vs 3.4 GiB. Under temperature 0 only (novad-p50) it is 2.4x faster and 24 points
+    # better, because large-v3 loops; under plain fallback without the probability filter (fb)
+    # it is 4.3 points worse. So the decoding config below matters as much as the model.
     variant: faster-whisper-large-v3-turbo-int8
     lang: en
-    # EXP-003: faster-whisper's VAD pass dropped short lines and mis-timed segments on Sintel.
+    # faster-whisper 1.2.1's VAD pass dropped short lines and mis-timed segments by up to 234 s.
     vad: false
-    # Segments whose mean word probability is below this are hallucinations over music.
+    # Segments whose mean word probability is below this are dropped (music hallucinations such
+    # as "No!" at p 0.05-0.15). It does not catch confident repetition loops (p 0.9+): those are
+    # what the temperature fallback below is for.
     min_prob: 0.5
+    # Extra faster-whisper arguments for every variant (`decode_by_variant: {<variant>: {...}}`
+    # adds to them). The fallback retries a segment at a higher temperature when its compression
+    # ratio is above 2.4 or its average log-probability below -1.0. Without it large-v3 repeats
+    # lines ("We're out of time" x5 at p 0.91-0.99; Tears of Steel insertions 117 vs 33). Sampling
+    # at temperature > 0 makes a retried segment, and so a transcript, vary run to run (WER SD
+    # 0.002-0.018 over 3 runs).
+    decode:
+      temperature: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
   align:
     # EXP-004: token-level monotonic alignment beats rapidfuzz line matching.
     variant: token

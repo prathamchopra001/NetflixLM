@@ -61,7 +61,7 @@ CONFIGS: dict[str, dict[str, Any]] = {
     },
     "fb-p50": {"vad": False, "min_prob": 0.5, "temperature": FALLBACK},
 }
-SHIPPED = "novad-p50"  # decided in the round-2 notes; config/pipeline.yaml records the same
+SHIPPED = "fb-p50"  # round-2 decision (notes); config/pipeline.yaml records the same
 app = typer.Typer(no_args_is_help=True)
 
 

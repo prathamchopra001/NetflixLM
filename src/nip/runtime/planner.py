@@ -273,12 +273,19 @@ def plan(
     if objective is Objective.QUALITY:
         resident = packs(best)
     else:  # greedy: downgrade where quality lost per GiB freed is smallest, until the set packs
+        # Step 7: an independent judge must not push any other slot down, so the others are
+        # chosen with the judge reusing text_llm; the judge then takes whatever still packs.
+        judges = cands.get(Slot.JUDGE_LLM, [])
+        free_judge = bool(judges) and judges[-1] is None
+        if free_judge:
+            choice[Slot.JUDGE_LLM] = len(judges) - 1
+        others = [s for s in choice if not (free_judge and s is Slot.JUDGE_LLM)]
         capacity = sum(g.usable for g in gpus)
         while not packs(choice):
             # GiB beyond the shortfall earn nothing; if the sum fits, packing is the problem
             short = gb(choice) - capacity
             moves = []
-            for k, s in enumerate(choice):
+            for k, s in enumerate(others):
                 for j in range(choice[s] + 1, len(cands[s])):
                     new = {**choice, s: j}
                     freed = gb(choice) - gb(new)
@@ -291,7 +298,7 @@ def plan(
             choice[s] = j
         resident = packs(choice)
         if resident:  # climb back wherever the packed set leaves room (greedy over-shoots)
-            for s in choice:
+            for s in others + [Slot.JUDGE_LLM] * free_judge:  # the judge last
                 choice[s] = next(j for j in range(choice[s] + 1) if packs({**choice, s: j}))
         else:
             choice = dict(best)
@@ -353,6 +360,10 @@ def plan(
                 decisions[s] = d.model_copy(update={"shared_with": others or None})
     if Slot.JUDGE_LLM in decisions:
         decisions[Slot.JUDGE_LLM].independent_family = not judge_reuses
+    if Slot.VLM in decisions:  # image caps come from the catalog until a rule exists
+        vlm = eff[Slot.VLM].variant
+        decisions[Slot.VLM].max_pixels = vlm.max_pixels
+        decisions[Slot.VLM].images_per_prompt = vlm.images_per_prompt
 
     return Plan(
         inventory_fingerprint=inventory.fingerprint,

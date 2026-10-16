@@ -125,10 +125,12 @@ CASES = [
         "resident",
         ["resident"],
         {
-            "text_llm": "qwen3.8-27b-int4 x1 tp1 ctx8192 gmu0.52",
+            # An independent judge (ministral@8k, 6.5 GiB) would push text_llm to 8k and asr to
+            # turbo, so the judge reuses text_llm (step 7).
+            "text_llm": "qwen3.8-27b-int4 x1 tp1 ctx16384 gmu0.57",
             "vlm": "qwen3.8-27b-int4 (shared)",
-            "judge_llm": "ministral-3-3b-fp8 x1 tp1 ctx8192 gmu0.14",
-            "asr": "faster-whisper-large-v3-turbo-int8 x1 frac0.04",
+            "judge_llm": "qwen3.8-27b-int4 (shared)",
+            "asr": "faster-whisper-large-v3-int8 x1 frac0.07",
             "ocr": "pp-ocrv6-medium x1 frac0.03",
             "detector": "llmdet-large x1 frac0.04",
             "image_embedder": "dinov2-large x1 frac0.04",
@@ -136,7 +138,7 @@ CASES = [
             "ner": "gliner-x-large x1 frac0.08",
             "shot_detector": "transnetv2 x1 frac0.02",
         },
-        ["text_llm context reduced 32768 -> 8192", "judge_llm context reduced 16384 -> 8192"],
+        ["text_llm context reduced 32768 -> 16384"],
     ),
     (
         "8x80GB",
@@ -199,7 +201,10 @@ def test_expected_plan(
     assert {s.value: _fmt(d) for s, d in p.decisions.items()} == decisions
     assert p.warnings == warnings
     assert p.skipped_slots == []
-    assert p.decisions[Slot.JUDGE_LLM].independent_family is True
+    judge = p.decisions[Slot.JUDGE_LLM]
+    assert judge.independent_family is (judge.variant != p.decisions[Slot.TEXT_LLM].variant)
+    vlm = p.decisions[Slot.VLM]  # catalog defaults for the image caps
+    assert (vlm.max_pixels, vlm.images_per_prompt) == (589824, 2)
     assert sorted(s for g in p.groups for s in g.slots) == sorted(EPISODE)  # each slot once
     assert (p.inventory_fingerprint, p.catalog_sha256) == (inv.fingerprint, CATALOG.sha256)
     assert Plan.model_validate_json(p.model_dump_json()) == p  # contract round-trip
@@ -223,6 +228,37 @@ def test_judge_reuses_text_llm_when_no_independent_family_fits() -> None:
     assert p.decisions[Slot.TEXT_LLM].shared_with == [Slot.VLM, Slot.JUDGE_LLM]
     assert p.groups[-1].name == "vlm+llm"  # the judge runs in the llm group, no own group
     assert Slot.JUDGE_LLM in p.groups[-1].slots
+
+
+def test_throughput_judge_never_pushes_other_slots_down() -> None:
+    no_judges = Catalog(
+        variants=[v for v in CATALOG.variants if v.serves != [Slot.JUDGE_LLM]], sha256="x"
+    )
+    for inv in INVENTORIES.values():
+        with_judges = plan(inv, CATALOG, EPISODE, Objective.THROUGHPUT)
+        reuse_only = plan(inv, no_judges, EPISODE, Objective.THROUGHPUT)
+        others = [s for s in EPISODE if s is not Slot.JUDGE_LLM]
+        assert [_fmt(with_judges.decisions[s]).split(" x")[0] for s in others] == [
+            _fmt(reuse_only.decisions[s]).split(" x")[0] for s in others
+        ]
+        for s in (Slot.TEXT_LLM, Slot.ASR):  # same variant and context
+            assert with_judges.decisions[s].context == reuse_only.decisions[s].context
+
+
+def test_vlm_image_caps_follow_the_catalog() -> None:
+    vlm_ids = {v.id for v in CATALOG.variants if Slot.VLM in v.serves}
+    bigger = Catalog(
+        variants=[
+            v.model_copy(update={"max_pixels": 1003520, "images_per_prompt": 4})
+            if v.id in vlm_ids
+            else v
+            for v in CATALOG.variants
+        ],
+        sha256="x",
+    )
+    vlm = plan(H100X8, bigger, EPISODE).decisions[Slot.VLM]
+    assert (vlm.variant, vlm.shared_with) == ("qwen3.5-397b-a17b-fp8", [Slot.TEXT_LLM])
+    assert (vlm.max_pixels, vlm.images_per_prompt) == (1003520, 4)
 
 
 def test_pin_is_honoured() -> None:

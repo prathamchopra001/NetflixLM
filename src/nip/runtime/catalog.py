@@ -39,6 +39,8 @@ class Variant(BaseModel):
     quant: str | None = None
     min_vllm: str | None = None
     box_format: str | None = None
+    max_pixels: int | None = None  # vlm: image cap per image (vLLM --mm-processor-kwargs)
+    images_per_prompt: int | None = None  # vlm: vLLM --limit-mm-per-prompt.image
     weights_gb: float | None = None  # vllm
     overhead_gb: float = 0.0  # vllm
     kv_mb_per_1k_tokens: float | None = None  # vllm

@@ -28,6 +28,8 @@ variants:
     tp_options: [1]
     min_vllm: "0.30"
     box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 30
     cost_hint: 1.0
     license: Apache-2.0
@@ -45,6 +47,8 @@ variants:
     tp_options: [1]
     min_vllm: "0.30"
     box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 40
     cost_hint: 2.0
     license: Apache-2.0
@@ -63,6 +67,8 @@ variants:
     min_compute_capability: "8.0"
     min_vllm: "0.30"
     box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 45
     cost_hint: 2.0
     license: Apache-2.0
@@ -80,6 +86,8 @@ variants:
     tp_options: [1, 2]
     min_vllm: "0.30"
     box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 55
     cost_hint: 1.5
     license: Apache-2.0
@@ -98,6 +106,8 @@ variants:
     tp_options: [1, 2]
     min_vllm: "0.30"
     box_format: xyxy_0_1000  # verify on first benchmark run
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 65
     cost_hint: 4.0
     license: Apache-2.0
@@ -116,6 +126,8 @@ variants:
     min_compute_capability: "8.0"
     min_vllm: "0.30"
     box_format: xyxy_0_1000  # verify on first benchmark run
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 70
     cost_hint: 4.0
     license: Apache-2.0
@@ -133,6 +145,8 @@ variants:
     tp_options: [1, 2, 4]
     min_vllm: "0.30"
     box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 80
     cost_hint: 6.0
     license: Apache-2.0
@@ -150,6 +164,8 @@ variants:
     tp_options: [4, 8]
     min_vllm: "0.30"
     box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 90
     cost_hint: 10.0
     license: Apache-2.0
@@ -168,6 +184,8 @@ variants:
     min_compute_capability: "8.0"
     min_vllm: "0.30"
     box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
     quality_rank: 95
     cost_hint: 10.0
     license: Apache-2.0

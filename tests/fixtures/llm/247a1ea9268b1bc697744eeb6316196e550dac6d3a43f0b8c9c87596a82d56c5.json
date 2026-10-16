@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Years earlier. Leo and Tomas argue quietly at Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"leo\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Years earlier. Leo and Tomas argue quietly at Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Leo and Tomas argue quietly at Greywater Dock.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"leo\",\n      \"object\": \"tomas\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    }\n  ]\n}"
+}

@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Tomas wait at Quill Archive\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ines\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas wait at Quill Archive\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Maya Reyes started the fire at Marrow Street Garage\",\n      \"predicate\": \"learns\",\n      \"subject\": \"ines\",\n      \"object\": \"secret_2\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

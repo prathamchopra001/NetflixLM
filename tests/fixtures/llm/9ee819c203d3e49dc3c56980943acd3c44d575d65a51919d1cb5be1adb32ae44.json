@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Sasha share a thermos at Quill Archive.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"dov\",\n      \"object\": \"ada\",\n      \"value\": \"obtain\"\n    ,\n      \"confidence\": 0.9\n    }\n  ]\n}"
+}

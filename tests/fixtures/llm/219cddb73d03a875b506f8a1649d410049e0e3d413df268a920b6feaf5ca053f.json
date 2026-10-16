@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Ines argue quietly at Ferry Terminal.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"Ferry Terminal\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Ines argue quietly at Ferry Terminal.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ines\",\n      \"object\": \"Ferry Terminal\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Ines argue quietly at Ferry Terminal.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"ada\",\n      \"object\": \"ines\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    }\n  ]\n}"
+}

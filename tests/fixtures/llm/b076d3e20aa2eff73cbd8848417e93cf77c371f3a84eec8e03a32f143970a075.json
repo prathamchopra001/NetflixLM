@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Rui and Dov argue quietly at Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"rui\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Rui and Dov argue quietly at Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Rui and Dov argue quietly at Greywater Dock.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"rui\",\n      \"object\": \"dov\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"the fog is worse than yesterday.\",\n      \"predicate\": \"state\",\n      \"subject\": \"The Lantern Bar\",\n      \"value\": \"injured: <detail>\",\n      \"confidence\": 0.5\n    }\n  ]\n}"
+}

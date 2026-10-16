@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Tomas argue quietly at Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ines\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Tomas argue quietly at Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Tomas argue quietly at Marrow Street Garage.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"ines\",\n      \"object\": \"tomas\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    }\n  ]\n}"
+}

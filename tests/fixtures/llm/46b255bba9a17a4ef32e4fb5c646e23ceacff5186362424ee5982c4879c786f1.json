@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Tomas argue quietly at Pier Nine.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"Pier Nine\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Tomas argue quietly at Pier Nine.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Pier Nine\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Hey the harbormaster, got a minute?\",\n      \"predicate\": \"references\",\n      \"subject\": \"ada\",\n      \"object\": \"secret_4\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 3,\n      \"quote\": \"I counted gulls instead of sleeping.\",\n      \"predicate\": \"state\",\n      \"subject\": \"tomas\",\n      \"value\": \"injured: <detail>\",\n      \"confidence\": 0.5\n    }\n  ]\n}"
+}

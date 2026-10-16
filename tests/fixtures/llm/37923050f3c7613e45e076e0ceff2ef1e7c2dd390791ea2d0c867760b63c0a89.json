@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Maya and Tomas wait at Saltworks Yard.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"maya\",\n      \"object\": \"Saltworks Yard\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Maya and Tomas wait at Saltworks Yard.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Saltworks Yard\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Dov Lindqvist forged the customs ledger.\",\n      \"predicate\": \"learns\",\n      \"subject\": \"maya\",\n      \"object\": \"secret_3\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 3,\n      \"quote\": \"Not a word to anyone.\",\n      \"predicate\": \"decision\",\n      \"subject\": \"tomas\",\n      \"value\": \"keep the secret\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

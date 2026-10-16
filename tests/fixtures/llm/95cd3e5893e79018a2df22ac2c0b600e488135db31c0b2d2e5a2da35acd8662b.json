@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Rui and Ada share a thermos\",\n      \"predicate\": \"holds\",\n      \"subject\": \"rui\",\n      \"object\": \"ada\",\n      \"value\": \"share\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"at Tidewater Diner\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"rui\",\n      \"object\": \"Tidewater Diner\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"at Tidewater Diner\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"Tidewater Diner\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Ada, have you seen the tide tables?\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"rui\",\n      \"object\": \"Kappa Cola\",\n      \"confidence\": 0.0\n    }\n  ]\n}"
+}

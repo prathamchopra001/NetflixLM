@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ines, Tomas and Leo crowd into Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ines\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ines, Tomas and Leo crowd into Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ines, Tomas and Leo crowd into Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"leo\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Hey Tomas, got a minute?\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"ines\",\n      \"object\": \"Tidewater Diner\",\n      \"confidence\": 0.0\n    }\n  ]\n}"
+}

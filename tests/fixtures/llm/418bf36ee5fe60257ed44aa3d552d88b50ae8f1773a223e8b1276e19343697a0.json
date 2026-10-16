@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas and Maya share a thermos at Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas and Maya share a thermos at Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"maya\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Grab me a Kappa Cola on your way back, Maya.\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"tomas\",\n      \"object\": \"Kappa Cola\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

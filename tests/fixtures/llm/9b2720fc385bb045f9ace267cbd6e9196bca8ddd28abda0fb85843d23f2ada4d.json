@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ada, Maya and Leo crowd into Quill Archive.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ada, Maya and Leo crowd into Quill Archive.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"maya\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ada, Maya and Leo crowd into Quill Archive.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"leo\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Hey the detective, got a minute?\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"ada\",\n      \"object\": \"Harbor City PD\",\n      \"confidence\": 0.8\n    }\n  ]\n}"
+}

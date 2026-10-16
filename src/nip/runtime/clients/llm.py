@@ -1,17 +1,20 @@
 """text_llm / vlm / judge_llm: vLLM's OpenAI-compatible API behind `/models/<variant>`.
 
-Every call is structured: `response_format` carries the JSON schema of a Pydantic model
-(hardware-adaptation.md › Serving), temperature 0.
+Every call is structured (D-025, tech-stack.md Build notes): instructor in JSON-schema mode, so
+`response_format` carries the JSON schema of a Pydantic model; temperature 0; Qwen thinking off
+(`chat_template_kwargs.enable_thinking: false`); `max_retries=1` = exactly one repair call when the
+reply fails the schema or a validator, which gets `context` as its validation context.
 """
 
 import base64
 import os
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
 
-from nip.runtime.clients.stub import stub_instance
+from nip.runtime.clients.stub import REPLAY_VARIANT, record, record_key, recorded, stub_instance
 
 # Serve's HTTP proxy runs on every Ray node; host-side dev reaches it through compose.dev.yaml
 # (NIP_SERVE_URL=http://127.0.0.1:8001, R9).
@@ -35,12 +38,14 @@ def messages(prompt: str, images: Sequence[bytes] = (), system: str | None = Non
 
 class LLMClient:
     def __init__(self, variant: str, base_url: str = SERVE_URL, timeout_s: float = 600) -> None:
+        import instructor
         from openai import OpenAI
 
         self.variant = variant
         self._client = OpenAI(
             base_url=f"{base_url}/models/{variant}/v1", api_key="unused", timeout=timeout_s
         )
+        self._structured = instructor.from_openai(self._client, mode=instructor.Mode.JSON_SCHEMA)
 
     def complete[M: BaseModel](
         self,
@@ -50,22 +55,29 @@ class LLMClient:
         images: Sequence[bytes] = (),
         system: str | None = None,
         max_tokens: int = 1024,
+        context: dict[str, Any] | None = None,
     ) -> M:
-        r = self._client.chat.completions.create(
+        _, raw = self._structured.chat.completions.create_with_completion(
             model=self.variant,
             messages=messages(prompt, images, system),
+            response_model=schema,
+            max_retries=1,
+            context=context,
             temperature=0,
             max_tokens=max_tokens,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {"name": schema.__name__, "schema": schema.model_json_schema()},
-            },
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
-        return schema.model_validate_json(r.choices[0].message.content or "")
+        reply = raw.choices[0].message.content or ""  # the reply that validated (after a repair)
+        if rec := os.environ.get("NIP_LLM_RECORD_DIR"):  # D-020: recordings for the cpu profile
+            key = record_key(self.variant, prompt, schema, system)
+            record(key, self.variant, schema.__name__, reply, Path(rec))
+        # a plain instance: instructor's carries its response object in __dict__
+        return schema.model_validate_json(reply, context=context)
 
 
 class StubLLM:
-    """Same interface; deterministic schema-valid output, no model (NIP_PROFILE=cpu)."""
+    """Same interface, no model (NIP_PROFILE=cpu): the recorded REPLAY_VARIANT response for this
+    exact call when there is one, else the deterministic minimal instance of the schema."""
 
     def __init__(self, variant: str = "stub") -> None:
         self.variant = variant
@@ -78,5 +90,9 @@ class StubLLM:
         images: Sequence[bytes] = (),
         system: str | None = None,
         max_tokens: int = 1024,
+        context: dict[str, Any] | None = None,
     ) -> M:
-        return stub_instance(schema)
+        reply = recorded(record_key(REPLAY_VARIANT, prompt, schema, system))
+        if reply is None:
+            return stub_instance(schema)
+        return schema.model_validate_json(reply, context=context)

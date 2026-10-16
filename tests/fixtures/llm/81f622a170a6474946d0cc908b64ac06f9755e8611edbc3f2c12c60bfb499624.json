@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Rui, Maya and Ines crowd into Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"rui\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Rui, Maya and Ines crowd into Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"maya\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Rui, Maya and Ines crowd into Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ines\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Where is everyone, Maya?\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"rui\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

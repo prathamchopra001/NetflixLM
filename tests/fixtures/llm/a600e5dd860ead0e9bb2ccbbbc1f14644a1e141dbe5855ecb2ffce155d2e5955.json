@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Ada share a thermos at Quill Archive.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Ada share a thermos at Quill Archive.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Grab me a Kappa Cola on your way back, Ada.\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"dov\",\n      \"object\": \"Kappa Cola\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 4,\n      \"quote\": \"I will find you at the dock.\",\n      \"predicate\": \"decision\",\n      \"subject\": \"dov\",\n      \"value\": \"find you at the dock\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

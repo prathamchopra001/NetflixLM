@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Sasha share a thermos at Ferry Terminal.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"Ferry Terminal\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Sasha share a thermos at Ferry Terminal.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"sasha\",\n      \"object\": \"Ferry Terminal\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Sasha share a thermos at Ferry Terminal.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"dov\",\n      \"object\": \"ada\",\n      \"value\": \"share\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Dov picks up the rusted key.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"dov\",\n      \"object\": \"ada\",\n      \"value\": \"obtain\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

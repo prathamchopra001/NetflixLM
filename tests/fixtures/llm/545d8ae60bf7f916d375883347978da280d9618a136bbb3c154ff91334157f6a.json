@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Dov sits alone at Ferry Terminal\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"Ferry Terminal\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"a stack of old papers on the table\",\n      \"predicate\": \"setup\",\n      \"subject\": \"ada\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 0.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Tomas Vale takes money from Greywater Holdings\",\n      \"predicate\": \"references\",\n      \"subject\": \"dov\",\n      \"object\": \"secret_4\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

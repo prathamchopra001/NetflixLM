@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas and Dov check their watches\",\n      \"predicate\": \"holds\",\n      \"subject\": \"Tidewater Diner\",\n      \"object\": \"Tidewater Diner\",\n      \"value\": \"check\"\n    ,\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

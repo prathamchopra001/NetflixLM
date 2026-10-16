@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Maya and Ines share a thermos\",\n      \"predicate\": \"holds\",\n      \"subject\": \"maya\",\n      \"object\": \"ada\",\n      \"value\": \"share\"\n    ,\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"at Pier Nine\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"maya\",\n      \"object\": \"ada\",\n      \"value\": \"pier nine\"\n    ,\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Ada Kovac is the informant\",\n      \"predicate\": \"learns\",\n      \"subject\": \"maya\",\n      \"object\": \"secret_1\"\n    ,\n      \"confidence\": 1.0\n    }\n  ]\n}"
+}

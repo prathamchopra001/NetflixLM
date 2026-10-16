@@ -137,7 +137,12 @@ def extract(
     variant: Annotated[str, typer.Option(help="enum | free-text")] = "enum",
     record: Annotated[bool, typer.Option(help="record responses into tests/fixtures/llm")] = False,
     episodes: Annotated[str, typer.Option(help="comma list, default all")] = "",
+    replay: Annotated[
+        bool, typer.Option(help="re-resolve and re-score the saved raw events, no model calls")
+    ] = False,
 ) -> None:
+    """One extraction pass of an arm (or, with --replay, the shipped resolution and grounding
+    code re-applied to the arm's saved raw events; wall times and failures are kept)."""
     from sqlalchemy import create_engine, select
 
     from eval.synthetic import build
@@ -162,6 +167,25 @@ def extract(
     ensure_ingested(engine, s3)
     show = build(SEED)
     eps = episodes.split(",") if episodes else list(show.episodes)
+    d = OUT / variant
+    saved: dict[str, list[dict[str, Any]]] = {}
+    if replay:
+        model_keys = (
+            "line",
+            "quote",
+            "predicate",
+            "subject",
+            "subject_name",
+            "object",
+            "object_name",
+            "value",
+            "confidence",
+        )  # the model's fields only
+        for x in (d / "events.jsonl").read_text(encoding="utf-8").splitlines():
+            e = json.loads(x)
+            saved.setdefault(e["scene"], []).append(
+                {"scene": e["scene"]} | {k: e.get(k) for k in model_keys}
+            )
     llm = LLMClient(VARIANT)
     events: list[dict[str, Any]] = []
     timing: list[float] = []
@@ -177,7 +201,9 @@ def extract(
             for sc in load_scenes(conn, ep, row.id):
                 t = time.perf_counter()
                 try:
-                    raw = extract_scene(llm, sc, registry, enum)
+                    raw = (
+                        saved.get(sc.ref, []) if replay else extract_scene(llm, sc, registry, enum)
+                    )
                 except Exception as e:  # recorded as a failed unit, as the stage would
                     failures.append(f"{sc.ref}: {type(e).__name__}: {str(e)[:300]}")
                     continue
@@ -201,11 +227,16 @@ def extract(
     for ev in events:
         ev["subject_truth"] = ids.get(ev.get("subject_id"))  # type: ignore[arg-type]
         ev["object_truth"] = ids.get(ev.get("object_id"))  # type: ignore[arg-type]
-    d = OUT / variant
     d.mkdir(parents=True, exist_ok=True)
     (d / "events.jsonl").write_text(
         "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events), encoding="utf-8"
     )
+    if replay:  # the pass's own wall times and failures stand
+        meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+        meta["replayed"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        (d / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
+        typer.echo(f"replayed {len(events)} events")
+        return
     meta = {
         "variant": variant,
         "model": VARIANT,

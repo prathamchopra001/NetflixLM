@@ -25,11 +25,15 @@ events, the first event's value, minimum confidence. That is the `fact_consolida
 invariant. Confidence = min of the source events, times NIP_INFERRED_STORY_CONFIDENCE_FACTOR when
 a source scene's story position is inferred.
 
+`write_facts` keeps every unchanged active fact (same predicate, subject, object, value, ranges)
+and its id, so `fact/{id}` evidence keeps resolving; only changed facts are superseded/inserted.
+
 Story positions come from `scene.story_seq` when every scene of the show has one (2.2), else from
 script order (episode_seq, then scene order) with nothing inferred.
 """
 
 import json
+import logging
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -40,6 +44,8 @@ from sqlalchemy.dialects.postgresql import Range
 
 from nip.contracts.fact import Fact, Predicate
 from nip.store import schema
+
+log = logging.getLogger(__name__)
 
 STAGE = "knowledge.consolidate"
 FACT_REVIEW_THRESHOLD = float(os.environ.get("NIP_FACT_REVIEW_THRESHOLD", "0.80"))
@@ -219,7 +225,7 @@ def load_events(conn: Connection, show_id: int) -> list[Event]:
             fe.c.object_id,
             fe.c.value,
             fe.c.confidence,
-        )  # fmt: skip
+        )
         .join(sc, sc.c.id == fe.c.scene_id)
         .join(ep, ep.c.id == sc.c.episode_id)
         .where(ep.c.show_id == show_id)
@@ -228,40 +234,78 @@ def load_events(conn: Connection, show_id: int) -> list[Event]:
     return [Event(*r) for r in rows]
 
 
-def write_facts(conn: Connection, show_id: int, facts: list[Fact]) -> None:
-    """The show's active facts become `superseded`; `facts` are inserted active."""
+def _ident(
+    predicate: str, subject: int, obj: int | None, value: Any, story: Any, screen: Any
+) -> Any:
+    return predicate, subject, obj, json.dumps(value, sort_keys=True), story, screen
+
+
+def write_facts(conn: Connection, show_id: int, facts: list[Fact]) -> dict[str, int]:
+    """Make `facts` the show's active facts with stable ids (review I-2).
+
+    An active fact with the same predicate, subject, object, value and ranges keeps its row (source
+    events and confidence are updated in place); active facts no longer produced become
+    `superseded`; new ones are inserted with `supersedes` = a superseded fact of the same subject,
+    predicate and object. Returns the counts (kept, inserted, superseded)."""
     fa = schema.fact
-    conn.execute(
-        update(fa)
-        .where(fa.c.show_id == show_id, fa.c.status == "active")
-        .values(status="superseded")
-    )
-    if facts:
+    old = {
+        _ident(
+            r.predicate,
+            r.subject_id,
+            r.object_id,
+            r.value,
+            (r.story.lower, r.story.upper),
+            (r.screen.lower, r.screen.upper),
+        ): r
+        for r in conn.execute(select(fa).where(fa.c.show_id == show_id, fa.c.status == "active"))
+    }
+    new: list[Fact] = []
+    for f in facts:
+        r = old.pop(
+            _ident(f.predicate, f.subject_id, f.object_id, f.value, f.story, f.screen), None
+        )
+        if r is None:
+            new.append(f)
+        elif r.source_event_ids != f.source_event_ids or abs(r.confidence - f.confidence) > 1e-5:
+            conn.execute(
+                update(fa)
+                .where(fa.c.id == r.id)
+                .values(source_event_ids=f.source_event_ids, confidence=f.confidence)
+            )
+    if old:  # first, so the replacements do not overlap them (fact_consolidated_no_overlap)
+        ids = [r.id for r in old.values()]
+        conn.execute(update(fa).where(fa.c.id.in_(ids)).values(status="superseded"))
+    gone = {(r.predicate, r.subject_id, r.object_id): r.id for r in old.values()}
+    if new:
+        cols = {
+            "show_id",
+            "predicate",
+            "subject_id",
+            "object_id",
+            "value",
+            "source_event_ids",
+            "confidence",
+        }
         conn.execute(
             insert(fa),
             [
-                f.model_dump(
-                    include={
-                        "show_id",
-                        "predicate",
-                        "subject_id",
-                        "object_id",
-                        "value",
-                        "source_event_ids",
-                        "confidence",
-                    },
-                    mode="json",
-                )  # fmt: skip
-                | {"screen": Range(*f.screen), "story": Range(*f.story)}
-                for f in facts
+                f.model_dump(include=cols, mode="json")
+                | {
+                    "screen": Range(*f.screen),
+                    "story": Range(*f.story),
+                    "supersedes": gone.get((str(f.predicate), f.subject_id, f.object_id)),
+                }
+                for f in new
             ],
         )
+    return {"kept": len(facts) - len(new), "inserted": len(new), "superseded": len(old)}
 
 
 def consolidate_show(conn: Connection, show_id: int) -> int:
     """Re-consolidate every event of the show; returns the number of active facts."""
     facts = consolidate(load_events(conn, show_id), positions(conn, show_id), show_id)
-    write_facts(conn, show_id, facts)
+    counts = write_facts(conn, show_id, facts)
+    log.info("show %d: %d facts (%s)", show_id, len(facts), counts)
     return len(facts)
 
 

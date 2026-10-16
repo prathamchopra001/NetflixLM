@@ -243,6 +243,8 @@ def save_events(
         ev["object_id"] = resolver.resolve(ev.get("object"), ev.get("object_name"), pred, "object")
         if ev["subject_id"] is None:  # an empty name: nothing to resolve or create
             continue
+        if ev["object_id"] is None and pred in ("holds", "owns", "wearing"):
+            continue  # holding nothing: would merge with any other object-less holds (review M-8)
         rows.append(
             {
                 "scene_id": scene.id,

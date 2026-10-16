@@ -29,3 +29,8 @@ def test_a_quote_longer_than_its_line_needs_the_whole_quote() -> None:
 def test_threshold_is_a_parameter() -> None:
     q = "Ada Kovak is the informant"  # one wrong letter
     assert grounded(q, LINE, 85) and not grounded(q, LINE, 99)
+
+
+def test_a_one_word_quote_grounds_only_a_one_word_line() -> None:  # review M-4
+    assert not grounded("Ada", LINE) and not grounded("a", LINE)
+    assert grounded("Maya?", "Maya?")

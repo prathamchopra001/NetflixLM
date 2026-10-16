@@ -7,6 +7,7 @@ reply fails the schema or a validator, which gets `context` as its validation co
 """
 
 import base64
+import logging
 import os
 from collections.abc import Sequence
 from pathlib import Path
@@ -15,6 +16,8 @@ from typing import Any
 from pydantic import BaseModel
 
 from nip.runtime.clients.stub import REPLAY_VARIANT, record, record_key, recorded, stub_instance
+
+log = logging.getLogger(__name__)
 
 # Serve's HTTP proxy runs on every Ray node; host-side dev reaches it through compose.dev.yaml
 # (NIP_SERVE_URL=http://127.0.0.1:8001, R9).
@@ -92,7 +95,9 @@ class StubLLM:
         max_tokens: int = 1024,
         context: dict[str, Any] | None = None,
     ) -> M:
-        reply = recorded(record_key(REPLAY_VARIANT, prompt, schema, system))
-        if reply is None:
+        key = record_key(REPLAY_VARIANT, prompt, schema, system)
+        reply = recorded(key)
+        if reply is None:  # prompt, registry or schema drift shows up here (review M-9)
+            log.info("no recorded %s reply %s: minimal stub instance", schema.__name__, key[:12])
             return stub_instance(schema)
         return schema.model_validate_json(reply, context=context)

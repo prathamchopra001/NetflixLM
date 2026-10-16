@@ -1,16 +1,22 @@
 """Entity resolution (architecture.md › Entity resolution, D-025).
 
 A registry key from the extraction enum resolves directly. An `UNKNOWN` (or, in EXP-020's
-free-text arm, any name) is fuzzy-matched against the show's names: canonical names, aliases and
-secret descriptions, candidates included (rapidfuzz WRatio on lower-cased, punctuation-free text,
-score >= RESOLVE_THRESHOLD, and the best score must point at one entity). A name that still does not
-resolve becomes `entity(status=candidate, origin=extracted)` with the name as its alias; the
-candidate is found by later events, and it appears in the review queue (`consolidate.review_queue`).
+free-text arm, any name) is matched against the show's names: canonical names, aliases and secret
+descriptions, candidates included. Both sides are lower-cased and stripped of punctuation
+(rapidfuzz `default_process`). A name scores 100 when its words are a subset of a known name's
+words and at least half of them ("Ada" -> "Ada Kovac", "TOMAS" -> "Tomas Vale", but not "Tomas" ->
+a secret's description that names him), else the rapidfuzz `ratio` of the whole strings (spelling
+slips). Whole words only: "tomato" is not "Tom" and "Dover Street" is not "Dov"
+(WRatio scored any containment at exactly 90, review I-1), and a longer name that merely contains
+a known one ("Dov Street") is not it either. The best score must reach RESOLVE_THRESHOLD and point
+at one entity. A name that still does not resolve becomes `entity(status=candidate,
+origin=extracted)` with the name as its alias; later events find the candidate, and it appears in
+the review queue (`consolidate.review_queue`).
 """
 
 from typing import Any
 
-from rapidfuzz import fuzz, process, utils
+from rapidfuzz import fuzz, utils
 from sqlalchemy import Connection, insert, select
 
 from nip.store import schema
@@ -22,6 +28,16 @@ SUBJECT_KIND = {"setup": "prop", "payoff": "prop"}
 OBJECT_KIND = {"present_at": "location", "holds": "prop", "owns": "prop", "wearing": "prop",
                "learns": "secret", "references": "secret", "relationship": "character",
                "payoff": "character", "mentions": "org"}  # fmt: skip
+
+
+def score(surface: str, name: str) -> float:
+    """100 when the surface's words are a subset of the name's words and at least half of them
+    (not one word of a secret's description sentence), else the strings' ratio."""
+    s, n = utils.default_process(surface), utils.default_process(name)
+    if not s:
+        return 0.0
+    sw, nw = set(s.split()), set(n.split())
+    return 100.0 if sw <= nw and 2 * len(sw) >= len(nw) else fuzz.ratio(s, n)
 
 
 class Resolver:
@@ -53,18 +69,11 @@ class Resolver:
 
     def match(self, name: str) -> int | None:
         """The one entity whose names best match `name` at >= RESOLVE_THRESHOLD, else None."""
-        hits = process.extract(
-            name,
-            self.names,
-            scorer=fuzz.WRatio,
-            processor=utils.default_process,
-            score_cutoff=RESOLVE_THRESHOLD,
-            limit=None,
-        )
-        if not hits:
+        scores = [score(name, n) for n in self.names]
+        best = max(scores, default=0.0)
+        if best < RESOLVE_THRESHOLD:
             return None
-        best = max(s for _, s, _ in hits)
-        ids = {self.ids[i] for _, s, i in hits if s == best}
+        ids = {self.ids[i] for i, s in enumerate(scores) if s == best}
         return ids.pop() if len(ids) == 1 else None
 
     def resolve(self, ref: str | None, name: str | None, predicate: str, role: str) -> int | None:

@@ -32,13 +32,15 @@ def ingest_show(pg: Engine, s3: FakeS3, d: Path, episodes: tuple[str, ...] = ("S
             ingest_files(conn, s3, show=SHOW, episode=ep, files=[(None, d / f"{ep}.fountain")])
 
 
-def run(pg: Engine, s3: FakeS3, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+def run(
+    pg: Engine, s3: FakeS3, monkeypatch: pytest.MonkeyPatch, episode: str = "S01E01"
+) -> dict[str, Any]:
     if extract.STAGE not in dict(pipeline.STAGES):  # once per test
         monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
         pipeline.add_stage(extract.STAGE, stage_extract)
         pipeline.add_stage("knowledge.consolidate", stage_consolidate)
     plan, inv = stub_plan()
-    return pipeline.run_store(pg, s3, show=SHOW, episodes=["S01E01"], plan=plan, inventory=inv)
+    return pipeline.run_store(pg, s3, show=SHOW, episodes=[episode], plan=plan, inventory=inv)
 
 
 def count(pg: Engine, t: Any, *where: Any) -> int:
@@ -59,14 +61,31 @@ def test_synthetic_show_extracts_on_the_cpu_profile(
     assert n_events == 75 and 0 < n_facts <= n_events
     raw = s3.objects["nip-artifacts", "runs/run_1/S01E01/knowledge.events.raw.jsonl"].decode()
     assert len(raw.splitlines()) >= n_events
-    with pg.connect() as conn:
-        fid = conn.execute(select(func.min(fa.c.id))).scalar_one()
-        assert load_timeline(conn, SHOW, "S01E01").resolve(f"fact/{fid}") is not None
-    # a second run re-extracts: events are replaced, the first run's facts superseded
+    first = active_ids(pg)
+    # a second run re-extracts (new event ids) but changes no fact: same ids, no new rows (I-2)
     s2 = run(pg, s3, monkeypatch)
     assert s2["status"] == "completed" and count(pg, fe) == n_events
-    assert count(pg, fa, fa.c.status == "active") == n_facts
-    assert count(pg, fa, fa.c.status == "superseded") == n_facts
+    assert active_ids(pg) == first and count(pg, fa) == len(first)
+    # the next episode's consolidation keeps S01E01's unchanged facts and their evidence refs
+    with pg.begin() as conn:
+        f = tmp_path / "S01E02.fountain"
+        ingest_files(conn, s3, show=SHOW, episode="S01E02", files=[(None, f)])
+    assert run(pg, s3, monkeypatch, "S01E02")["status"] == "completed"
+    kept = first & active_ids(pg)
+    assert len(kept) >= 0.8 * len(first)
+    with pg.connect() as conn:
+        tl = load_timeline(conn, SHOW, "S01E01")
+        assert all(tl.resolve(f"fact/{i}") is not None for i in kept)
+        for old in first - kept:  # closed by an S01E02 event: superseded, with a successor
+            succ = conn.execute(select(fa.c.id).where(fa.c.supersedes == old)).first()
+            status = conn.execute(select(fa.c.status).where(fa.c.id == old)).scalar_one()
+            assert status == "superseded" and succ is not None
+
+
+def active_ids(pg: Engine) -> set[int]:
+    fa = schema.fact
+    with pg.connect() as c:
+        return set(c.execute(select(fa.c.id).where(fa.c.status == "active")).scalars())
 
 
 class FakeLLM:
@@ -128,4 +147,6 @@ def test_fabricated_quotes_are_dropped_and_unknown_names_become_candidates(
     assert q["facts"] and all(f.confidence < 0.8 for f in q["facts"])  # the 0.5 present_at facts
     raw = s3.objects["nip-artifacts", "runs/run_1/S01E01/knowledge.events.raw.jsonl"].decode()
     rows = [json.loads(r) for r in raw.splitlines()]
-    assert sum(r["predicate"] == "learns" for r in rows) == len(quotes)  # raw keeps the dropped
+    dropped = [r for r in rows if not r["grounded"]]  # raw keeps the dropped, with the verdict
+    assert dropped and all(r["quote"] == "Ada Kovac is the informant" for r in dropped)
+    assert len(rows) - len(dropped) == len(quotes)

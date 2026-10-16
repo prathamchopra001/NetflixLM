@@ -3,10 +3,11 @@
 A registry key from the extraction enum resolves directly. An `UNKNOWN` (or, in EXP-020's
 free-text arm, any name) is matched against the show's names: canonical names, aliases and secret
 descriptions, candidates included. Both sides are lower-cased and stripped of punctuation
-(rapidfuzz `default_process`). A name scores 100 when its words are a subset of a known name's
-words and at least half of them ("Ada" -> "Ada Kovac", "TOMAS" -> "Tomas Vale", but not "Tomas" ->
-a secret's description that names him), else the rapidfuzz `ratio` of the whole strings (spelling
-slips). Whole words only: "tomato" is not "Tom" and "Dover Street" is not "Dov"
+(rapidfuzz `default_process`, whitespace collapsed). A name scores 101 when it equals a known
+name, 100 when its words are a subset of a known name's words and at least half of them ("Ada" ->
+"Ada Kovac", "TOMAS" -> "Tomas Vale", but not "Tomas" -> a secret's description that names him),
+else the rapidfuzz `ratio` of the whole strings (spelling slips). Whole words only: "tomato"
+is not "Tom" and "Dover Street" is not "Dov"
 (WRatio scored any containment at exactly 90, review I-1), and a longer name that merely contains
 a known one ("Dov Street") is not it either. The best score must reach RESOLVE_THRESHOLD and point
 at one entity. A name that still does not resolve becomes `entity(status=candidate,
@@ -31,11 +32,15 @@ OBJECT_KIND = {"present_at": "location", "holds": "prop", "owns": "prop", "weari
 
 
 def score(surface: str, name: str) -> float:
-    """100 when the surface's words are a subset of the name's words and at least half of them
-    (not one word of a secret's description sentence), else the strings' ratio."""
-    s, n = utils.default_process(surface), utils.default_process(name)
+    """101 for the same name; 100 when the surface's words are a subset of the name's words and at
+    least half of them (not one word of a secret's description sentence); else the strings' ratio.
+    The exact tier makes a repeated unresolved name find its own candidate instead of tying with the
+    names that contain it ("Vale": candidate "Vale" vs "Tomas Vale", "Mira Vale")."""
+    s, n = (" ".join(utils.default_process(x).split()) for x in (surface, name))
     if not s:
         return 0.0
+    if s == n:  # an exact name outranks every subset match (re-review N-1)
+        return 101.0
     sw, nw = set(s.split()), set(n.split())
     return 100.0 if sw <= nw and 2 * len(sw) >= len(nw) else fuzz.ratio(s, n)
 

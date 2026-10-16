@@ -51,3 +51,28 @@ def test_scores() -> None:
     assert score("Dover Street", "Dov") < RESOLVE_THRESHOLD
     assert score("Tomas", "Tomas Vale takes money from Greywater Holdings") < RESOLVE_THRESHOLD
     assert score("Marrow Street", "Marrow Street Garage") == 100
+
+
+class Minting(Resolver):
+    """Candidates without a database: a new id per call, added to the names."""
+
+    def candidate(self, name: str, kind: str) -> int:
+        eid = 100 + len(self.names)
+        self._add(name, eid)
+        return eid
+
+
+def test_an_exact_name_wins_and_a_repeated_unknown_name_reuses_its_candidate() -> None:  # N-1
+    r = object.__new__(Minting)
+    r.keys, r.names, r.ids = {}, [], []
+    for name, eid in {
+        "Tomas Vale": 2,
+        "Mira Vale": 8,
+        "Ada Maria Kovac": 9,
+        "Ada Kovac": 1,
+    }.items():
+        r._add(name, eid)
+    first = r.resolve("UNKNOWN", "Vale", "present_at", "subject")
+    assert first >= 100 and r.resolve("UNKNOWN", "VALE", "present_at", "subject") == first
+    assert r.resolve("UNKNOWN", "Ada Kovac", "present_at", "subject") == 1
+    assert r.match("ada  kovac") == 1 and r.match("Ada Maria") == 9

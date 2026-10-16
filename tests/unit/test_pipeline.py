@@ -4,8 +4,10 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from nip import pipeline
 from nip.agents.base import Input
 from nip.cli import app
+from nip.contracts import Autoscaling, Gpu, HardwareInventory, Node, Plan, Slot, StageGroup
 from nip.contracts.flag import Agent, Flag
 from nip.contracts.report import Report
 from nip.pipeline import (
@@ -15,6 +17,8 @@ from nip.pipeline import (
     require_stable_refs,
     run_pipeline,
 )
+from nip.runtime import planner
+from nip.runtime.catalog import load_catalog
 
 SCRIPT = "INT. ROOM - DAY #1#\n\nMaya enters.\n\nEXT. DOCK - NIGHT #2#\n\nRain.\n"
 EN = "1\n00:00:01,000 --> 00:00:03,000\nHello.\n\n2\n00:00:04,000 --> 00:00:06,000\nBye.\n"
@@ -192,3 +196,76 @@ def test_flags_without_a_stable_or_valid_ref_are_counted_drops() -> None:
         "no stable evidence ref (scene/line/shot/kf/cue/clr), R13",
         "malformed evidence ref",
     ]
+
+
+# ---- W-serve: skipped slots are recorded, staged segments, the no-fit reason ------------------
+def _inv(free_gb: float) -> HardwareInventory:
+    gpu = Gpu(index=0, name="g", vram_total_gb=8.0, vram_free_gb=free_gb, compute_capability="8.9")
+    return HardwareInventory(
+        fingerprint="sim",
+        nodes=[Node(node_id="n0", cpus=16, ram_gb=31.0, gpus=[gpu])],
+        autoscaling=Autoscaling(enabled=False, max_gpu_nodes=0),
+    )
+
+
+WORKLOAD = {s: 1 for s in pipeline.MODEL_SLOTS}
+PINS = {Slot.ASR: "faster-whisper-large-v3-turbo-int8"}
+CATALOG = load_catalog()
+
+
+def _plan(free_gb: float) -> Plan:
+    return planner.plan(_inv(free_gb), CATALOG, WORKLOAD, pins=PINS, margin_gb=pipeline.MARGIN_GB)
+
+
+def test_no_fit_says_free_vs_needed() -> None:
+    """W-int's laptop reading (6.70 GiB free): text_llm is skipped, and the reason has numbers."""
+    p = _plan(6.70)
+    assert p.skipped_slots == [Slot.TEXT_LLM]
+    why = pipeline.no_fit(Slot.TEXT_LLM, _inv(6.70), CATALOG, PINS, 0.9)
+    assert why == (
+        "no hardware for text_llm: qwen3.5-4b-awq needs 6.25 GiB on one GPU, GPU 0 has 6.20 "
+        "usable = min(0.90 x 8.00 total, 6.70 free - 0.50 margin): short 0.05 GiB"
+    )
+    assert Slot.TEXT_LLM in _plan(6.75).decisions  # the reason's arithmetic is the planner's
+
+
+def test_a_skipped_slot_skips_its_stages_and_story_runs_on_rules() -> None:
+    p = _plan(6.70)
+    p = p.model_copy(update={"warnings": ["no hardware for text_llm: short 0.05 GiB"]})
+    names = ["timeline.asr", "knowledge.story", "knowledge.extract", "knowledge.index", "checks"]
+    assert pipeline.skipped_stages(p, names) == {
+        "knowledge.story": "knowledge.story ran on rules only: no hardware for text_llm: "
+        "short 0.05 GiB",
+        "knowledge.extract": "knowledge.extract skipped: no hardware for text_llm: short 0.05 GiB",
+    }
+    rp = pipeline.report_plan(p, ["note"])
+    assert rp.skipped_slots == [Slot.TEXT_LLM] and rp.warnings[-1] == "note"
+
+
+def test_outside_the_cluster_llm_slots_are_skipped_with_the_reason() -> None:
+    p = _plan(7.6)
+    assert pipeline.serve_slots(p) == {Slot.TEXT_LLM}  # asr/embedder run in-process
+    q = pipeline.without(p, {Slot.TEXT_LLM}, "run it in the cluster")
+    assert Slot.TEXT_LLM not in q.decisions and q.skipped_slots == [Slot.TEXT_LLM]
+    assert all(Slot.TEXT_LLM not in g.slots and g.slots for g in q.groups)
+    assert pipeline.slot_reason(q, Slot.TEXT_LLM) == "no Serve for text_llm: run it in the cluster"
+
+
+def test_segments_cut_where_the_served_group_changes() -> None:
+    p = _plan(7.6)
+    llm = next(g for g in p.groups if Slot.TEXT_LLM in g.slots)
+    assert p.mode == "staged" and llm.name == "llm"
+    names = ["timeline.asr", "timeline.align", "knowledge.story", "knowledge.extract",
+             "knowledge.consolidate", "knowledge.index", "timeline"]  # fmt: skip
+    stages = [(n, lambda ep: None) for n in names]
+
+    def cut(served: dict[Slot, StageGroup]) -> list[tuple[str | None, list[str]]]:
+        segs = pipeline.segments(stages, served)  # type: ignore[arg-type]
+        return [(g.name if g else None, [n for n, _ in part]) for g, part in segs]
+
+    assert cut({Slot.TEXT_LLM: llm}) == [
+        (None, ["timeline.asr", "timeline.align"]),
+        ("llm", ["knowledge.story", "knowledge.extract"]),
+        (None, ["knowledge.consolidate", "knowledge.index", "timeline"]),
+    ]
+    assert cut({}) == [(None, [n for n, _ in stages])]  # no serving: today's per-episode order

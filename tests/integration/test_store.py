@@ -6,6 +6,8 @@ Postgres via the `pg` fixture (NIP_TEST_DATABASE_URL), S3 via the in-memory `s3`
 import json
 import shutil
 import subprocess
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +24,8 @@ from nip.contracts import (
     Mode,
     Objective,
     Plan,
+    Slot,
+    SlotDecision,
     StageGroup,
 )
 from nip.contracts.flag import EvidenceKind
@@ -549,3 +553,80 @@ def test_failed_unit_rolls_back_its_rows_and_does_not_poison_the_next(
     assert [tuple(r) for r in seqs] == [("1", None), ("2", 2)]
     assert errors[0] == "RuntimeError: bad transition" and "DivisionByZero" in errors[1]
     assert errors[2:] == [None] * 4
+
+
+def plan_without_llm() -> Plan:
+    """A hardware (non-stub) Plan whose planner found no room for text_llm (W-int's laptop)."""
+    plan, _ = stub_plan()
+    why = "no hardware for text_llm: qwen3.5-4b-awq needs 6.25 GiB on one GPU, ... short 0.05 GiB"
+    return plan.model_copy(update={"skipped_slots": [Slot.TEXT_LLM], "warnings": [why]})
+
+
+def test_a_skipped_slot_is_a_recorded_gap_not_a_silent_one(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """W-int review I-1: without text_llm, extraction is skipped (not stubbed), the plot rules
+    that read its facts are skipped with it, and run summary + report say why."""
+    from nip.agents import script_critic
+
+    ingest(pg, s3, episode_files(tmp_path))
+    called: list[str] = []
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    monkeypatch.setattr(pipeline, "AGENTS", [*pipeline.AGENTS, script_critic])
+    pipeline.add_stage("knowledge.story", lambda ep: called.append("story"))
+    pipeline.add_stage("knowledge.extract", lambda ep: called.append("extract"))
+    _, inv = stub_plan()
+    s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01"], plan=plan_without_llm(),
+                           inventory=inv)  # fmt: skip
+    assert called == ["story"]  # story runs on its rules; extraction never falls back to a stub
+    ep = s["episodes"]["S01E01"]
+    assert s["status"] == "completed_with_gaps" and ep["flags_kept"] == 2
+    assert s["plan"]["skipped_slots"] == ["text_llm"]
+    assert "short 0.05 GiB" in s["plan"]["warnings"][0]
+    assert ep["skipped_stages"][1].startswith("knowledge.extract skipped: no hardware for text_llm")
+    assert {"stage": "knowledge.extract", "wall_s": 0.0, "skipped": True} in ep["stages"]
+    assert {str(c.check) for c in script_critic.CHECKS} <= set(ep["skipped"])
+    report = json.loads(s3.objects["nip-artifacts", "runs/run_1/S01E01/report.json"])
+    assert report["status"] == "completed_with_gaps"
+    assert report["coverage"]["script_critic"] == 0.0  # not 1.0 over 0 facts
+    assert report["plan"]["skipped_slots"] == ["text_llm"]
+    assert report["plan"]["warnings"][1:] == ep["skipped_stages"]
+
+
+def test_staged_run_holds_each_served_group_up_around_its_stages_for_every_episode(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """nip run --in-cluster with a fake serving layer: the llm group is deployed once, around
+    story + extract of both episodes; the rest runs per episode outside it."""
+    ingest(pg, s3, episode_files(tmp_path))
+    ingest(pg, s3, episode_files(tmp_path), episode="S01E02")
+    events: list[str] = []
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    for name in ("timeline.asr", "knowledge.story", "knowledge.extract", "knowledge.index"):
+        pipeline.add_stage(name, lambda ep, n=name: events.append(f"{n} {ep.episode}"))
+    plan, inv = stub_plan()
+    llm = StageGroup(name="llm", slots=[Slot.TEXT_LLM])
+    decisions = {Slot.ASR: SlotDecision(variant="a"), Slot.TEXT_LLM: SlotDecision(variant="q")}
+    groups = [StageGroup(name="timeline", slots=[Slot.ASR]), llm]
+    plan = plan.model_copy(update={"mode": Mode.STAGED, "groups": groups, "decisions": decisions})
+
+    @contextmanager
+    def deploy(g: StageGroup) -> Iterator[dict[str, Any]]:
+        events.append(f"up {g.name}")
+        yield {"load_s": {"nip-q": 1.0}}
+        events.append(f"down {g.name}")
+
+    s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01", "S01E02"], plan=plan,
+                           inventory=inv, deploy=deploy, served={Slot.TEXT_LLM})  # fmt: skip
+    assert events == [
+        "timeline.asr S01E01", "timeline.asr S01E02", "up llm",
+        "knowledge.story S01E01", "knowledge.extract S01E01",
+        "knowledge.story S01E02", "knowledge.extract S01E02", "down llm",
+        "knowledge.index S01E01", "knowledge.index S01E02",
+    ]  # fmt: skip
+    assert s["status"] == "completed" and s["plan"]["mode"] == "staged"
+    assert s["serving"] == [
+        {"group": "llm", "stages": ["knowledge.story", "knowledge.extract"],
+         "load_s": {"nip-q": 1.0}}
+    ]  # fmt: skip
+    assert [e["flags_kept"] for e in s["episodes"].values()] == [2, 2]

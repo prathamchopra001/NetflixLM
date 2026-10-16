@@ -19,7 +19,8 @@ import socket
 import subprocess
 import time
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -330,6 +331,29 @@ def teardown(
     return round(time.monotonic() - t, 1)
 
 
+@contextmanager
+def group(
+    apps_: list[App], serve: Any, used_mib: Callable[[], int] = gpu_used_mib
+) -> Iterator[dict[str, Any]]:
+    """One stage group's lifetime: measure idle VRAM -> deploy -> (body) -> teardown -> wait for
+    VRAM back to idle. Yields the group's record: `idle_mib`, `load_s` (per app), then on exit
+    `up_mib` (used VRAM with the group loaded, after its work), `unload_s` and `after_mib`.
+    On an error the group is still torn down and the original error is re-raised."""
+    rec: dict[str, Any] = {"idle_mib": used_mib()}
+    try:
+        rec["load_s"] = deploy(apps_, serve)
+        yield rec
+    except BaseException as e:  # tear down, but keep the original error as the cause
+        try:
+            teardown(apps_, serve, rec["idle_mib"], used_mib)
+        except ServingError as t:
+            e.add_note(f"teardown after this failure also failed: {t}")
+        raise
+    rec["up_mib"] = used_mib()
+    rec["unload_s"] = teardown(apps_, serve, rec["idle_mib"], used_mib)
+    rec["after_mib"] = used_mib()
+
+
 def run(
     plan: Plan,
     catalog: Catalog,
@@ -343,17 +367,7 @@ def run(
     keeps everything up for the whole run. Returns load/unload seconds per group."""
     out: list[dict[str, Any]] = []
     for g in plan.groups:
-        group = apps(plan, catalog, inventory, g.slots)
-        idle = used_mib()
-        try:
-            loads = deploy(group, serve)
+        with group(apps(plan, catalog, inventory, g.slots), serve, used_mib) as rec:
             work(g)
-        except BaseException as e:  # tear down, but keep the original error as the cause
-            try:
-                teardown(group, serve, idle, used_mib)
-            except ServingError as t:
-                e.add_note(f"teardown after this failure also failed: {t}")
-            raise
-        unload_s = teardown(group, serve, idle, used_mib)
-        out.append({"group": g.name, "load_s": loads, "unload_s": unload_s})
+        out.append({"group": g.name, "load_s": rec["load_s"], "unload_s": rec["unload_s"]})
     return out

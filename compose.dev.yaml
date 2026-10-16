@@ -6,6 +6,13 @@
 #   NIP_TEST_DATABASE_URL=postgresql://nip:change_me@127.0.0.1:55432/nip
 #   NIP_S3_ENDPOINT=http://127.0.0.1:8333   NIP_SERVE_URL=http://127.0.0.1:8001
 # 55432 and 8001 avoid a host Postgres on 5432 and the API on 8000.
+#
+# Real models on the laptop (W-serve): LLM slots are Serve apps, so the run goes inside ray-head,
+# which reads weights from the repo's models/ and runs the checked-out source (no image rebuild):
+#   HF_HUB_OFFLINE=1 docker compose -f compose.yaml -f compose.dev.yaml up -d --wait ray-head
+#   MSYS_NO_PATHCONV=1 docker compose -f compose.yaml -f compose.dev.yaml exec ray-head \
+#       nip run --show S --episodes S01E01 --in-cluster
+# (HF_HUB_OFFLINE must be set when the container starts: vLLM inherits Ray's environment.)
 
 services:
   postgres:
@@ -14,3 +21,11 @@ services:
     ports: ["127.0.0.1:8333:8333"]
   ray-head:
     ports: ["127.0.0.1:8001:8000"] # Serve's HTTP proxy
+    environment:
+      PYTHONPATH: /app/src:/app
+    volumes:
+      - ./models:/models # weights on D: (models/hf), not the named volume
+      - ./src:/app/src:ro
+      - ./config:/app/config:ro
+      - ./eval:/app/eval:ro
+      - ./tests:/app/tests:ro

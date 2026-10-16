@@ -236,3 +236,16 @@ def test_run_keeps_the_deploy_error_when_teardown_also_fails(
     with pytest.raises(ServingError, match="failed to deploy") as e:
         run(PLAN, CATALOG, LAPTOP, lambda g: None, serve, used_mib=lambda: next(readings))
     assert any("after teardown" in n for n in e.value.__notes__)
+
+
+def test_group_records_vram_and_tears_down_even_when_the_work_fails() -> None:
+    """serving.group (nip run --in-cluster wraps the stages that call the group's apps)."""
+    serve, readings = FakeServe(), iter([1500, 7600, 1520, 1510])
+    a = App("m", (Slot.DETECTOR,), 1, 0.3)
+    with serving.group([a], serve, used_mib=lambda: next(readings)) as rec:
+        assert set(serve.running) == {"nip-m"}
+    assert serve.running == {} and rec["load_s"] == {"nip-m": rec["load_s"]["nip-m"]}
+    assert (rec["idle_mib"], rec["up_mib"], rec["after_mib"]) == (1500, 7600, 1510)
+    with pytest.raises(KeyError), serving.group([a], serve, used_mib=lambda: 1500):
+        raise KeyError("stage crashed")
+    assert serve.running == {} and serve.log[-1] == ("delete", "nip-m")

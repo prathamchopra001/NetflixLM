@@ -43,7 +43,9 @@ PLAN = ReportPlan(plan_id="plan_42", mode="staged", judge_independent=False)
 
 def test_documented_report_validates_and_round_trips() -> None:
     r = Report.model_validate(DOC_REPORT)
-    assert json.loads(r.model_dump_json()) == DOC_REPORT
+    # W-serve added skipped_slots / warnings to the plan header (additive, empty by default)
+    plan = DOC_REPORT["plan"] | {"skipped_slots": [], "warnings": []}
+    assert json.loads(r.model_dump_json()) == DOC_REPORT | {"plan": plan}
 
 
 @pytest.mark.parametrize(

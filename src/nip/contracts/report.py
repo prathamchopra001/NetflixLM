@@ -9,7 +9,7 @@ from pydantic import Field
 
 from nip.contracts._base import Confidence, Contract
 from nip.contracts.flag import Agent, Category, CheckId, EvidenceRole, Flag, FlagStatus, Tier
-from nip.contracts.plan import Mode
+from nip.contracts.plan import Mode, Slot
 
 RunStatus = Literal["queued", "running", "completed", "completed_with_gaps", "failed", "cancelled"]
 
@@ -33,6 +33,10 @@ class ReportPlan(Contract):
     plan_id: str
     mode: Mode
     judge_independent: bool
+    # Slots the planner could not place and its warnings (why: free vs needed VRAM), plus what
+    # the run did without them; a skipped slot is never silent (architecture.md, W-serve).
+    skipped_slots: list[Slot] = []
+    warnings: list[str] = []
 
 
 class ReportSection(Contract):

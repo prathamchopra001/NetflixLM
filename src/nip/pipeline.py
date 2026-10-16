@@ -44,8 +44,8 @@ import logging
 import os
 import time
 from collections import Counter
-from collections.abc import Callable, Collection, Iterator
-from contextlib import contextmanager
+from collections.abc import Callable, Collection, Iterator, Mapping
+from contextlib import AbstractContextManager, contextmanager, nullcontext
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from fractions import Fraction
@@ -61,7 +61,7 @@ from nip.agents import localization
 from nip.agents.base import Check, Input, emit, run_check
 from nip.contracts.flag import CHECK_OWNER, Agent, CheckId, Flag, ProducedBy
 from nip.contracts.inventory import HardwareInventory
-from nip.contracts.plan import Mode, Objective, Plan, Slot
+from nip.contracts.plan import Mode, Objective, Plan, Slot, StageGroup
 from nip.contracts.report import Report, ReportPlan, build_report
 from nip.contracts.timeline import Timeline
 from nip.ingest import Script, SubtitleTrack
@@ -142,6 +142,9 @@ class EpisodeRun:
     report: Report | None = None
     # name -> body, uploaded to runs/{run_id}/{ep}/{name} by `publish`, after the commit
     artifacts: dict[str, bytes] = field(default_factory=dict)
+    # stage -> why it was not run (or ran rules-only): its Plan slot was skipped (W-serve)
+    skipped_stages: dict[str, str] = field(default_factory=dict)
+    lost: list[str] = field(default_factory=list)  # check ids skipped with them: a coverage gap
 
     @property
     def timeline(self) -> Timeline:
@@ -174,13 +177,48 @@ class EpisodeRun:
         self.units.append(row | {"finished_at": datetime.now(UTC)})
 
 
-def report_plan(plan: Plan) -> ReportPlan:
+def report_plan(plan: Plan, notes: Collection[str] = ()) -> ReportPlan:
+    """The report's Plan header: skipped slots and the planner's warnings (with why a slot did
+    not fit), plus `notes` (what the run did without them)."""
     judge = plan.decisions.get(Slot.JUDGE_LLM)
     return ReportPlan(
         plan_id=plan.plan_id or PLAN_ID,
         mode=plan.mode,
         judge_independent=bool(judge and judge.independent_family),
+        skipped_slots=plan.skipped_slots,
+        warnings=[*plan.warnings, *notes],
     )
+
+
+# The Plan slot each wired model stage calls (W-serve). When the planner skipped that slot, the
+# stage is not run and the run says why (architecture.md: no silent gaps); story order then comes
+# from the rules alone (B-044). Checks that read what a skipped stage produces are skipped with it
+# and count as a coverage gap.
+STAGE_SLOTS = {
+    "timeline.asr": Slot.ASR,
+    "knowledge.story": Slot.TEXT_LLM,
+    "knowledge.extract": Slot.TEXT_LLM,
+    "knowledge.index": Slot.TEXT_EMBEDDER,
+}
+RULES_ONLY = {"knowledge.story"}  # runs without its slot, on rules alone
+FEEDS = {"knowledge.extract": "plot."}  # the plot rules read the extracted facts
+
+
+def slot_reason(plan: Plan, slot: Slot) -> str:
+    """The Plan's warning for a skipped slot ("no hardware for text_llm: ...")."""
+    found = (w for w in plan.warnings if w.split(":")[0].endswith(f" {slot}"))
+    return next(found, f"no {slot} in the Plan")
+
+
+def skipped_stages(plan: Plan, stages: Collection[str]) -> dict[str, str]:
+    """Stages whose model slot the Plan skipped -> what the run does instead, and why."""
+    out: dict[str, str] = {}
+    for name in stages:
+        slot = STAGE_SLOTS.get(name)
+        if slot is not None and slot in plan.skipped_slots:
+            how = "ran on rules only" if name in RULES_ONLY else "skipped"
+            out[name] = f"{name} {how}: {slot_reason(plan, slot)}"
+    return out
 
 
 def require_stable_refs(flags: list[Flag]) -> tuple[list[Flag], list[tuple[Flag, str]]]:
@@ -246,12 +284,12 @@ def coverage(
 
 def stage_report(ep: EpisodeRun) -> None:
     """The report object; it is published only after the run commits (`publish`)."""
-    gaps = any(u["status"] == "failed" for u in ep.units)
+    gaps = bool(ep.lost) or any(u["status"] == "failed" for u in ep.units)
     ep.report = build_report(
         episode=ep.episode,
         run_id=ep.run_id,
         status="completed_with_gaps" if gaps else "completed",
-        plan=report_plan(ep.plan),
+        plan=report_plan(ep.plan, ep.skipped_stages.values()),
         coverage=coverage(ep.checks, ep.skipped, ep.units),
         flags=ep.kept,
     )
@@ -265,6 +303,22 @@ STAGES: list[tuple[str, Stage]] = [
     ("flags", stage_flags),
     ("report", stage_report),
 ]
+
+
+def segments(
+    stages: list[tuple[str, Stage]], served: Mapping[Slot, StageGroup]
+) -> list[tuple[StageGroup | None, list[tuple[str, Stage]]]]:
+    """Consecutive stages, cut where the Serve group they need changes (None: no Serve app).
+    `served`: slot -> its Plan group, for the slots that run as Serve apps."""
+    out: list[tuple[StageGroup | None, list[tuple[str, Stage]]]] = []
+    for name, fn in stages:
+        slot = STAGE_SLOTS.get(name)
+        group = served.get(slot) if slot is not None else None
+        if out and out[-1][0] == group:
+            out[-1][1].append((name, fn))
+        else:
+            out.append((group, [(name, fn)]))
+    return out
 
 
 def add_stage(name: str, fn: Stage, before: str = "timeline") -> None:
@@ -353,10 +407,17 @@ def run_store(
     agents: Collection[Agent] | None = None,
     out_dir: Path | None = None,
     requested_by: str = "cli",
+    deploy: Callable[[StageGroup], AbstractContextManager[dict[str, Any]]] | None = None,
+    served: Collection[Slot] = (),
 ) -> dict[str, Any]:
     """Run every stage over `episodes` of `show` from the store; returns the run summary.
 
     `agents`: None = auto (every agent whose checks' inputs are present).
+    Staged serving (`nip run --in-cluster`): `served` are the slots that run as Serve apps and
+    `deploy(group)` holds a Plan group's apps up (`serving.group`). The stages are cut into
+    segments where the group they need changes; each segment runs over every episode, in order,
+    inside its group's deployment, so a model loads once per run. Without serving it is one
+    segment: each episode runs every stage in turn.
     """
     if not episodes:
         raise InputRejected("no episodes given")
@@ -374,6 +435,8 @@ def run_store(
             prepared.append((row, *build_checks(available, ctx, agents)))
             langs += [t for t in targets if t not in langs]
         resolved = sorted({str(owner(c.check)) for _, checks, _ in prepared for c in checks})
+        skips = skipped_stages(plan, [n for n, _ in STAGES])
+        lost_prefixes = tuple(FEEDS[s] for s in skips if s in FEEDS)
         plan_db = runs.create_plan(conn, plan, inventory)
         plan = plan.model_copy(update={"plan_id": runs.ext_id("plan", plan_db)})
         run_db = runs.create_run(
@@ -387,17 +450,31 @@ def run_store(
         )
         conn.commit()
         run_id = runs.ext_id("run", run_db)
-        eps = [
-            EpisodeRun(conn, s3, show, row.ref, row.id, run_id, plan, checks, skipped)
-            for row, checks, skipped in prepared
-        ]
+        eps = []
+        for row, checks, skipped in prepared:
+            lost = [str(c.check) for c in checks if str(c.check).startswith(lost_prefixes)]
+            ep = EpisodeRun(conn, s3, show, row.ref, row.id, run_id, plan,
+                            [c for c in checks if str(c.check) not in lost], skipped + lost,
+                            skipped_stages=skips, lost=lost)  # fmt: skip
+            eps.append(ep)
+        group_of = {s: g for g in plan.groups for s in g.slots if s in served}
+        loads: list[dict[str, Any]] = []
         try:  # one transaction for the whole run: every episode commits, or none
+            for group, part in segments(STAGES, group_of if deploy else {}):
+                scope = deploy(group) if deploy and group else nullcontext({})
+                with scope as rec:
+                    for ep in eps:
+                        for name, fn in part:
+                            if name in skips and name not in RULES_ONLY:
+                                ep.stages.append({"stage": name, "wall_s": 0.0, "skipped": True})
+                                continue
+                            with _timed(ep.stages, name):
+                                fn(ep)
+                if group is not None:
+                    loads.append({"group": group.name, "stages": [n for n, _ in part], **rec})
             for ep in eps:
-                for name, fn in STAGES:
-                    with _timed(ep.stages, name):
-                        fn(ep)
                 runs.add_work_units(conn, run_db, ep.units)
-            gaps = any(u["status"] == "failed" for ep in eps for u in ep.units)
+            gaps = any(ep.lost or any(u["status"] == "failed" for u in ep.units) for ep in eps)
             status = "completed_with_gaps" if gaps else "completed"
             runs.finish_run(conn, run_db, status)
             conn.commit()
@@ -413,10 +490,18 @@ def run_store(
         "plan_id": plan.plan_id,
         "status": status,
         "agents": resolved,
+        "plan": {
+            "mode": plan.mode,
+            "groups": [g.name for g in plan.groups],
+            "skipped_slots": plan.skipped_slots,
+            "warnings": plan.warnings,
+        },
+        "serving": loads,  # per deployed group: load/unload seconds, VRAM idle/up/after (MiB)
         "episodes": {
             ep.episode: {
                 "stages": ep.stages,
                 "skipped": ep.skipped,
+                "skipped_stages": list(ep.skipped_stages.values()),
                 "spans": dict(Counter(str(s.kind) for s in ep.timeline.spans)),
                 "units": dict(Counter(u["status"] for u in ep.units)),
                 "flags_emitted": len(ep.flags),
@@ -448,19 +533,111 @@ def current_plan(workload: dict[Slot, int]) -> tuple[Plan, HardwareInventory]:
         vllm: str | None = version("vllm")
     except PackageNotFoundError:
         vllm = None
-    inv = probe_hardware()
+    inv = probe_hardware()  # free VRAM now, as NVML reports it (Windows desktop included)
     pins = {Slot.ASR: timeline_config()["asr"]["variant"]}
     pins |= {s: v for s in Slot if (v := os.environ.get(f"NIP_PIN_{s.upper()}", ""))}
+    catalog = validate(load_catalog(), vllm, licenses=None)
+    gmu = float(os.environ.get("NIP_GPU_MEM_UTILIZATION", "0.90"))
     p = planner.plan(
         inv,
-        validate(load_catalog(), vllm, licenses=None),
+        catalog,
         workload,
         Objective(os.environ.get("NIP_PLAN_OBJECTIVE", "quality")),
         pins,
         stub=os.environ.get("NIP_PROFILE") == "cpu",
-        gpu_mem_utilization=float(os.environ.get("NIP_GPU_MEM_UTILIZATION", "0.90")),
+        gpu_mem_utilization=gmu,
+        margin_gb=MARGIN_GB,
     )
-    return p, inv
+    why = {f"no hardware for {s}": no_fit(s, inv, catalog, pins, gmu) for s in p.skipped_slots}
+    return p.model_copy(update={"warnings": [why.get(w, w) for w in p.warnings]}), inv
+
+
+MARGIN_GB = 0.5  # free VRAM the planner leaves per GPU (planner.plan's margin_gb)
+
+
+def need_gb(v: Any) -> float:
+    """GiB a catalog variant needs on one GPU at its smallest context (the planner's sizing)."""
+    from nip.runtime.planner import CONCURRENCY
+
+    if v.engine != "vllm":
+        return float(v.vram_gb or 0.0)
+    kv = v.kv_mb_per_1k_tokens * v.context.min / 1024 * CONCURRENCY / 1024
+    return float(max(v.weights_gb + kv + v.overhead_gb, v.startup_peak_gb or 0.0))
+
+
+def no_fit(
+    slot: Slot, inv: HardwareInventory, catalog: Any, pins: Mapping[Slot, str], gmu: float
+) -> str:
+    """Why the planner found no hardware for `slot`: the smallest candidate's need against the
+    roomiest GPU's usable VRAM, min(gmu x total, free - margin). ponytail: one GPU, tp 1 and
+    compute capability ignored; enough for the laptop's one-GPU question."""
+    pool = [v for v in catalog.variants if slot in v.serves and v.engine != "stub"]
+    pool = [v for v in pool if pins.get(slot, v.id) == v.id]
+    gpus = [g for n in inv.nodes for g in n.gpus]
+    if not pool or not gpus:
+        return f"no hardware for {slot}: " + ("no GPU" if pool else "no catalog variant")
+    vid, need = min(((v.id, need_gb(v)) for v in pool), key=lambda x: x[1])
+    g = max(gpus, key=lambda g: min(gmu * g.vram_total_gb, g.vram_free_gb - MARGIN_GB))
+    usable = min(gmu * g.vram_total_gb, g.vram_free_gb - MARGIN_GB)
+    return (
+        f"no hardware for {slot}: {vid} needs {need:.2f} GiB on one GPU, GPU {g.index} has "
+        f"{usable:.2f} usable = min({gmu:.2f} x {g.vram_total_gb:.2f} total, "
+        f"{g.vram_free_gb:.2f} free - {MARGIN_GB:.2f} margin): short {need - usable:.2f} GiB"
+    )
+
+
+def serve_slots(plan: Plan) -> set[Slot]:
+    """Slots whose variant runs as a vLLM Serve app. Actor slots (asr, text_embedder) run their
+    model in-process inside their stage, so a run deploys nothing for them."""
+    from nip.runtime.catalog import load_catalog
+
+    engines = {v.id: v.engine for v in load_catalog().variants}
+    return {s for s, d in plan.decisions.items() if engines.get(d.variant) == "vllm"}
+
+
+def without(plan: Plan, slots: Collection[Slot], why: str) -> Plan:
+    """The Plan with `slots` moved to skipped_slots, each with the warning `no Serve for <slot>`."""
+    gone = sorted(slots, key=list(Slot).index)
+    groups = [g.model_copy(update={"slots": [s for s in g.slots if s not in gone]})
+              for g in plan.groups]  # fmt: skip
+    return plan.model_copy(
+        update={
+            "decisions": {s: d for s, d in plan.decisions.items() if s not in gone},
+            "groups": [g for g in groups if g.slots],
+            "skipped_slots": [*plan.skipped_slots, *gone],
+            "warnings": [*plan.warnings, *(f"no Serve for {s}: {why}" for s in gone)],
+        }
+    )
+
+
+IN_CLUSTER_CMD = (
+    "docker compose -f compose.yaml -f compose.dev.yaml exec ray-head nip run ... --in-cluster"
+)
+
+
+def cluster_deploy(
+    plan: Plan, inv: HardwareInventory, served: Collection[Slot]
+) -> Callable[[StageGroup], AbstractContextManager[dict[str, Any]]]:
+    """`deploy(group)` for run_store: the group's Serve apps for `served` slots (serving.group:
+    deploy, then teardown and VRAM back to idle on exit). Needs Ray: inside the cluster only."""
+    import gc
+
+    from nip.runtime import serving
+    from nip.runtime.catalog import load_catalog
+
+    serve, catalog = serving.ray_serve(), load_catalog()
+
+    def deploy(g: StageGroup) -> AbstractContextManager[dict[str, Any]]:
+        # Staged: an earlier group's in-process model (ASR on the GPU) goes before this one loads.
+        # ponytail: only the ASR backend is cached on the GPU today; the embedder runs on CPU.
+        from nip.timeline import asr
+
+        asr.backend.cache_clear()
+        gc.collect()
+        return serving.group(serving.apps(plan, catalog, inv, [s for s in g.slots if s in served]),
+                             serve)  # fmt: skip
+
+    return deploy
 
 
 def run(
@@ -470,8 +647,17 @@ def run(
     force: Annotated[bool, typer.Option(help="Ignore the stage cache (none until 2.9B)")] = False,
     out_dir: Annotated[Path | None, typer.Option(help="Also write per-episode JSON here")] = None,
     dry_run: Annotated[bool, typer.Option(help="Print the stages and checks, run nothing")] = False,
+    in_cluster: Annotated[
+        bool,
+        typer.Option(help="Inside ray-head: deploy each Plan group's Serve apps around its stages"),
+    ] = False,
 ) -> None:
-    """Run the checks on ingested episodes; flags and the run are stored in Postgres."""
+    """Run the checks on ingested episodes; flags and the run are stored in Postgres.
+
+    LLM slots run as Ray Serve apps, so real LLMs need the run inside the cluster:
+    `docker compose -f compose.yaml -f compose.dev.yaml exec ray-head nip run ... --in-cluster`
+    (staged: each Plan group's apps are deployed around the stages that call them, then torn
+    down with VRAM back to idle). A run elsewhere skips those slots and says so in the report."""
     eps = [e.strip() for x in episodes for e in x.split(",") if e.strip()]
     try:
         wanted = None if agents == "auto" else {Agent(a.strip()) for a in agents.split(",")}
@@ -484,10 +670,20 @@ def run(
         return
     # ponytail: one unit per episode for each model slot; real counts only size replicas (multi-GPU)
     plan, inv = current_plan({s: len(eps) for s in MODEL_SLOTS})
+    served = serve_slots(plan)
+    deploy = None
+    if in_cluster:
+        try:
+            deploy = cluster_deploy(plan, inv, served)
+        except ImportError as e:  # no Ray on this machine (the Windows host)
+            raise typer.BadParameter(f"--in-cluster runs inside ray-head: {IN_CLUSTER_CMD}") from e
+    elif served:
+        plan = without(plan, served, f"not deployed outside the cluster; run {IN_CLUSTER_CMD}")
     engine = create_engine(database_url())
     try:
         summary = run_store(engine, objects.client(), show=show, episodes=eps, plan=plan,
-                            inventory=inv, agents=wanted, out_dir=out_dir)  # fmt: skip
+                            inventory=inv, agents=wanted, out_dir=out_dir, deploy=deploy,
+                            served=served)  # fmt: skip
     except InputRejected as e:
         typer.echo(f"INPUT_REJECTED: {e}", err=True)
         raise typer.Exit(1) from e

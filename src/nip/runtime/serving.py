@@ -11,6 +11,7 @@ Ray is imported lazily, so the Windows / cpu profile imports this module without
 `serve` parameters take the `ray.serve` module (or a fake with the same calls in tests).
 """
 
+import importlib
 import json
 import os
 import signal
@@ -227,12 +228,24 @@ def ray_serve() -> Any:
     return serve
 
 
+def actor_class(slot: Slot) -> type:
+    """`nip.runtime.clients.<slot>.Actor` when that module defines one, else `Placeholder`."""
+    try:
+        mod = importlib.import_module(f"nip.runtime.clients.{slot}")
+    except ModuleNotFoundError as e:
+        if e.name != f"nip.runtime.clients.{slot}":
+            raise  # the client module exists but one of its imports is missing
+        return Placeholder
+    cls: type = getattr(mod, "Actor", Placeholder)
+    return cls
+
+
 def _bind(a: App, serve: Any) -> Any:
     if a.vllm_args:
         cls: type = VllmServer
         init: tuple[Any, ...] = (a.variant, list(a.vllm_args), a.route_prefix)
     else:
-        cls, init = Placeholder, (a.variant,)
+        cls, init = actor_class(a.slots[0]), (a.variant,)
     return (
         serve.deployment(cls)
         .options(

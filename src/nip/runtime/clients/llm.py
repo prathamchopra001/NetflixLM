@@ -5,6 +5,7 @@ Every call is structured: `response_format` carries the JSON schema of a Pydanti
 """
 
 import base64
+import os
 from collections.abc import Sequence
 from typing import Any
 
@@ -12,7 +13,9 @@ from pydantic import BaseModel
 
 from nip.runtime.clients.stub import stub_instance
 
-SERVE_URL = "http://127.0.0.1:8000"  # Serve's HTTP proxy runs on every Ray node
+# Serve's HTTP proxy runs on every Ray node; host-side dev reaches it through compose.dev.yaml
+# (NIP_SERVE_URL=http://127.0.0.1:8001, R9).
+SERVE_URL = os.environ.get("NIP_SERVE_URL", "http://127.0.0.1:8000")
 
 
 def _image_part(data: bytes) -> dict[str, Any]:

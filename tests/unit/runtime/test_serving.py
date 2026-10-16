@@ -2,6 +2,8 @@
 
 import json
 import signal
+import sys
+import types
 from pathlib import Path
 from typing import Any
 
@@ -106,18 +108,26 @@ def test_stub_plan_deploys_nothing() -> None:
 
 def test_deploy_binds_options_and_redeploy_scales_in_place() -> None:
     serve = FakeServe()
-    a = App("m", (Slot.ASR,), 1, 0.3)
+    a = App("m", (Slot.DETECTOR,), 1, 0.3)  # no clients.detector module: placeholder
     deploy([a], serve)
     app = serve.running["nip-m"]
     assert app["cls"] is Placeholder and app["args"] == ("m",)
     assert app["opts"]["ray_actor_options"] == {"num_gpus": 0.3}
     assert app["opts"]["max_constructor_retry_count"] == 1
-    deploy([App("m", (Slot.ASR,), 3, 0.3)], serve)
+    deploy([App("m", (Slot.DETECTOR,), 3, 0.3)], serve)
     assert serve.running["nip-m"]["opts"]["num_replicas"] == 3 and len(serve.running) == 1
     v = App("q", (Slot.TEXT_LLM,), 1, 0.77, ("repo", "--x"))
     deploy([v], serve)
     assert serve.running["nip-q"]["cls"] is VllmServer
     assert serve.running["nip-q"]["args"] == ("q", ["repo", "--x"], "/models/q")
+
+
+def test_actor_slots_bind_their_client_actor(monkeypatch: pytest.MonkeyPatch) -> None:
+    mod = types.ModuleType("nip.runtime.clients.ner")
+    mod.Actor = actor = type("Actor", (), {})  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "nip.runtime.clients.ner", mod)
+    assert serving.actor_class(Slot.NER) is actor
+    assert serving.actor_class(Slot.DETECTOR) is Placeholder
 
 
 def test_deploy_failure_raises_serving_error() -> None:

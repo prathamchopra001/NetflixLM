@@ -2,5 +2,5 @@
 # (core.autocrlf=true would otherwise give postgres-init.sh CRLF and the mlflow DB is never created).
 *.sh text eol=lf
 *Dockerfile text eol=lf
-compose.yaml text eol=lf
+compose*.yaml text eol=lf
 deploy/keycloak/*.json text eol=lf

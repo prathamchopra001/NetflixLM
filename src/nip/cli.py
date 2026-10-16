@@ -9,6 +9,7 @@ from eval.labeling.labeling import app as labeling_app
 from eval.report import app as eval_app
 from nip import pipeline
 from nip.runtime import planner
+from nip.store import ingest
 from nip.timeline import picture
 
 app = typer.Typer(no_args_is_help=True)
@@ -24,4 +25,6 @@ eval_app.add_typer(labeling_app, name="labels")
 app.add_typer(eval_app, name="eval")
 app.add_typer(picture.app, name="timeline")
 app.add_typer(planner.app, name="plan")
+app.command("ingest")(ingest.ingest_cmd)
 app.command("run")(pipeline.run)
+app.command("run-files")(pipeline.run_files)

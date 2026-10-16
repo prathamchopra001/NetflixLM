@@ -48,6 +48,7 @@ dependencies = [
     "phonenumbers>=9.0.41",
     "en-core-web-sm",
     "de-core-news-sm",
+    "sentence-transformers>=6.1.0",
 ]
 
 [project.optional-dependencies]

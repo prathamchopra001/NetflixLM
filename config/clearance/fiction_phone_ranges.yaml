@@ -7,7 +7,7 @@ NANP:                      # US, CA: 555-0100 to 555-0199 under any area code; t
   regions: [US, CA]        # were returned to general use in 2016, so 555-0200.. stay candidates
   national: ['\d{3}55501\d{2}']
 GB:                        # Ofcom "numbers for drama". The Ofcom page itself answered 403 to our fetch;
-  regions: [GB]            # every range below except the three marked unverified was read on
+  regions: [GB]            # every range below was read on
   national:                # britishtelephones.com/film.htm (reproduces the table) and matches Ofcom's
                            # published summary (2026-10-16). Each is a 1,000-number block.
     - '(?:113|114|115|116|117|118|121|131|141|151|161)4960\d{3}'  # Leeds Sheffield Nottingham Leicester Bristol Reading Birmingham Edinburgh Glasgow Liverpool Manchester: 01xx 496 0000-0999
@@ -20,7 +20,4 @@ GB:                        # Ofcom "numbers for drama". The Ofcom page itself an
     - '8081570\d{3}'       # freephone 08081 570000-570999
     - '9098790\d{3}'       # premium rate 0909 879 0000-0999
     - '3069990\d{3}'       # UK-wide 03069 990000-990999
-    - '2476180\d{3}'       # unverified: Coventry 024 7618 0xxx (not in the table above)
-    - '2392880\d{3}'       # unverified: Portsmouth 023 9288 0xxx (not in the table above)
-    - '2380496\d{3}'       # unverified: Southampton 023 8049 6xxx (not in the table above)
 # ES, DE, FR: no reserved range configured yet (add under its own key when legal supplies one).

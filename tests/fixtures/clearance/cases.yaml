@@ -50,3 +50,11 @@
 - {id: phone_gb_belfast_drama, lang: en, text: "Tel 028 9649 6123", expect: []}
 - {id: phone_gb_not_drama, lang: en, text: "Tel 0161 497 0123", expect: [clr.phone]}
 - {id: url_spanish_sentence_is_not_a_host, lang: es, text: "Hola . Es verdad", expect: []}
+- {id: plate_us_spaced_4, lang: en, text: "ABC 1234", expect: [clr.plate]}
+- {id: plate_us_spaced_3, lang: en, text: "ABC 123", expect: [clr.plate]}
+- {id: plate_us_digits_first, lang: en, text: "123 ABC", expect: [clr.plate]}
+- {id: plate_de_spaced, lang: de, text: "B AB 1234", expect: [clr.plate]}
+- {id: not_a_plate_month_dec, lang: en, text: "DEC 2019", expect: []}
+- {id: not_a_plate_box, lang: en, text: "BOX 123", expect: []}
+- {id: not_a_plate_bce, lang: en, text: "300 BCE", expect: []}
+- {id: not_a_plate_go_to, lang: de, text: "GO TO 500", expect: []}

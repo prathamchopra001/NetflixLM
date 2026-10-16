@@ -62,3 +62,28 @@ def test_read_wav_rejects_other_formats(tmp_path):
         f.writeframes(b"\0" * 400)
     with pytest.raises(ValueError, match="16 kHz mono"):
         read_wav(p)
+
+
+def test_asr_cli_writes_transcript_json_and_merges_into_the_timeline_group(
+    clip, tmp_path, monkeypatch
+):
+    import json
+
+    import typer
+    from typer.testing import CliRunner
+
+    from nip.timeline import asr, picture
+
+    stub = StubASR(segments=(Segment("hi", 500, 1500, (Word("hi", 500, 1500, 1.0),)),))
+    monkeypatch.setattr(asr, "make_asr", lambda *a, **k: stub)
+    root = typer.Typer()
+    picture.app.add_typer(
+        asr.app
+    )  # the wiring line for cli.py (picture.app is mounted at `timeline`)
+    root.add_typer(picture.app, name="timeline")
+    out = tmp_path / "t.json"
+    r = CliRunner().invoke(root, ["timeline", "asr", str(clip), "--out", str(out)])
+    picture.app.registered_groups.clear()  # leave the shared app as it was
+    assert r.exit_code == 0, r.output
+    (seg,) = json.loads(out.read_text())
+    assert seg["frames"] == [12, 36] and seg["words"][0]["w"] == "hi"

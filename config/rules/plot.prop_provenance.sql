@@ -5,7 +5,7 @@
 --   use        = a `holds` event whose value.event is 'use'
 --   possession = any other `holds` or `owns` event of that prop (no event kind means obtained)
 --   gone       = a `state` event of the prop itself, value.state destroyed or lost
--- Positions are the scenes' story_seq; confidence is the raw event confidence (the story-inferred
+-- `lost` is handled exactly like `destroyed`. Positions are the scenes' story_seq; confidence is the raw event confidence (the story-inferred
 -- reduction is the loader's). A pickup after the loss and not after the use ends the loss.
 -- One row per use event (a use that is both gets before_obtained first; the loader keeps one row
 -- per claim line). detail = 'before_obtained' (other_* = first later possession, if any) or
@@ -52,7 +52,7 @@ found AS (
   FROM uses u
   JOIN LATERAL (
     SELECT * FROM gone d WHERE d.subject_id = u.object_id AND d.story_seq < u.story_seq
-    ORDER BY d.story_seq, d.fact_id LIMIT 1
+    ORDER BY d.story_seq DESC, d.fact_id LIMIT 1  -- the latest loss before the use
   ) d ON true
   WHERE NOT EXISTS (  -- picked up again after the loss, by the time of this use
     SELECT 1 FROM possessions g

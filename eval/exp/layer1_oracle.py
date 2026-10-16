@@ -50,8 +50,11 @@ Event = tuple[
 ]  # episode, scene no, line seq, quote, value
 
 
-def consolidate(show: Show) -> list[dict[str, Any]]:
+def consolidate(show: Show, gone_as: str | None = None) -> list[dict[str, Any]]:
     """Fact specs from the truth facts: predicate, subject, object, value, story (lo, hi), events.
+
+    A stand-in for 2.1's consolidation (rules-only ceiling, not 2.1's semantics). `gone_as`
+    writes every `destroyed` prop state as that state instead (e.g. `lost`).
 
     present_at and references are points ([seq, seq+1), merged per subject/object/seq); learns,
     holds (a character's events of one prop, uses included) and state are open-ended from their
@@ -62,7 +65,12 @@ def consolidate(show: Show) -> list[dict[str, Any]]:
         for sc in scenes:
             for n, line in enumerate(sc.lines, 1):
                 for f in line.facts:
-                    seq, ev = sc.story_seq, (ep, sc.no, n, f.quote, f.value)
+                    fv = (
+                        {**(f.value or {}), "state": gone_as}
+                        if gone_as and (f.value or {}).get("state") == "destroyed"
+                        else f.value
+                    )
+                    seq, ev = sc.story_seq, (ep, sc.no, n, f.quote, fv)
                     if f.predicate in ("present_at", "references"):
                         key: tuple[Any, ...] = (f.predicate, f.subject, f.object, seq)
                         story: tuple[int, int | None] = (seq, seq + 1)
@@ -70,7 +78,7 @@ def consolidate(show: Show) -> list[dict[str, Any]]:
                     elif f.predicate in ("learns", "holds"):
                         key, story, value = (f.predicate, f.subject, f.object), (seq, None), None
                     elif f.predicate == "state":
-                        value = {"state": (f.value or {}).get("state")}
+                        value = {"state": (fv or {}).get("state")}
                         key, story = (f.predicate, f.subject, value["state"]), (seq, None)
                     else:
                         continue
@@ -84,7 +92,7 @@ def consolidate(show: Show) -> list[dict[str, Any]]:
     return list(groups.values())
 
 
-def build_store(engine: Engine, show_dir: Path, show: Show) -> None:
+def build_store(engine: Engine, show_dir: Path, show: Show, gone_as: str | None = None) -> None:
     s3 = FakeS3()
     with engine.begin() as conn:
         for ep in show.episodes:
@@ -118,7 +126,7 @@ def build_store(engine: Engine, show_dir: Path, show: Show) -> None:
                 .values(show_id=show_id, kind=e.kind, canonical_name=e.name, origin="bible")
                 .returning(schema.entity.c.id)
             ).scalar_one()
-        for g in consolidate(show):
+        for g in consolidate(show, gone_as):
             ids = []
             for ep, no, seq, quote, value in g["events"]:
                 line_id, scene_id = line[ep, no, seq]
@@ -167,6 +175,7 @@ def main(
     show_dir: Annotated[Path, typer.Option(help="Injected show dir: S01E0n.fountain + truth.json")],
     flags: Annotated[Path, typer.Option(help="Flags JSONL to write")],
     admin_url: Annotated[str | None, typer.Option(help="Default: $NIP_TEST_DATABASE_URL")] = None,
+    gone_as: Annotated[str | None, typer.Option(help="Write destroyed props as e.g. lost")] = None,
 ) -> None:
     url = (admin_url or os.environ["NIP_TEST_DATABASE_URL"]).replace(
         "postgresql://", "postgresql+psycopg://", 1
@@ -183,7 +192,7 @@ def main(
             c.execute(text("CREATE EXTENSION vector"))
             c.execute(text("CREATE EXTENSION btree_gist"))
             schema.metadata.create_all(c)
-        build_store(engine, show_dir, show)
+        build_store(engine, show_dir, show, gone_as)
         got, wall = run_rules(engine, list(show.episodes))
     finally:
         engine.dispose()

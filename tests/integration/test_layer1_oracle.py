@@ -1,7 +1,7 @@
 """2.3 benchmark path: oracle facts of the synthetic show -> store -> Layer 1 rules -> labels.
 
 The clean show raises nothing; on the 2.9A plot-injected show every planted violation is found
-(and nothing else), for two seeds.
+(and nothing else), for two seeds; seed 2 writes every destroyed prop as `lost`.
 """
 
 from pathlib import Path
@@ -17,9 +17,9 @@ from eval.synthetic import read_show
 pytestmark = pytest.mark.integration
 
 
-@pytest.mark.parametrize("seed", [1, 2])
+@pytest.mark.parametrize(("seed", "gone_as"), [(1, None), (2, "lost")])
 def test_injected_show_is_found_exactly_and_the_clean_show_is_silent(
-    pg: Engine, tmp_path: Path, seed: int
+    pg: Engine, tmp_path: Path, seed: int, gone_as: str | None
 ) -> None:
     labels = _synthetic(tmp_path, seed)
     assert len(labels) == 12
@@ -33,7 +33,7 @@ def test_injected_show_is_found_exactly_and_the_clean_show_is_silent(
         conn.execute(text('TRUNCATE "show" RESTART IDENTITY CASCADE'))
     injected = tmp_path / SYNTHETIC / "injected"
     show = read_show(injected)
-    build_store(pg, injected, show)
+    build_store(pg, injected, show, gone_as)
     flags, _ = run_rules(pg, list(show.episodes))
     assert len(flags) == 12 and len(match(flags, labels)) == 12
     assert all(f.verification.evidence == f.verification.rule_recheck == "pass" for f in flags)

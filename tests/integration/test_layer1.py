@@ -417,19 +417,46 @@ def test_prop_obtained_before_use_is_clean(w: World, use_seq: int, obtain_seq: i
     assert flags(w, PropProvenance, "S01E01")[0] == []
 
 
-def test_prop_picked_up_again_after_loss_is_clean(w: World) -> None:
-    w.add_scene("S01E01", "1", 1, ["Maya picks it up.", "Maya pockets the key."])
-    w.add_scene("S01E01", "2", 2, ["The key breaks.", "Gone."])
-    w.add_scene("S01E01", "3", 3, ["The lock.", "Leo uses the key."])
-    w.add_scene("S01E01", "4", 3, ["Maya digs.", "Maya takes the key."])
-    w.fact("holds", "maya", ("S01E01", "1", 2), (1, None), "key", OBTAIN, "the key",
-           more=[(("S01E01", "4", 2), "the key", OBTAIN)])  # fmt: skip
-    w.fact("state", "key", ("S01E01", "2", 1), (2, None), value={"state": "destroyed"})
-    use = w.fact("holds", "leo", ("S01E01", "3", 2), (3, 4), "key", USE, "the key")
+def lost_world(w: World, state: str, pickup: bool, lost_again: bool = False) -> int:
+    """Maya obtains the key at 1, it is `state` at 2; optionally she picks it up at 3 and it is
+    lost again at 4 (`lost_again`); Leo uses it at 5. Scene n is at story position n."""
+    for n in range(1, 6):
+        w.add_scene("S01E01", str(n), n, [f"Scene {n} opens.", f"Key moment {n}."])
+    events = []
+    if pickup:
+        events.append((("S01E01", "3", 2), "Key moment 3", OBTAIN))
+    w.fact("holds", "maya", ("S01E01", "1", 2), (1, None), "key", OBTAIN, "Key moment 1",
+           more=events)  # fmt: skip
+    w.fact(
+        "state", "key", ("S01E01", "2", 2), (2, None), value={"state": state}, quote="Key moment 2"
+    )
+    if lost_again:
+        w.fact("state", "key", ("S01E01", "4", 2), (4, None), value={"state": "destroyed"},
+               quote="Key moment 4")  # fmt: skip
+    return w.fact("holds", "leo", ("S01E01", "5", 2), (5, 6), "key", USE, "Key moment 5")
+
+
+@pytest.mark.parametrize("state", ["destroyed", "lost"])
+def test_prop_used_after_loss_without_pickup_is_flagged(w: World, state: str) -> None:
+    """`lost` is treated exactly like `destroyed`."""
+    lost_world(w, state, pickup=False)
+    (f,), tl = flags(w, PropProvenance, "S01E01")
+    assert claim_refs([f]) == ["S01E01/line/5.2"] and "S01E01/sc/2" in f.explanation
+    assert f.evidence[1].role is EvidenceRole.CONTRADICTION
+    check_verified([f], tl, PropProvenance(w.c, "demo"))
+
+
+@pytest.mark.parametrize("state", ["destroyed", "lost"])
+def test_prop_picked_up_again_after_loss_is_clean(w: World, state: str) -> None:
+    lost_world(w, state, pickup=True)
     assert flags(w, PropProvenance, "S01E01")[0] == []
-    # without the pickup at 3 the use is after the loss
-    w.retract(use + 0)  # keep the fixture honest: retracting the use removes every finding
-    assert flags(w, PropProvenance, "S01E01")[0] == []
+
+
+def test_prop_lost_found_and_lost_again_is_flagged_against_the_latest_loss(w: World) -> None:
+    """obtained 1, lost 2, found 3, lost 4, used 5: the pickup at 3 must not mask the loss at 4."""
+    lost_world(w, "lost", pickup=True, lost_again=True)
+    (f,), _ = flags(w, PropProvenance, "S01E01")
+    assert claim_refs([f]) == ["S01E01/line/5.2"] and "S01E01/sc/4" in f.explanation
 
 
 # --- confidence, retraction, re-check ---------------------------------------------------------

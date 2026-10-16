@@ -87,6 +87,9 @@ def test_migration_matches_core_tables_and_downgrades(monkeypatch: pytest.Monkey
         try:
             expected, actual = _catalog(core), _catalog(migrated)
             assert len(expected["columns"]) > 200  # the queries really see the schema
+            # 0002: the speaker column and one HNSW partial index per embedder variant
+            assert any(c[:2] == ("script_line", "speaker") for c in actual["columns"])
+            assert sum("USING hnsw" in ix[2] and "WHERE" in ix[2] for ix in actual["indexes"]) == 2
             for part in CATALOG:
                 assert actual[part] - expected[part] == set(), f"only in migration: {part}"
                 assert expected[part] - actual[part] == set(), f"only in schema.py: {part}"

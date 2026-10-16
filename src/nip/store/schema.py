@@ -34,6 +34,8 @@ from sqlalchemy.dialects.postgresql import (
 
 metadata = MetaData()
 
+HNSW_VARIANTS = ("qwen3-embedding-0.6b", "qwen3-embedding-8b")  # catalog text_embedder variants
+
 TSTZ = TIMESTAMP(timezone=True)
 SHA = CHAR(64)
 
@@ -49,14 +51,16 @@ def _fk(name: str, target: str, nullable: bool = False) -> Column[int]:
 # --- content and timeline
 
 show = Table(
-    "show", metadata,
+    "show",
+    metadata,
     _id(),
     Column("slug", Text, nullable=False, unique=True),
     Column("title", Text, nullable=False),
 )
 
 episode = Table(
-    "episode", metadata,
+    "episode",
+    metadata,
     _id(),
     _fk("show_id", "show.id"),
     Column("season", Integer, nullable=False),
@@ -73,7 +77,8 @@ episode = Table(
 )
 
 source_file = Table(
-    "source_file", metadata,
+    "source_file",
+    metadata,
     _id(),
     _fk("episode_id", "episode.id", nullable=True),  # null for show-level files
     _fk("show_id", "show.id"),
@@ -89,7 +94,8 @@ source_file = Table(
 )
 
 scene = Table(
-    "scene", metadata,
+    "scene",
+    metadata,
     _id(),
     _fk("episode_id", "episode.id"),
     Column("script_scene_no", Text, nullable=False),
@@ -106,19 +112,22 @@ scene = Table(
 )
 
 script_line = Table(
-    "script_line", metadata,
+    "script_line",
+    metadata,
     _id(),
     _fk("scene_id", "scene.id"),
     Column("seq", Integer, nullable=False),
     Column("kind", Text, nullable=False),
     Column("speaker_entity_id", BigInteger),
+    Column("speaker", Text),  # 0002: the script's character cue; speaker_entity_id is 2.1's
     Column("text", Text, nullable=False),
     Column("frames", INT8RANGE),
     Index("ix_script_line_frames", "frames", postgresql_using="gist"),
 )
 
 shot = Table(
-    "shot", metadata,
+    "shot",
+    metadata,
     _id(),
     _fk("episode_id", "episode.id"),
     _fk("scene_id", "scene.id", nullable=True),
@@ -129,7 +138,8 @@ shot = Table(
 )
 
 transcript_segment = Table(
-    "transcript_segment", metadata,
+    "transcript_segment",
+    metadata,
     _id(),
     _fk("episode_id", "episode.id"),
     Column("frames", INT8RANGE, nullable=False),
@@ -137,13 +147,12 @@ transcript_segment = Table(
     Column("text", Text, nullable=False),
     Column("words", JSONB, nullable=False),
     _fk("aligned_line_id", "script_line.id", nullable=True),
-    Index(
-        "ix_transcript_segment_episode_frames", "episode_id", "frames", postgresql_using="gist"
-    ),
+    Index("ix_transcript_segment_episode_frames", "episode_id", "frames", postgresql_using="gist"),
 )
 
 subtitle_track = Table(
-    "subtitle_track", metadata,
+    "subtitle_track",
+    metadata,
     _id(),
     _fk("episode_id", "episode.id"),
     _fk("source_file_id", "source_file.id"),
@@ -152,7 +161,8 @@ subtitle_track = Table(
 )
 
 subtitle_cue = Table(
-    "subtitle_cue", metadata,
+    "subtitle_cue",
+    metadata,
     _id(),
     _fk("track_id", "subtitle_track.id"),
     Column("idx", Integer, nullable=False),
@@ -166,7 +176,8 @@ subtitle_cue = Table(
 # --- knowledge layer
 
 entity = Table(
-    "entity", metadata,
+    "entity",
+    metadata,
     _id(),
     _fk("show_id", "show.id"),
     Column("kind", Text, nullable=False),
@@ -178,7 +189,8 @@ entity = Table(
 )
 
 entity_alias = Table(
-    "entity_alias", metadata,
+    "entity_alias",
+    metadata,
     _fk("entity_id", "entity.id"),
     Column("lang", Text, nullable=False, server_default="any"),
     Column("alias", Text, nullable=False),
@@ -188,7 +200,8 @@ entity_alias = Table(
 )
 
 fact_event = Table(
-    "fact_event", metadata,
+    "fact_event",
+    metadata,
     _id(),
     _fk("scene_id", "scene.id"),
     _fk("line_id", "script_line.id"),
@@ -202,7 +215,8 @@ fact_event = Table(
 )
 
 fact = Table(
-    "fact", metadata,
+    "fact",
+    metadata,
     _id(),
     _fk("show_id", "show.id"),
     Column("predicate", Text, nullable=False),
@@ -216,12 +230,25 @@ fact = Table(
     Column("version", Integer, nullable=False, server_default=text("1")),
     Column("status", Text, nullable=False, server_default="active"),
     _fk("supersedes", "fact.id", nullable=True),
-    Index("ix_fact_subject_predicate_story", "subject_id", "predicate", "story",
-          postgresql_using="gist"),
-    Index("ix_fact_subject_predicate_screen", "subject_id", "predicate", "screen",
-          postgresql_using="gist"),
+    Index(
+        "ix_fact_subject_predicate_story",
+        "subject_id",
+        "predicate",
+        "story",
+        postgresql_using="gist",
+    ),
+    Index(
+        "ix_fact_subject_predicate_screen",
+        "subject_id",
+        "predicate",
+        "screen",
+        postgresql_using="gist",
+    ),
     ExcludeConstraint(
-        ("subject_id", "="), ("predicate", "="), ("object_id", "="), ("story", "&&"),
+        ("subject_id", "="),
+        ("predicate", "="),
+        ("object_id", "="),
+        ("story", "&&"),
         name="fact_consolidated_no_overlap",
         using="gist",
         where=text("status = 'active'"),
@@ -231,7 +258,8 @@ fact = Table(
 # --- registries and retrieval
 
 clearance_item = Table(
-    "clearance_item", metadata,
+    "clearance_item",
+    metadata,
     _id(),
     _fk("show_id", "show.id"),
     Column("name", Text, nullable=False),
@@ -243,19 +271,31 @@ clearance_item = Table(
 )
 
 scene_chunk = Table(
-    "scene_chunk", metadata,
+    "scene_chunk",
+    metadata,
     _id(),
     _fk("scene_id", "scene.id"),
     Column("kind", Text, nullable=False),
     Column("text", Text, nullable=False),
     # Untyped dimension so embedder variants can differ by Plan; HNSW indexes are partial
-    # expression indexes per variant, added when an embedder ships.
+    # expression indexes per variant (0002), all 1,024-d (larger embedders are truncated).
     Column("embedding", Vector(), nullable=False),
     Column("embedder_variant", Text, nullable=False),
+    UniqueConstraint("scene_id", "kind", "embedder_variant"),  # 0002: once per scene and variant
+    *(
+        Index(
+            f"ix_scene_chunk_hnsw_{v.replace('-', '_').replace('.', '_')}",
+            text("(embedding::vector(1024)) vector_cosine_ops"),
+            postgresql_using="hnsw",
+            postgresql_where=text(f"embedder_variant = '{v}'"),
+        )
+        for v in HNSW_VARIANTS
+    ),
 )
 
 detection = Table(
-    "detection", metadata,
+    "detection",
+    metadata,
     _id(),
     _fk("episode_id", "episode.id"),
     _fk("shot_id", "shot.id", nullable=True),
@@ -271,7 +311,8 @@ detection = Table(
 # --- runs, plans, caching, coverage
 
 plan = Table(
-    "plan", metadata,
+    "plan",
+    metadata,
     _id(),
     Column("inventory", JSONB, nullable=False),
     Column("catalog_sha256", SHA, nullable=False),
@@ -283,7 +324,8 @@ plan = Table(
 )
 
 run = Table(
-    "run", metadata,
+    "run",
+    metadata,
     _id(),
     _fk("show_id", "show.id"),
     Column("episode_ids", ARRAY(BigInteger), nullable=False),
@@ -300,7 +342,8 @@ run = Table(
 )
 
 work_unit = Table(
-    "work_unit", metadata,
+    "work_unit",
+    metadata,
     _id(),
     _fk("run_id", "run.id"),
     Column("stage", Text, nullable=False),
@@ -315,7 +358,8 @@ work_unit = Table(
 )
 
 stage_cache = Table(
-    "stage_cache", metadata,
+    "stage_cache",
+    metadata,
     Column("cache_key", SHA, primary_key=True),
     Column("stage", Text, nullable=False),
     Column("artifact_key", Text, nullable=False),
@@ -326,7 +370,8 @@ stage_cache = Table(
 )
 
 variant_calibration = Table(
-    "variant_calibration", metadata,
+    "variant_calibration",
+    metadata,
     Column("variant", Text, nullable=False),
     Column("gpu_name", Text, nullable=False),
     Column("context", Integer, nullable=False),
@@ -338,7 +383,8 @@ variant_calibration = Table(
 # --- flags, review, audit
 
 flag = Table(
-    "flag", metadata,
+    "flag",
+    metadata,
     _id(),
     _fk("run_id", "run.id"),
     _fk("episode_id", "episode.id"),
@@ -360,7 +406,8 @@ flag = Table(
 )
 
 evidence = Table(
-    "evidence", metadata,
+    "evidence",
+    metadata,
     _id(),
     _fk("flag_id", "flag.id"),
     Column("kind", Text, nullable=False),
@@ -373,7 +420,8 @@ evidence = Table(
 )
 
 disposition = Table(
-    "disposition", metadata,
+    "disposition",
+    metadata,
     _id(),
     Column("flag_fingerprint", SHA, nullable=False),
     _fk("flag_id", "flag.id"),
@@ -384,7 +432,8 @@ disposition = Table(
 )
 
 fact_correction = Table(
-    "fact_correction", metadata,
+    "fact_correction",
+    metadata,
     _id(),
     _fk("fact_id", "fact.id"),
     Column("action", Text, nullable=False),
@@ -396,7 +445,8 @@ fact_correction = Table(
 
 # Append-only: the application role gets INSERT but not UPDATE/DELETE.
 audit_event = Table(
-    "audit_event", metadata,
+    "audit_event",
+    metadata,
     _id(),
     Column("at", TSTZ, nullable=False, server_default=text("now()")),
     Column("actor", Text, nullable=False),

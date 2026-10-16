@@ -377,7 +377,13 @@ def _write_script(conn: Connection, ep_id: int, script: Script, fps: Fraction) -
             conn.execute(
                 insert(schema.script_line),
                 [
-                    {"scene_id": sc_id, "seq": i, "kind": e.kind, "text": e.text}
+                    {
+                        "scene_id": sc_id,
+                        "seq": i,
+                        "kind": e.kind,
+                        "speaker": e.speaker,
+                        "text": e.text,
+                    }
                     for i, e in enumerate(s.elements, 1)
                 ],
             )

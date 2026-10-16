@@ -1,0 +1,26 @@
+# Sidecar bible for the Sintel corpus title (2.9A). Characters come from the English subtitles;
+# fictional.brands feed the clr.brand_text negatives (declared fictional = must not be flagged).
+show: sintel
+characters:
+  - id: sintel
+    name: Sintel
+    aliases: ["the hunter"]
+    gender: female
+    pronouns: {en: she/her}
+  - id: scales
+    name: Scales
+    aliases: ["the dragon"]
+    gender: male
+    pronouns: {en: he/him}
+  - id: shaman
+    name: The Shaman
+    aliases: ["the gatekeeper"]
+    gender: male
+    pronouns: {en: he/him}
+secrets:
+  - id: scales_is_the_dragon
+    description: Scales is the dragon Sintel has been hunting
+fictional:
+  brands: [Brightwave Energy, Kappa Cola]
+  orgs: [The Gatekeepers]
+  places: [The Land of the Gatekeepers]

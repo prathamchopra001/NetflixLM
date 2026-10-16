@@ -1,0 +1,13 @@
+item,kind,status,scope,notes
+(290) 482-7716,phone,pending,,injected: NANP N9X expansion area code
+(415) 555-2671,phone,cleared,,injected: 555 outside 0100-0199
+https://velthorn.io,url,denied,,injected: made-up domain
+www.quillmere-books.com,url,cleared,,injected: made-up domain
+ines.valdor@quillmere-books.com,email,pending,,injected: made-up domain
+hello@velthorn.io,email,denied,,injected: made-up domain
+1428 Marrow Hollow Road,address,cleared,,injected: invented street in regional format
+77 Saltwick Lane,address,pending,,injected: invented street in regional format
+7KLM482,plate,denied,,injected: regional plate format
+4TRX903,plate,cleared,,injected: regional plate format
+Veltrix Cola,brand,pending,,injected: fictional mark not declared in the bible
+Orbitel Mobile,brand,denied,,injected: fictional mark not declared in the bible

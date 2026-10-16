@@ -7,6 +7,7 @@ free; cue numbers never change because no cue is added or removed).
 """
 
 import random
+from collections.abc import Collection
 from pathlib import Path
 
 import pysubs2
@@ -39,9 +40,12 @@ class LocReadability(Injector):
         *,
         episode: str | None = None,
         lang: str | None = None,
+        title: str | None = None,
         k: int = 6,
+        avoid: Collection[int] = (),
     ) -> list[Label]:
-        """`episode` defaults to the corpus title dir, `lang` to the `<lang>_` file prefix."""
+        """`episode` defaults to the corpus title dir, `lang` to the `<lang>_` file prefix; `avoid`
+        holds 1-based cue numbers earlier injectors already edited."""
         episode = episode or src.parent.name
         lang = lang or src.name.split("_", 1)[0]
         r = rule_pack(lang)["readability"]
@@ -70,7 +74,9 @@ class LocReadability(Injector):
         isolated = [
             i
             for i, e in enumerate(ev)
-            if min(gap_before(i), gap_after(i)) >= MARGIN_MS and 1000 <= e.duration <= 6000
+            if min(gap_before(i), gap_after(i)) >= MARGIN_MS
+            and 1000 <= e.duration <= 6000
+            and i + 1 not in avoid
         ]
         rng.shuffle(isolated)
         picks: list[tuple[int, str]] = []
@@ -110,7 +116,7 @@ class LocReadability(Injector):
             labels.append(
                 Label(
                     label_id=f"{episode}-{lang}-readability-s{seed}-{i + 1}",
-                    title=episode,
+                    title=title or episode,
                     episode=episode,
                     check=self.check,
                     lang=lang,

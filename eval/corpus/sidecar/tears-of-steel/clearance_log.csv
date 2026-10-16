@@ -1,0 +1,13 @@
+item,kind,status,scope,notes
+(390) 731-2208,phone,cleared,,injected: NANP N9X expansion area code
+(212) 555-0963,phone,pending,,injected: 555 outside 0100-0199
+https://noravale.net,url,pending,,injected: made-up domain
+www.harkness-supply.com,url,denied,,injected: made-up domain
+rui.marlow@harkness-supply.com,email,cleared,,injected: made-up domain
+support@noravale.net,email,denied,,injected: made-up domain
+2217 Ferrow Street,address,pending,,injected: invented street in regional format
+9 Dunmere Court,address,cleared,,injected: invented street in regional format
+8QTR516,plate,pending,,injected: regional plate format
+2BNV770,plate,denied,,injected: regional plate format
+Zephyra Energy,brand,cleared,,injected: fictional mark not declared in the bible
+Corvane Motors,brand,pending,,injected: fictional mark not declared in the bible

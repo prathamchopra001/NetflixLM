@@ -1,19 +1,25 @@
-"""loc.offset: shift every cue of a subtitle file by a constant (skeleton example)."""
+"""loc.offset: shift every cue of a subtitle file by a constant number of frames.
+
+The frame rate is the picture's (probed, never assumed): "+12 frames" is 500 ms at 24 fps and
+500.5 ms at 24000/1001. The label is track-level (R12): it lists every cue ref of the track, so a
+flag that claims the first and/or the last cue matches it.
+"""
 
 import random
+from fractions import Fraction
 from pathlib import Path
 
-import pysubs2
-
 from eval.injectors.base import Injector, Label, Target, register
+from eval.injectors.common import Srt, context, picture_fps
 from nip.contracts import refs
+from nip.timecode import frame_to_ms
 
-FPS = 24000 / 1001  # ponytail: assumes 23.976; the title's real rate comes with 2.9A (R12)
+SHIFTS = (-24, -12, 12, 24, 36)  # frames
 
 
 @register
 class LocOffset(Injector):
-    id = "loc.offset.v1"
+    id = "loc.offset.v2"
     check = "loc.offset"
 
     def inject(
@@ -24,27 +30,34 @@ class LocOffset(Injector):
         *,
         episode: str | None = None,
         lang: str | None = None,
+        title: str | None = None,
+        fps: Fraction | None = None,
     ) -> list[Label]:
-        """`episode` defaults to the corpus title dir, `lang` to the `<lang>_` file prefix."""
-        episode = episode or src.parent.name
-        lang = lang or src.name.split("_", 1)[0]
-        frames = random.Random(seed).choice([-24, -12, 12, 24, 36])
-        subs = pysubs2.load(str(src), encoding="utf-8")
-        subs.shift(ms=round(frames * 1000 / FPS))
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        subs.save(str(dst), encoding="utf-8")
+        """`episode` defaults to the corpus title dir, `lang` to the `<lang>_` file prefix, `fps`
+        to the probe of the picture next to `src`."""
+        episode, lang, title = context(src, episode, lang, title)
+        fps = fps or picture_fps(src)
+        srt = Srt(src.read_bytes())
+        first = min(c.start_ms for c in srt.cues)
+        ok = [f for f in SHIFTS if f > 0 or frame_to_ms(-f, fps) <= first]  # no negative times
+        frames = random.Random(f"{self.id}/{seed}").choice(ok)
+        ms = frame_to_ms(abs(frames), fps) * (1 if frames > 0 else -1)
+        for c in srt.cues:
+            c.start_ms += ms
+            c.end_ms += ms
+        srt.write(dst)
         return [
             Label(
-                label_id=f"{src.stem}-offset-{seed}",
-                title=src.stem,
+                label_id=f"{episode}-{lang}-offset-s{seed}",
+                title=title,
                 episode=episode,
                 check=self.check,
                 lang=lang,
                 target=Target(
-                    kind="subtitle_file",
-                    refs=[refs.cue(episode, lang, i) for i in range(1, len(subs) + 1)],
+                    kind="subtitle_track",
+                    refs=[refs.cue(episode, lang, i) for i in range(1, len(srt.cues) + 1)],
                 ),
-                description=f"All cues shifted by {frames:+d} frames at 23.976 fps",
+                description=f"all cues shifted by {frames:+d} frames ({ms:+d} ms at {fps} fps)",
                 injector=self.id,
                 seed=seed,
             )

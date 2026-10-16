@@ -8,3 +8,22 @@ timeline:
     long_shot_s: 4.0
     interval_s: 2.0
     jpeg_quality: 90
+  asr:
+    # EXP-003: turbo-int8 is 2.4x faster than large-v3-int8 and its WER is lower (large-v3
+    # hallucinates more over music); the laptop and workstation default alike.
+    variant: faster-whisper-large-v3-turbo-int8
+    lang: en
+    # EXP-003: faster-whisper's VAD pass dropped short lines and mis-timed segments on Sintel.
+    vad: false
+    # Segments whose mean word probability is below this are hallucinations over music.
+    min_prob: 0.5
+  align:
+    # EXP-004: token-level monotonic alignment beats rapidfuzz line matching.
+    variant: token
+    # Share of a line's tokens that must match inside one cluster of the transcript.
+    min_match: 0.5
+    # rapidfuzz variant only: minimum partial_ratio.
+    min_score: 75
+    # A line's first word never starts earlier than this long before it ends (Whisper's first
+    # word after silence starts early and runs long).
+    first_word_cap_s: 0.3

@@ -1,0 +1,44 @@
+# On-screen text cases for the clearance text channel. `expect`: the check ids that must be
+# candidates for the line (exactly these). Rendered by render.py for the real-OCR test.
+# lang: language of the text (Presidio language). `ner`: what the stubbed GLiNER "reads".
+- {id: phone_real, lang: en, text: "CALL (617) 482-9154 NOW", expect: [clr.phone]}
+- {id: phone_nanp_not_reserved, lang: en, text: "(212) 555-0223", expect: [clr.phone]}
+- {id: phone_fiction, lang: en, text: "CALL (212) 555-0142", expect: []}
+- {id: phone_fiction_e164, lang: en, text: "+1 415 555 0100", expect: []}
+- {id: phone_fiction_edge, lang: en, text: "(310) 555-0199", expect: []}
+- {id: phone_gb_drama, lang: en, text: "Tel 020 7946 0123", expect: []}
+- {id: phone_es, lang: es, text: "Llame al 912 345 678", expect: [clr.phone]}
+- {id: phone_fr, lang: fr, text: "Appelez le 01 23 45 67 89", expect: [clr.phone]}
+- {id: url_spaced, lang: en, text: "www . acme-shop . com", expect: [clr.url]}
+- {id: url_scheme, lang: en, text: "https://realcorp.io/sale", expect: [clr.url]}
+- {id: url_reserved_com, lang: en, text: "visit www.example.com", expect: []}
+- {id: url_reserved_org, lang: en, text: "https://docs.example.org/a", expect: []}
+- {id: url_reserved_test, lang: en, text: "go to shop.test", expect: []}
+- {id: url_reserved_invalid, lang: en, text: "mail.invalid", expect: []}
+- {id: email_real, lang: en, text: "bob@realco.com", expect: [clr.email]}
+- {id: email_reserved, lang: en, text: "info@example.com", expect: []}
+- {id: email_reserved_test, lang: en, text: "me@studio.test", expect: []}
+- {id: plate_us, lang: en, text: "7ABC123", expect: [clr.plate]}
+- {id: plate_gb, lang: en, text: "AB12 CDE", expect: [clr.plate]}
+- {id: plate_es, lang: es, text: "1234 BCD", expect: [clr.plate]}
+- {id: plate_fr, lang: fr, text: "AB-123-CD", expect: [clr.plate]}
+- {id: plate_de, lang: de, text: "B-AB 1234", expect: [clr.plate]}
+- {id: address, lang: en, text: "221B Baker Street, London NW1 6XE", expect: [clr.address],
+   ner: [{text: "221B Baker Street, London NW1 6XE", label: address, start: 0, end: 33, score: 0.75}]}
+- {id: brand_deny_list, lang: en, text: "Coca-Cola", expect: [clr.brand_text]}
+- {id: brand_ner, lang: en, text: "Welcome to Globex Burgers", expect: [clr.brand_text],
+   ner: [{text: Globex Burgers, label: organization, start: 11, end: 25, score: 0.8}]}
+- {id: brand_fictional, lang: en, text: "Brightwave Energy", expect: [],
+   ner: [{text: Brightwave Energy, label: organization, start: 0, end: 17, score: 0.9}]}
+- {id: plain_text, lang: en, text: "THE BLENDER FOUNDATION PRESENTS", expect: []}
+- {id: credits_digits, lang: en, text: "2007 - 2024", expect: []}
+- {id: address_only_digits_is_not_an_address, lang: en, text: "+1 415 555 0100", expect: [],
+   ner: [{text: "+1 415 555 0100", label: address, start: 0, end: 15, score: 0.8}]}
+- {id: ner_org_on_a_reserved_url_is_not_a_brand, lang: en, text: "visit example.com", expect: [],
+   ner: [{text: example.com, label: organization, start: 6, end: 17, score: 0.8}]}
+- {id: ner_org_on_a_real_url_is_not_a_second_finding, lang: en, text: "visit acme-shop.com", expect: [clr.url],
+   ner: [{text: acme-shop.com, label: organization, start: 6, end: 19, score: 0.8}]}
+- {id: ner_org_on_a_dot_test_host_is_not_a_brand, lang: en, text: "go to shop.test", expect: [],
+   ner: [{text: shop.test, label: organization, start: 6, end: 15, score: 0.8}]}
+- {id: ner_org_on_a_plate_is_not_a_brand, lang: en, text: "7ABC123", expect: [clr.plate],
+   ner: [{text: 7ABC123, label: organization, start: 0, end: 7, score: 0.8}]}

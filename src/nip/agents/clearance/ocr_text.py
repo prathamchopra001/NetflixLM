@@ -169,7 +169,7 @@ class FictionAwarePhone(PhoneRecognizer):
 # "www . site . com", "site .com", "site. com": OCR spaces dots out (D-026 cleanup). Only a TLD
 # list may follow, or a sentence break ("Hello. It works") would become a host name.
 _GTLD = "com|net|org|edu|gov|info|biz|app|dev|tv|io"
-_DOT_BEFORE = re.compile(rf"(?i)(?<=\w)\s+\.\s*(?=(?:{_GTLD}|co|de|es|fr|uk|us|eu)\b)")
+_DOT_BEFORE = re.compile(rf"(?i)(?<=\w)\s+\.\s*(?=(?:{_GTLD}|(?-i:co|de|es|fr|uk|us|eu))\b)")
 _DOT_AFTER = re.compile(rf"(?i)(?<=\w)\.\s+(?=(?:{_GTLD})\b)")
 _WWW = re.compile(r"(?i)\b(www\d?)\s*\.\s*")
 _SCHEME = re.compile(r"(?i)\b(https?)\s*:\s*/\s*/\s*")
@@ -275,6 +275,7 @@ class TextScanner:
                 PatternRecognizer(
                     PLATE,
                     supported_language=lang,
+                    global_regex_flags=re.DOTALL | re.MULTILINE,  # no IGNORECASE: caps only
                     patterns=[
                         Pattern(p["name"], p["regex"], p["score"]) for p in cfg["plate_patterns"]
                     ],
@@ -327,9 +328,9 @@ class TextScanner:
                 for r in self._engine.analyze(text, lang, entities=list(CHECK))
                 if r.score >= self._min[_MIN_KEY[r.entity_type]]
             ]
-            # A phone, URL, email or plate is its own finding: GLiNER's address / brand reading of the
-            # same characters ("acme-shop.com" as an organization) and the domain inside an email
-            # are not second ones. Fiction-safe values count too, so example.com is not a brand.
+            # A phone, URL, email or plate is its own finding: GLiNER's address / brand reading of
+            # the same characters ("acme-shop.com" as an organization) and the domain inside an
+            # email are not second ones. Fiction-safe values count too: example.com is no brand.
             fixed = [r for r in raw if r.entity_type in (PHONE, URL, EMAIL, PLATE)]
             emails = [r for r in fixed if r.entity_type == EMAIL]
 

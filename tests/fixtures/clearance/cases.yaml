@@ -42,3 +42,11 @@
    ner: [{text: shop.test, label: organization, start: 6, end: 15, score: 0.8}]}
 - {id: ner_org_on_a_plate_is_not_a_brand, lang: en, text: "7ABC123", expect: [clr.plate],
    ner: [{text: 7ABC123, label: organization, start: 0, end: 7, score: 0.8}]}
+- {id: not_a_plate_month_year, lang: en, text: "MAY 1985", expect: []}
+- {id: not_a_plate_speed, lang: en, text: "100 MPH", expect: []}
+- {id: not_a_plate_up_to, lang: de, text: "UP TO 50", expect: []}
+- {id: not_a_plate_lowercase, lang: en, text: "abc-1234", expect: []}
+- {id: phone_gb_manchester_drama, lang: en, text: "Tel 0161 496 0123", expect: []}
+- {id: phone_gb_belfast_drama, lang: en, text: "Tel 028 9649 6123", expect: []}
+- {id: phone_gb_not_drama, lang: en, text: "Tel 0161 497 0123", expect: [clr.phone]}
+- {id: url_spanish_sentence_is_not_a_host, lang: es, text: "Hola . Es verdad", expect: []}

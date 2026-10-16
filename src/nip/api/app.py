@@ -6,10 +6,12 @@ from typing import Annotated, Any
 
 import boto3
 from botocore.config import Config
-from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from fastapi import APIRouter, Depends, FastAPI
 from sqlalchemy import create_engine, text
 
+from nip.api import errors
 from nip.api.auth import current_user
+from nip.api.errors import ApiError
 from nip.store.db import database_url
 
 system = APIRouter(tags=["system"])
@@ -46,7 +48,7 @@ def _ray() -> None:
 
 @system.get("/readyz")
 def readyz() -> dict[str, str]:
-    """Postgres, object storage and the Ray cluster; 503 naming whichever is down."""
+    """Postgres, object storage and the Ray cluster; 503 CLUSTER_UNAVAILABLE naming what is down."""
     status, down = {}, False
     for name, probe in (
         ("postgres", _postgres),
@@ -59,7 +61,8 @@ def readyz() -> dict[str, str]:
         except Exception as e:  # any failure = not ready; report the type, not connection strings
             status[name], down = f"down: {type(e).__name__}", True
     if down:
-        raise HTTPException(503, status)
+        down_names = ", ".join(k for k, v in status.items() if v != "ok")
+        raise ApiError(503, "CLUSTER_UNAVAILABLE", f"Not ready: {down_names}", status)
     return status
 
 
@@ -70,6 +73,7 @@ def me(user: Annotated[dict[str, Any], Depends(current_user)]) -> dict[str, Any]
 
 def create_app() -> FastAPI:
     app = FastAPI(title="nip", version="0.1.0")
+    errors.install(app)
     app.include_router(system)
     app.include_router(system, prefix="/api/v1")  # reachable behind the UI's /api proxy too
     app.include_router(v1)

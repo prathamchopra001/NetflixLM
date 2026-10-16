@@ -35,3 +35,11 @@ def test_every_long_running_service_has_a_healthcheck() -> None:
     for name, svc in SERVICES.items():
         if name != "objectstore-init":
             assert "healthcheck" in svc, name
+
+
+def test_dev_realm_import_is_opt_in_by_environment() -> None:
+    kc = SERVICES["keycloak"]
+    assert kc["environment"]["NIP_KEYCLOAK_DEV_REALM"] == "${NIP_KEYCLOAK_DEV_REALM:-false}"
+    # the flag is only ever produced by the conditional, never written literally
+    assert "&& echo --import-realm" in kc["command"][0]
+    assert kc["command"][0].count("--import-realm") == 1

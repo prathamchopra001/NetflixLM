@@ -127,7 +127,9 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.6@sha256:0aae0de7fca85525f727d3354df17896092de8bb26ae4c12d89c77e5df8cbce4
-    command: start-dev --http-port=8080
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - exec /opt/keycloak/bin/kc.sh start-dev --http-port=8080 $$([ "$$NIP_KEYCLOAK_DEV_REALM" = true ] && echo --import-realm)
     mem_limit: 1536m # the JVM idles near 770 MiB
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
@@ -137,7 +139,7 @@ services:
       KC_HEALTH_ENABLED: "true"
       # Dev realm (user dev/dev with every role, password grant, no TLS): laptop only. Off unless
       # NIP_KEYCLOAK_DEV_REALM=true, so cloud VMs run this same file with environment values only.
-      KC_IMPORT_REALM: ${NIP_KEYCLOAK_DEV_REALM:-false}
+      NIP_KEYCLOAK_DEV_REALM: ${NIP_KEYCLOAK_DEV_REALM:-false}
     volumes:
       - ./deploy/keycloak/nip-realm.json:/opt/keycloak/data/import/nip-realm.json:ro
     ports: ["127.0.0.1:8180:8080"]

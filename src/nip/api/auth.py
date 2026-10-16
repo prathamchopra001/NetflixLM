@@ -9,10 +9,17 @@ from functools import lru_cache
 from typing import Annotated, Any
 
 import jwt
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from nip.api.errors import ApiError
+
 _bearer = HTTPBearer(auto_error=False)
+_CHALLENGE = {"WWW-Authenticate": "Bearer"}
+
+
+def _unauthorized(message: str) -> ApiError:
+    return ApiError(401, "UNAUTHORIZED", message, headers=_CHALLENGE)
 
 
 @lru_cache
@@ -22,7 +29,7 @@ def _jwks() -> jwt.PyJWKClient:
 
 def _claims(creds: HTTPAuthorizationCredentials | None) -> dict[str, Any]:
     if creds is None:
-        raise HTTPException(401, "missing bearer token", {"WWW-Authenticate": "Bearer"})
+        raise _unauthorized("Missing bearer token")
     try:
         key = _jwks().get_signing_key_from_jwt(creds.credentials)
         return jwt.decode(
@@ -31,9 +38,11 @@ def _claims(creds: HTTPAuthorizationCredentials | None) -> dict[str, Any]:
             algorithms=["RS256", "ES256"],
             issuer=os.environ["NIP_OIDC_ISSUER"],
             audience=os.environ.get("NIP_OIDC_AUDIENCE", "nip-api"),
+            # A token that never expires, or has no subject, is not accepted.
+            options={"require": ["exp", "iat", "sub", "iss", "aud"]},
         )
-    except jwt.PyJWTError as e:
-        raise HTTPException(401, f"invalid token: {e}", {"WWW-Authenticate": "Bearer"}) from e
+    except (jwt.PyJWTError, ValueError, TypeError, KeyError) as e:
+        raise _unauthorized(f"Invalid token: {type(e).__name__}") from e
 
 
 def current_user(
@@ -41,4 +50,6 @@ def current_user(
 ) -> dict[str, Any]:
     claims = _claims(creds)
     roles = claims.get(os.environ.get("NIP_OIDC_ROLES_CLAIM", "roles"), [])
-    return {"sub": claims["sub"], "roles": sorted(roles if isinstance(roles, list) else [roles])}
+    if not isinstance(roles, list) or not all(isinstance(r, str) for r in roles):
+        raise _unauthorized("Invalid token: roles claim must be a list of strings")
+    return {"sub": claims["sub"], "roles": sorted(roles)}

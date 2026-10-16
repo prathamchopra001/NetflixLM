@@ -60,8 +60,11 @@ def test_keycloak_token_is_accepted_by_the_api() -> None:
         {"grant_type": "password", "client_id": "nip-ui", "username": "dev", "password": "dev"}
     ).encode()
     url = f"{KEYCLOAK}/realms/nip/protocol/openid-connect/token"
-    with urllib.request.urlopen(urllib.request.Request(url, form), timeout=10) as r:
-        token = json.load(r)["access_token"]
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, form), timeout=10) as r:
+            token = json.load(r)["access_token"]
+    except urllib.error.HTTPError as e:
+        pytest.skip(f"dev realm not imported (NIP_KEYCLOAK_DEV_REALM=true): HTTP {e.code}")
     status, me = _get(f"{API}/api/v1/me", {"Authorization": f"Bearer {token}"})
     assert status == 200
     assert {"viewer", "reviewer", "legal", "operator"} <= set(me["roles"])

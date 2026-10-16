@@ -1,0 +1,3 @@
+readability:
+  # characters per second; spaces and punctuation count
+  reading_speed_cps: {adult: 17, children: 13}

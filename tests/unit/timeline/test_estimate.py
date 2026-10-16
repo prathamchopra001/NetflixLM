@@ -111,3 +111,13 @@ def test_without_picture_uses_24_fps_and_covers_every_object() -> None:
 def test_duplicate_scene_numbers_are_ambiguous() -> None:
     with pytest.raises(ValueError, match="duplicate timeline refs"):
         build_timeline("E1", Script(None, [_actions("5", 1), _actions("5", 1)]))
+
+
+def test_keyframes_are_one_frame_spans() -> None:
+    script = Script(None, [_actions("1", 1)])
+    tl = build_timeline(
+        "E1", script, _media(Fraction(24), 100), shots=[(0, 40), (40, 100)], keyframes=[(1, 0, 70)]
+    )
+    kf = tl.resolve("E1/kf/1.0")
+    assert kf and kf.kind is EvidenceKind.KEYFRAME and kf.frames == (70, 71)
+    assert kf.tc_in == "00:00:02:22"

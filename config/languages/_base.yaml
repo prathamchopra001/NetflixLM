@@ -1,0 +1,11 @@
+# Localization rule pack: defaults shared by every language (architecture.md > Rule pack defaults,
+# Netflix Timed Text Style Guide, D-011). Packs resolve by tag fallback, es-ES -> es -> _base
+# (D-021); a more specific pack overrides keys section by section. Fractions are exact ("5/6").
+readability:
+  max_chars_per_line: 42
+  max_lines: 2
+  min_duration_s: 5/6  # 20 frames at 24 fps
+  max_duration_s: 7
+  min_gap_frames: 2
+  # Gaps shorter than this are closed to min_gap_frames (3-11 frames at 24 fps).
+  close_gap_below_s: 1/2

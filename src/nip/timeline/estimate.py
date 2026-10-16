@@ -61,10 +61,12 @@ def build_timeline(
     media: MediaInfo | None = None,
     subtitles: Mapping[str, SubtitleTrack] | None = None,
     shots: Sequence[tuple[int, int]] = (),
+    keyframes: Sequence[tuple[int, int, int]] = (),
 ) -> Timeline:
-    """Timeline with estimated scene spans, plus shots and subtitle cues (keyed by language).
+    """Timeline with estimated scene spans, plus shots, keyframes and subtitle cues (by language).
 
     `shots` are [in, out) frame ranges from shot detection; a shot's ref id is its index.
+    `keyframes` are (shot index, n, frame) as written by `extract_keyframes` (ref `kf/{shot}.{n}`).
     """
     fps = media.fps if media else NO_PICTURE_FPS
     start, drop = (media.start_tc_frames, media.drop_frame) if media else (0, False)
@@ -74,6 +76,9 @@ def build_timeline(
         return Span(kind=kind, ref=ref, frames=f, tc_in=tc_in, tc_out=tc_out, **kw)
 
     timed_spans = [timed(EvidenceKind.SHOT, f"{episode}/shot/{i}", s) for i, s in enumerate(shots)]
+    timed_spans += [
+        timed(EvidenceKind.KEYFRAME, f"{episode}/kf/{i}.{n}", (f, f + 1)) for i, n, f in keyframes
+    ]
     for lang, track in (subtitles or {}).items():
         for c in track.cues:
             a = ms_to_frame(c.start_ms, fps)

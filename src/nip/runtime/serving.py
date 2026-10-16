@@ -225,6 +225,15 @@ def _bind(a: App, serve: Any) -> Any:
     )
 
 
+def _why(serve: Any, name: str) -> str:
+    """The replica's constructor error from Serve's status (serve.run's own error omits it)."""
+    try:
+        app = serve.status().applications[name]
+        return "\n".join([app.message, *(d.message for d in app.deployments.values())])
+    except Exception:  # status unavailable: the run error alone has to do
+        return ""
+
+
 def deploy(apps_: list[App], serve: Any) -> dict[str, float]:
     """Start each app; on an existing name Serve updates it in place (new replica count = scale).
     Blocks until every app is RUNNING; returns load seconds per app."""
@@ -234,7 +243,7 @@ def deploy(apps_: list[App], serve: Any) -> dict[str, float]:
         try:
             serve.run(_bind(a, serve), name=a.name, route_prefix=a.route_prefix)
         except Exception as e:
-            raise ServingError(f"{a.name} failed to deploy: {e}") from e
+            raise ServingError(f"{a.name} failed to deploy: {e}\n{_why(serve, a.name)}") from e
         secs[a.name] = round(time.monotonic() - t, 1)
     return secs
 

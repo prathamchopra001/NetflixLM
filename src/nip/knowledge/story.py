@@ -44,6 +44,7 @@ from nip.config import config_dir
 from nip.contracts import refs
 from nip.contracts.plan import Slot
 from nip.ingest.bible import StoryOverride, parse_bible
+from nip.ingest.script import HEADING_RE
 from nip.store import schema
 
 if TYPE_CHECKING:
@@ -132,7 +133,7 @@ class Verdict(BaseModel):
 
     relation: Literal["next_day", "same_day", "later_days", "earlier", "simultaneous"]
     days: int = Field(1, ge=1, le=3650)
-    reason: str = Field("", max_length=300)
+    reason: str = ""
 
 
 class LLM(Protocol):
@@ -155,11 +156,15 @@ def _caps(kind: str, text: str) -> bool:
 
 
 def _tail(heading: str) -> str:
-    """What follows the last " - " plus every parenthetical: where a heading states time and
-    markers (location names such as DREAM HOUSE stay out of it)."""
+    """Every " - " segment of the heading except the location (the one starting INT./EXT., else
+    the first), plus every parenthetical: where a heading states time and markers, in any position
+    (`FLASHBACK - INT. B - DAY`, `INT. B - FLASHBACK - NIGHT`). Location names such as DREAM HOUSE
+    stay out of it."""
     h = heading.upper()
-    _, sep, rest = h.rpartition(" - ")
-    return f"{rest if sep else ''} {' '.join(re.findall(r'\(([^)]*)\)', h))}"
+    segs = h.split(" - ")
+    loc = next((i for i, x in enumerate(segs) if HEADING_RE.match(x)), 0)
+    rest = [x for i, x in enumerate(segs) if i != loc]
+    return f"{' '.join(rest)} {' '.join(re.findall(r'\(([^)]*)\)', h))}"
 
 
 def _tod(text: str) -> int | None:
@@ -327,8 +332,11 @@ class _Deriver:
                 p.markers.append("flashback")
             p.day, p.inferred = self.flash_day(c, o, detect)
         elif self.base >= 0 and {"intercut", "dream", "vision"} & set(p.markers):
-            p.kind = "share"
-            p.day = o.story_day if o and o.story_day is not None else self.out[self.base].day
+            if o and o.story_day is not None:
+                # a stated day beats sharing: own unit at that day, marker kept
+                p.kind, p.day = "flash", o.story_day
+            else:
+                p.kind, p.day = "share", self.out[self.base].day
         else:
             self.present(i, c, o, p)
         if p.kind == "share":
@@ -351,7 +359,7 @@ class _Deriver:
             return self.day - c.back_days, False
         if detect and self.span is not None:
             return self.span
-        return None, not o
+        return None, True  # first in the show is a guess, an override or not
 
     def present(self, i: int, c: Cues, o: StoryOverride | None, p: _P) -> None:
         if o and o.story_day is not None:
@@ -374,10 +382,13 @@ class _Deriver:
             self.story.ambiguous += 1
             p.day, p.inferred = self.day + 1, True
             if (v := self.ask(i)) is not None:
-                self.verdict(p, v)
+                self.verdict(p, v, overridden=o is not None)
 
-    def verdict(self, p: _P, v: Verdict) -> None:
-        p.source = "llm"
+    def verdict(self, p: _P, v: Verdict, overridden: bool) -> None:
+        """An override (here: markers without a day) always wins: the LLM only fills the day."""
+        if overridden and v.relation in ("earlier", "simultaneous"):
+            return
+        p.source = "override" if overridden else "llm"
         if v.relation == "same_day":
             p.day = self.day
         elif v.relation == "later_days":
@@ -543,7 +554,7 @@ def write_positions(
         )
 
 
-_VERDICTS: dict[Any, Verdict] = {}  # one run derives the whole show once per episode: ask once
+_VERDICTS: dict[str, dict[Any, Verdict]] = {}  # per model variant; one ask per prompt
 
 
 def make_llm(variant: str) -> Any:
@@ -567,7 +578,13 @@ def stage_story(ep: "EpisodeRun") -> None:
     def unit(key: str) -> AbstractContextManager[None]:
         return ep.unit(STAGE, key, model_variant=variant)
 
-    story = derive(scenes, load_overrides(ep.conn, ep.s3, ep.show), llm, unit=unit, memo=_VERDICTS)
+    story = derive(
+        scenes,
+        load_overrides(ep.conn, ep.s3, ep.show),
+        llm,
+        unit=unit,
+        memo=_VERDICTS.setdefault(variant or "", {}),
+    )
     for k in story.unmatched:
         log.warning("story_overrides: no scene matches %r", k)
     write_positions(ep.conn, ids, story.positions)

@@ -203,12 +203,56 @@ def test_override_wins_over_a_detected_flashback() -> None:
     assert p[1].markers == ("vision",) and p[1].story_seq == 1  # a vision shares, not a flashback
 
 
-def test_override_flashback_without_a_day_is_first_and_not_inferred() -> None:
+def test_override_flashback_without_a_day_is_first_and_still_inferred() -> None:
     p = pos(
         heads("INT. A - DAY", "INT. B - DAY"),
         [StoryOverride(scene="S01E01/sc/2", markers=["flashback"])],
     )
-    assert days(p) == [1, None] and seqs(p) == [2, 1] and not p[1].inferred
+    assert days(p) == [1, None] and seqs(p) == [2, 1] and p[1].inferred
+
+
+def test_markers_only_override_is_never_overwritten_by_the_llm() -> None:
+    sc = heads("INT. A - NIGHT", "INT. B - DAY", "INT. C - NIGHT")
+    ov = [StoryOverride(scene="S01E01/sc/2", markers=["continuous"])]
+    for relation in ("earlier", "simultaneous"):  # would add a flashback / share a seq
+        p = pos(sc, ov, Scripted(relation, 2))
+        assert p[1].markers == ("continuous",) and p[1].source == "override"
+        assert days(p) == [1, 2, 2] and seqs(p) == [1, 2, 3]  # the rule default stands
+    p = pos(sc, ov, Scripted("later_days", 4))  # a verdict that only fills the unset day
+    assert p[1].markers == ("continuous",) and p[1].source == "override" and p[1].story_day == 5
+
+
+def test_override_day_on_a_sharing_scene_decides_its_seq() -> None:
+    sc = heads("INT. A - DAY", "INT. B - NIGHT (DREAM)", "INT. C - NEXT MORNING")
+    p = pos(sc, [StoryOverride(scene="S01E01/sc/2", markers=["dream"], story_day=9)])
+    assert p[1].markers == ("dream",) and p[1].story_day == 9
+    assert days(p) == [1, 9, 2] and seqs(p) == [1, 3, 2]  # seq follows the day, not the base
+    assert p[2].story_day == 2  # the day counter was not moved by the dream
+
+
+@pytest.mark.parametrize(
+    ("heading", "marker"),
+    [
+        ("FLASHBACK - INT. B - DAY", "flashback"),
+        ("INT. B - FLASHBACK - NIGHT", "flashback"),
+        ("INT. B - NIGHT - FLASHBACK", "flashback"),
+        ("INT. B - DREAM - NIGHT", "dream"),
+        ("INT. B - SAME TIME - NIGHT", "intercut"),
+        ("INT. B - NIGHT (SAME TIME)", "intercut"),
+    ],
+)
+def test_markers_are_read_from_any_heading_segment(heading: str, marker: str) -> None:
+    sc = heads("INT. A - NIGHT", "INT. B - NIGHT", "INT. C - NIGHT")
+    sc[1] = SceneIn(sc[1].ref, heading, sc[1].elements)  # a prefix form is not Fountain-parseable
+    p = pos(sc)
+    assert p[1].markers == (marker,)
+    assert days(p)[2] == 1  # the following NIGHT is not a regression into a next day
+    assert not any(x.source == "llm" for x in p)
+
+
+def test_location_names_are_not_markers() -> None:
+    p = pos(heads("INT. A - NIGHT", "INT. DREAM HOUSE - NIGHT", "INT. FLASHBACK DINER - NIGHT"))
+    assert [x.markers for x in p] == [(), (), ()] and days(p) == [1, 1, 1]
 
 
 def test_override_ref_forms() -> None:

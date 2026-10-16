@@ -214,14 +214,14 @@ CATALOG = load_catalog()
 
 
 def _plan(free_gb: float) -> Plan:
-    return planner.plan(_inv(free_gb), CATALOG, WORKLOAD, pins=PINS, margin_gb=pipeline.MARGIN_GB)
+    return planner.plan(_inv(free_gb), CATALOG, WORKLOAD, pins=PINS, margin_gb=0.5)
 
 
 def test_no_fit_says_free_vs_needed() -> None:
     """W-int's laptop reading (6.70 GiB free): text_llm is skipped, and the reason has numbers."""
     p = _plan(6.70)
     assert p.skipped_slots == [Slot.TEXT_LLM]
-    why = pipeline.no_fit(Slot.TEXT_LLM, _inv(6.70), CATALOG, PINS, 0.9)
+    why = pipeline.no_fit(Slot.TEXT_LLM, _inv(6.70), CATALOG, PINS, 0.9, 0.5)
     assert why == (
         "no hardware for text_llm: qwen3.5-4b-awq needs 6.25 GiB on one GPU, GPU 0 has 6.20 "
         "usable = min(0.90 x 8.00 total, 6.70 free - 0.50 margin): short 0.05 GiB"
@@ -269,3 +269,20 @@ def test_segments_cut_where_the_served_group_changes() -> None:
         (None, ["knowledge.consolidate", "knowledge.index", "timeline"]),
     ]
     assert cut({}) == [(None, [n for n, _ in stages])]  # no serving: today's per-episode order
+
+
+def test_the_margin_is_an_env_knob_and_no_fit_keeps_the_bare_reason_when_vram_is_not_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from nip.config import vram_margin_gb
+
+    monkeypatch.delenv("NIP_VRAM_MARGIN_GB", raising=False)
+    assert vram_margin_gb() == 0.5
+    monkeypatch.setenv("NIP_VRAM_MARGIN_GB", "0.25")
+    assert vram_margin_gb() == 0.25
+    p = planner.plan(_inv(6.70), CATALOG, WORKLOAD, pins=PINS, margin_gb=vram_margin_gb())
+    assert Slot.TEXT_LLM in p.decisions  # 6.45 usable >= the 6.25 startup peak
+    # e.g. a skip for compute capability: VRAM would fit, so no "short -x GiB"
+    assert pipeline.no_fit(Slot.TEXT_LLM, _inv(7.6), CATALOG, PINS, 0.9, 0.5) == (
+        "no hardware for text_llm"
+    )

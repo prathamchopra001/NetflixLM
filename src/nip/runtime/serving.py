@@ -31,6 +31,9 @@ from nip.runtime.catalog import Catalog, Variant
 ENFORCE_EAGER_MAX_GB = 16.0  # CUDA graphs cost ~0.5-1 GiB: skip them on GPUs this small
 STARTUP_TIMEOUT_S = 900.0
 IDLE_TOLERANCE_MIB = 256  # desktop apps move free VRAM by ~100 MiB on the laptop
+# A run's group teardown: the Windows desktop moved 1,065-1,669 MiB used within 25 min (W-serve),
+# so "back to idle" there means within 1 GiB, which still catches a left-over model (>= 1.5 GiB).
+DRIFT_TOLERANCE_MIB = 1024
 MAX_ONGOING_REQUESTS = 64  # per vLLM replica; the scheduler bounds units in flight anyway
 
 
@@ -315,6 +318,7 @@ def teardown(
     idle_mib: int | None = None,
     used_mib: Callable[[], int] = gpu_used_mib,
     timeout_s: float = 120.0,
+    tolerance_mib: int = IDLE_TOLERANCE_MIB,
 ) -> float:
     """Delete the apps; with `idle_mib`, wait until used VRAM is back within tolerance of it.
     Returns seconds until idle. ponytail: checks this node's GPUs only; a multi-node check
@@ -324,7 +328,7 @@ def teardown(
         serve.delete(a.name)
     if idle_mib is None:
         return round(time.monotonic() - t, 1)
-    while (used := used_mib()) > idle_mib + IDLE_TOLERANCE_MIB:
+    while (used := used_mib()) > idle_mib + tolerance_mib:
         if time.monotonic() - t > timeout_s:
             raise ServingError(f"VRAM used {used} MiB after teardown, idle was {idle_mib} MiB")
         time.sleep(0.5)
@@ -333,24 +337,36 @@ def teardown(
 
 @contextmanager
 def group(
-    apps_: list[App], serve: Any, used_mib: Callable[[], int] = gpu_used_mib
+    apps_: list[App],
+    serve: Any,
+    used_mib: Callable[[], int] = gpu_used_mib,
+    tolerance_mib: int = DRIFT_TOLERANCE_MIB,
+    timeout_s: float = 120.0,
 ) -> Iterator[dict[str, Any]]:
     """One stage group's lifetime: measure idle VRAM -> deploy -> (body) -> teardown -> wait for
     VRAM back to idle. Yields the group's record: `idle_mib`, `load_s` (per app), then on exit
     `up_mib` (used VRAM with the group loaded, after its work), `unload_s` and `after_mib`.
-    On an error the group is still torn down and the original error is re-raised."""
+    A deploy or body error tears the group down and is re-raised. After successful work, VRAM
+    that does not come back within `tolerance_mib` is a `warning` in the record, not an error:
+    the apps are deleted, the desktop may have grown, and only the next group needs the room
+    (if it does not fit, its deploy fails)."""
     rec: dict[str, Any] = {"idle_mib": used_mib()}
     try:
         rec["load_s"] = deploy(apps_, serve)
         yield rec
     except BaseException as e:  # tear down, but keep the original error as the cause
         try:
-            teardown(apps_, serve, rec["idle_mib"], used_mib)
+            teardown(apps_, serve, rec["idle_mib"], used_mib, timeout_s, tolerance_mib)
         except ServingError as t:
             e.add_note(f"teardown after this failure also failed: {t}")
         raise
     rec["up_mib"] = used_mib()
-    rec["unload_s"] = teardown(apps_, serve, rec["idle_mib"], used_mib)
+    try:
+        rec["unload_s"] = teardown(
+            apps_, serve, rec["idle_mib"], used_mib, timeout_s, tolerance_mib
+        )
+    except ServingError as t:
+        rec["warning"] = str(t)
     rec["after_mib"] = used_mib()
 
 

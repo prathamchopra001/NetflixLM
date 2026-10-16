@@ -24,6 +24,12 @@ def default_hf_home() -> Path:
 os.environ.setdefault("HF_HOME", str(default_hf_home()))
 
 
+def vram_margin_gb() -> float:
+    """Free VRAM (GiB) the planner leaves on each GPU: `NIP_VRAM_MARGIN_GB`, default 0.5.
+    The 8 GB laptop may set 0.25 (EXP-001: steady use 54-107 MiB above the planner's estimate)."""
+    return float(os.environ.get("NIP_VRAM_MARGIN_GB", "0.5"))
+
+
 def config_dir() -> Path:
     """`$NIP_CONFIG_DIR`; else `config/` of the source tree (editable install); else `./config`.
 

@@ -618,10 +618,10 @@ def test_staged_run_holds_each_served_group_up_around_its_stages_for_every_episo
 
     s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01", "S01E02"], plan=plan,
                            inventory=inv, deploy=deploy, served={Slot.TEXT_LLM})  # fmt: skip
-    assert events == [
+    assert events == [  # each stage over every episode before the next (I-3, also on the host)
         "timeline.asr S01E01", "timeline.asr S01E02", "up llm",
-        "knowledge.story S01E01", "knowledge.extract S01E01",
-        "knowledge.story S01E02", "knowledge.extract S01E02", "down llm",
+        "knowledge.story S01E01", "knowledge.story S01E02",
+        "knowledge.extract S01E01", "knowledge.extract S01E02", "down llm",
         "knowledge.index S01E01", "knowledge.index S01E02",
     ]  # fmt: skip
     assert s["status"] == "completed" and s["plan"]["mode"] == "staged"
@@ -630,3 +630,87 @@ def test_staged_run_holds_each_served_group_up_around_its_stages_for_every_episo
          "load_s": {"nip-q": 1.0}}
     ]  # fmt: skip
     assert [e["flags_kept"] for e in s["episodes"].values()] == [2, 2]
+
+
+def test_a_group_that_fails_to_deploy_is_a_gap_not_a_failed_run(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """W-serve review I-1: a vLLM start that fails (e.g. desktop VRAM grew since the probe) skips
+    the stages that needed it, with the reason; the rest of the run commits."""
+    from nip.agents import script_critic
+    from nip.runtime.serving import ServingError
+
+    ingest(pg, s3, episode_files(tmp_path))
+    called: list[str] = []
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    monkeypatch.setattr(pipeline, "AGENTS", [*pipeline.AGENTS, script_critic])
+    pipeline.add_stage("knowledge.story", lambda ep: called.append(f"story {ep.plan.decisions}"))
+    pipeline.add_stage("knowledge.extract", lambda ep: called.append("extract"))
+    plan, inv = stub_plan()
+    llm = StageGroup(name="llm", slots=[Slot.TEXT_LLM])
+    decisions = {Slot.TEXT_LLM: SlotDecision(variant="q")}
+    plan = plan.model_copy(update={"mode": Mode.STAGED, "groups": [llm], "decisions": decisions})
+
+    @contextmanager
+    def deploy(g: StageGroup) -> Iterator[dict[str, Any]]:
+        raise ServingError("nip-q failed to deploy: CUDA out of memory\ndetails")
+        yield {}  # pragma: no cover
+
+    s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01"], plan=plan, inventory=inv,
+                           deploy=deploy, served={Slot.TEXT_LLM})  # fmt: skip
+    assert called == ["story {}"]  # story ran on its rules (no text_llm left); extract skipped
+    ep = s["episodes"]["S01E01"]
+    assert s["status"] == "completed_with_gaps" and ep["flags_kept"] == 2
+    assert s["serving"] == [{"group": "llm", "stages": ["knowledge.story", "knowledge.extract"],
+                             "error": "nip-q failed to deploy: CUDA out of memory"}]  # fmt: skip
+    why = "no Serve for text_llm: group llm failed to deploy: nip-q failed to deploy: CUDA out"
+    assert ep["skipped_stages"][1].startswith(f"knowledge.extract skipped: {why}")
+    assert {str(c.check) for c in script_critic.CHECKS} <= set(ep["skipped"])
+    report = json.loads(s3.objects["nip-artifacts", "runs/run_1/S01E01/report.json"])
+    assert report["coverage"]["script_critic"] == 0.0
+    assert report["plan"]["skipped_slots"] == ["text_llm"]
+
+
+def test_host_and_cluster_runs_give_identical_flags_on_two_episodes(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """W-serve review I-3: one execution order everywhere. The wired pipeline (cpu stubs, the
+    synthetic show's replayed extraction) over S01E01-02, on the host path and on the cluster
+    path (fake serving around the llm stages), gives the same flags."""
+    from eval.synthetic.generate import build
+    from eval.synthetic.model import write_show
+    from nip.runtime import planner
+    from nip.runtime.catalog import load_catalog
+
+    write_show(build(1), tmp_path)
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    monkeypatch.setattr(pipeline, "AGENTS", list(pipeline.AGENTS))
+    pipeline.wire()
+    _, inv = stub_plan()
+    plan = planner.plan(inv, load_catalog(), {sl: 2 for sl in pipeline.MODEL_SLOTS}, stub=True)
+    ups: list[str] = []
+
+    @contextmanager
+    def deploy(g: StageGroup) -> Iterator[dict[str, Any]]:
+        ups.append(g.name)
+        yield {}
+
+    def run(**serving: Any) -> list[tuple[str, str, str]]:
+        tables = ", ".join(f'"{t.name}"' for t in schema.metadata.sorted_tables)
+        with pg.begin() as conn:  # a fresh store for each path
+            conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
+        ingest(pg, s3, [(None, tmp_path / "bible.yaml")], episode=None)
+        for e in ("S01E01", "S01E02"):
+            ingest(pg, s3, [(None, tmp_path / f"{e}.fountain")], episode=e)
+        s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01", "S01E02"], plan=plan,
+                               inventory=inv, **serving)  # fmt: skip
+        assert s["status"] == "completed"
+        f = schema.flag
+        with pg.connect() as conn:
+            rows = conn.execute(select(f.c.check_id, f.c.fingerprint, f.c.title)).all()
+        return sorted((r.check_id, r.fingerprint, r.title) for r in rows)
+
+    host = run()
+    cluster = run(deploy=deploy, served={Slot.TEXT_LLM})
+    print(f"{len(host)} flags on both paths")
+    assert ups == ["resident"] and host == cluster and host  # the stub show has flags to compare

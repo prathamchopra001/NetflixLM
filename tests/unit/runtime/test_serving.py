@@ -249,3 +249,13 @@ def test_group_records_vram_and_tears_down_even_when_the_work_fails() -> None:
     with pytest.raises(KeyError), serving.group([a], serve, used_mib=lambda: 1500):
         raise KeyError("stage crashed")
     assert serve.running == {} and serve.log[-1] == ("delete", "nip-m")
+
+
+def test_group_teardown_drift_after_the_work_is_a_warning_not_an_error() -> None:
+    """The desktop grew while the group worked: the apps are deleted, the run goes on."""
+    serve, readings = FakeServe(), iter([1000, 7500] + [2200] * 10)
+    with serving.group([App("m", (Slot.DETECTOR,), 1, 0.3)], serve,
+                       used_mib=lambda: next(readings), timeout_s=0.0) as rec:  # fmt: skip
+        pass
+    assert serve.running == {} and "after teardown" in rec["warning"]
+    assert rec["after_mib"] == 2200 and "unload_s" not in rec

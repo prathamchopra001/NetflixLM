@@ -7,9 +7,11 @@ NIP_TEST_DATABASE_URL=postgresql://nip:change_me@127.0.0.1:55432/nip (a role tha
 DATABASE). Each session gets its own database, so concurrent test runs do not collide.
 """
 
+import io
 import os
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from sqlalchemy import Engine, create_engine, make_url, text
@@ -18,7 +20,7 @@ from nip.store.schema import metadata
 
 
 class FakeS3:
-    """The two boto3 S3 calls the store makes, kept in a dict of (bucket, key) -> bytes."""
+    """The boto3 S3 calls the store makes, kept in a dict of (bucket, key) -> bytes."""
 
     def __init__(self) -> None:
         self.objects: dict[tuple[str, str], bytes] = {}
@@ -28,6 +30,9 @@ class FakeS3:
 
     def put_object(self, *, Bucket: str, Key: str, Body: bytes) -> None:  # noqa: N803 (boto3)
         self.objects[Bucket, Key] = Body
+
+    def get_object(self, *, Bucket: str, Key: str) -> dict[str, Any]:  # noqa: N803 (boto3)
+        return {"Body": io.BytesIO(self.objects[Bucket, Key])}  # story reads the stored bible
 
 
 @pytest.fixture

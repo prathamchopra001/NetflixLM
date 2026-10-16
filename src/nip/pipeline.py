@@ -45,7 +45,7 @@ import os
 import time
 from collections import Counter
 from collections.abc import Callable, Collection, Iterator, Mapping
-from contextlib import AbstractContextManager, contextmanager, nullcontext
+from contextlib import AbstractContextManager, ExitStack, contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from fractions import Fraction
@@ -59,6 +59,7 @@ from sqlalchemy import Connection, Engine, create_engine, or_, select
 
 from nip.agents import localization
 from nip.agents.base import Check, Input, emit, run_check
+from nip.config import vram_margin_gb
 from nip.contracts.flag import CHECK_OWNER, Agent, CheckId, Flag, ProducedBy
 from nip.contracts.inventory import HardwareInventory
 from nip.contracts.plan import Mode, Objective, Plan, Slot, StageGroup
@@ -66,6 +67,7 @@ from nip.contracts.report import Report, ReportPlan, build_report
 from nip.contracts.timeline import Timeline
 from nip.ingest import Script, SubtitleTrack
 from nip.ingest.media import MediaRejected, probe
+from nip.runtime.serving import ServingError
 from nip.store import objects, runs, schema
 from nip.store.db import database_url
 from nip.store.ingest import FORMATS, InputRejected, ingest
@@ -305,6 +307,19 @@ STAGES: list[tuple[str, Stage]] = [
 ]
 
 
+def degrade(ep: "EpisodeRun", plan: Plan) -> None:
+    """Run `ep` on `plan`: the stages whose slot it skipped are recorded (story runs on rules) and
+    the checks fed by a skipped stage are lost (a coverage gap). Used at run start, and when a
+    Serve group fails to deploy mid-run."""
+    ep.plan = plan
+    ep.skipped_stages |= skipped_stages(plan, [n for n, _ in STAGES])
+    fed = tuple(FEEDS[s] for s in ep.skipped_stages if s in FEEDS)
+    lost = [str(c.check) for c in ep.checks if str(c.check).startswith(fed)]
+    ep.checks = [c for c in ep.checks if str(c.check) not in lost]
+    ep.lost += lost
+    ep.skipped += lost
+
+
 def segments(
     stages: list[tuple[str, Stage]], served: Mapping[Slot, StageGroup]
 ) -> list[tuple[StageGroup | None, list[tuple[str, Stage]]]]:
@@ -413,11 +428,13 @@ def run_store(
     """Run every stage over `episodes` of `show` from the store; returns the run summary.
 
     `agents`: None = auto (every agent whose checks' inputs are present).
+    Order (one everywhere, W-serve I-3): each stage runs over every episode, in episode order,
+    before the next stage (hardware-adaptation.md: load group -> drain its units -> unload).
     Staged serving (`nip run --in-cluster`): `served` are the slots that run as Serve apps and
-    `deploy(group)` holds a Plan group's apps up (`serving.group`). The stages are cut into
-    segments where the group they need changes; each segment runs over every episode, in order,
-    inside its group's deployment, so a model loads once per run. Without serving it is one
-    segment: each episode runs every stage in turn.
+    `deploy(group)` holds a Plan group's apps up (`serving.group`) around the consecutive stages
+    that call them, so a model loads once per run. A group that fails to deploy is not a failed
+    run: its slots leave the episodes' Plan (`no Serve for …`), their stages are recorded skips
+    and the checks they feed are coverage gaps (`completed_with_gaps`).
     """
     if not episodes:
         raise InputRejected("no episodes given")
@@ -435,8 +452,6 @@ def run_store(
             prepared.append((row, *build_checks(available, ctx, agents)))
             langs += [t for t in targets if t not in langs]
         resolved = sorted({str(owner(c.check)) for _, checks, _ in prepared for c in checks})
-        skips = skipped_stages(plan, [n for n, _ in STAGES])
-        lost_prefixes = tuple(FEEDS[s] for s in skips if s in FEEDS)
         plan_db = runs.create_plan(conn, plan, inventory)
         plan = plan.model_copy(update={"plan_id": runs.ext_id("plan", plan_db)})
         run_db = runs.create_run(
@@ -450,28 +465,38 @@ def run_store(
         )
         conn.commit()
         run_id = runs.ext_id("run", run_db)
-        eps = []
-        for row, checks, skipped in prepared:
-            lost = [str(c.check) for c in checks if str(c.check).startswith(lost_prefixes)]
-            ep = EpisodeRun(conn, s3, show, row.ref, row.id, run_id, plan,
-                            [c for c in checks if str(c.check) not in lost], skipped + lost,
-                            skipped_stages=skips, lost=lost)  # fmt: skip
-            eps.append(ep)
-        group_of = {s: g for g in plan.groups for s in g.slots if s in served}
+        eps = [
+            EpisodeRun(conn, s3, show, row.ref, row.id, run_id, plan, checks, skipped)
+            for row, checks, skipped in prepared
+        ]
+        for ep in eps:
+            degrade(ep, plan)
+        group_of = {s: g for g in plan.groups for s in g.slots if s in served} if deploy else {}
         loads: list[dict[str, Any]] = []
         try:  # one transaction for the whole run: every episode commits, or none
-            for group, part in segments(STAGES, group_of if deploy else {}):
-                scope = deploy(group) if deploy and group else nullcontext({})
-                with scope as rec:
-                    for ep in eps:
-                        for name, fn in part:
-                            if name in skips and name not in RULES_ONLY:
+            for group, part in segments(STAGES, group_of):
+                up: dict[str, Any] = {}  # serving.group fills it in on enter and on exit
+                with ExitStack() as stack:
+                    if deploy and group:
+                        rec = {"group": group.name, "stages": [n for n, _ in part]}
+                        loads.append(rec)
+                        try:
+                            up = stack.enter_context(deploy(group))
+                        except ServingError as e:  # torn down already; the run goes on without
+                            rec["error"] = str(e).splitlines()[0]
+                            gone = [s for s in group.slots if s in served]
+                            why = f"group {group.name} failed to deploy: {rec['error']}"
+                            for ep in eps:
+                                degrade(ep, without(ep.plan, gone, why))
+                    for name, fn in part:
+                        for ep in eps:
+                            if name in ep.skipped_stages and name not in RULES_ONLY:
                                 ep.stages.append({"stage": name, "wall_s": 0.0, "skipped": True})
                                 continue
                             with _timed(ep.stages, name):
                                 fn(ep)
-                if group is not None:
-                    loads.append({"group": group.name, "stages": [n for n, _ in part], **rec})
+                if up:
+                    rec |= up
             for ep in eps:
                 runs.add_work_units(conn, run_db, ep.units)
             gaps = any(ep.lost or any(u["status"] == "failed" for u in ep.units) for ep in eps)
@@ -479,6 +504,8 @@ def run_store(
             runs.finish_run(conn, run_db, status)
             conn.commit()
         except BaseException:
+            if loads:  # the load/unload timings of a failed run are worth keeping (logs)
+                log.error("run %s failed; serving so far: %s", run_id, loads)
             conn.rollback()
             runs.finish_run(conn, run_db, "failed")
             conn.commit()
@@ -546,43 +573,51 @@ def current_plan(workload: dict[Slot, int]) -> tuple[Plan, HardwareInventory]:
         pins,
         stub=os.environ.get("NIP_PROFILE") == "cpu",
         gpu_mem_utilization=gmu,
-        margin_gb=MARGIN_GB,
+        margin_gb=(margin := vram_margin_gb()),
     )
-    why = {f"no hardware for {s}": no_fit(s, inv, catalog, pins, gmu) for s in p.skipped_slots}
+    why = {
+        f"no hardware for {s}": no_fit(s, inv, catalog, pins, gmu, margin) for s in p.skipped_slots
+    }
     return p.model_copy(update={"warnings": [why.get(w, w) for w in p.warnings]}), inv
 
 
-MARGIN_GB = 0.5  # free VRAM the planner leaves per GPU (planner.plan's margin_gb)
-
-
 def need_gb(v: Any) -> float:
-    """GiB a catalog variant needs on one GPU at its smallest context (the planner's sizing)."""
-    from nip.runtime.planner import CONCURRENCY
+    """GiB a catalog variant needs on one GPU at its smallest context: the planner's own per-GPU
+    sizing (`planner._placements` at tp 1)."""
+    from nip.runtime.planner import _kv_gb
 
     if v.engine != "vllm":
         return float(v.vram_gb or 0.0)
-    kv = v.kv_mb_per_1k_tokens * v.context.min / 1024 * CONCURRENCY / 1024
-    return float(max(v.weights_gb + kv + v.overhead_gb, v.startup_peak_gb or 0.0))
+    return float(max(v.weights_gb + _kv_gb(v, v.context.min) + v.overhead_gb,
+                     v.startup_peak_gb or 0.0))  # fmt: skip
 
 
 def no_fit(
-    slot: Slot, inv: HardwareInventory, catalog: Any, pins: Mapping[Slot, str], gmu: float
+    slot: Slot,
+    inv: HardwareInventory,
+    catalog: Any,
+    pins: Mapping[Slot, str],
+    gmu: float,
+    margin: float,
 ) -> str:
     """Why the planner found no hardware for `slot`: the smallest candidate's need against the
-    roomiest GPU's usable VRAM, min(gmu x total, free - margin). ponytail: one GPU, tp 1 and
-    compute capability ignored; enough for the laptop's one-GPU question."""
+    roomiest GPU's usable VRAM, min(gmu x total, free - margin). ponytail: one GPU, tp 1; when
+    VRAM is not the reason (compute capability, tp) the planner's bare reason stays."""
+    bare = f"no hardware for {slot}"
     pool = [v for v in catalog.variants if slot in v.serves and v.engine != "stub"]
     pool = [v for v in pool if pins.get(slot, v.id) == v.id]
     gpus = [g for n in inv.nodes for g in n.gpus]
     if not pool or not gpus:
-        return f"no hardware for {slot}: " + ("no GPU" if pool else "no catalog variant")
+        return f"{bare}: " + ("no GPU" if pool else "no catalog variant")
     vid, need = min(((v.id, need_gb(v)) for v in pool), key=lambda x: x[1])
-    g = max(gpus, key=lambda g: min(gmu * g.vram_total_gb, g.vram_free_gb - MARGIN_GB))
-    usable = min(gmu * g.vram_total_gb, g.vram_free_gb - MARGIN_GB)
+    g = max(gpus, key=lambda g: min(gmu * g.vram_total_gb, g.vram_free_gb - margin))
+    usable = min(gmu * g.vram_total_gb, g.vram_free_gb - margin)
+    if need <= usable:
+        return bare
     return (
-        f"no hardware for {slot}: {vid} needs {need:.2f} GiB on one GPU, GPU {g.index} has "
-        f"{usable:.2f} usable = min({gmu:.2f} x {g.vram_total_gb:.2f} total, "
-        f"{g.vram_free_gb:.2f} free - {MARGIN_GB:.2f} margin): short {need - usable:.2f} GiB"
+        f"{bare}: {vid} needs {need:.2f} GiB on one GPU, GPU {g.index} has {usable:.2f} usable "
+        f"= min({gmu:.2f} x {g.vram_total_gb:.2f} total, {g.vram_free_gb:.2f} free - "
+        f"{margin:.2f} margin): short {need - usable:.2f} GiB"
     )
 
 

@@ -147,7 +147,10 @@ class EpisodeRun:
 
     @contextmanager
     def unit(self, stage: str, key: str, model_variant: str | None = None) -> Iterator[None]:
-        """One work unit: recorded `done`, or `failed` (logged, swallowed: a coverage gap)."""
+        """One work unit: recorded `done`, or `failed` (logged, swallowed: a coverage gap).
+
+        The body runs in a savepoint: a failed unit's rows are rolled back, and a database error
+        in it does not poison the run's transaction for the units after it."""
         row: dict[str, Any] = {  # every row has the same keys: one executemany inserts them all
             "stage": stage,
             "unit_key": key,
@@ -155,12 +158,15 @@ class EpisodeRun:
             "error": None,
             "started_at": datetime.now(UTC),
         }
+        savepoint = self.conn.begin_nested()
         try:
             yield
         except Exception as e:  # ponytail: one attempt; retries with backoff come with models
+            savepoint.rollback()
             log.exception("%s unit %s failed", stage, key)
             row |= {"status": "failed", "error": f"{type(e).__name__}: {e}"}
         else:
+            savepoint.commit()
             row["status"] = "done"
         self.units.append(row | {"finished_at": datetime.now(UTC)})
 
@@ -175,15 +181,22 @@ def report_plan(plan: Plan) -> ReportPlan:
 
 
 def require_stable_refs(flags: list[Flag]) -> tuple[list[Flag], list[tuple[Flag, str]]]:
-    """(flags citing a stable ref, [(flag, reason)] for those citing only fact/asr refs)."""
+    """(flags citing a stable ref, [(flag, reason)] for the others: only fact/asr refs, or a ref
+    that is not an evidence ref at all)."""
     ok: list[Flag] = []
     bad: list[tuple[Flag, str]] = []
     for f in flags:
-        if runs.stable_refs(f):
-            ok.append(f)
+        try:
+            stable = runs.stable_refs(f)
+        except ValueError as e:  # refs.parse: not an evidence ref
+            reason = f"malformed evidence ref: {e}"
         else:
-            log.warning("dropped %s flag %r: no stable evidence ref", f.check, f.title)
-            bad.append((f, "no stable evidence ref (scene/line/shot/kf/cue/clr), R13"))
+            if stable:
+                ok.append(f)
+                continue
+            reason = "no stable evidence ref (scene/line/shot/kf/cue/clr), R13"
+        log.warning("dropped %s flag %r: %s", f.check, f.title, reason)
+        bad.append((f, reason))
     return ok, bad
 
 

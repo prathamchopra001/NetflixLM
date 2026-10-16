@@ -6,9 +6,15 @@ from typer.testing import CliRunner
 
 from nip.agents.base import Input
 from nip.cli import app
-from nip.contracts.flag import Agent
+from nip.contracts.flag import Agent, Flag
 from nip.contracts.report import Report
-from nip.pipeline import InputRejected, build_checks, coverage, run_pipeline
+from nip.pipeline import (
+    InputRejected,
+    build_checks,
+    coverage,
+    require_stable_refs,
+    run_pipeline,
+)
 
 SCRIPT = "INT. ROOM - DAY #1#\n\nMaya enters.\n\nEXT. DOCK - NIGHT #2#\n\nRain.\n"
 EN = "1\n00:00:01,000 --> 00:00:03,000\nHello.\n\n2\n00:00:04,000 --> 00:00:06,000\nBye.\n"
@@ -153,3 +159,24 @@ def test_coverage_counts_done_units_per_agent() -> None:
     assert coverage(checks, [], units) == {Agent.LOCALIZATION_AUDITOR: 0.75}
     assert coverage(checks, [], []) == {Agent.LOCALIZATION_AUDITOR: 1.0}  # active, nothing to do
     assert coverage([], ["loc.readability"], []) == {Agent.LOCALIZATION_AUDITOR: 0.0}
+
+
+def test_flags_without_a_stable_or_valid_ref_are_counted_drops() -> None:
+    def flag(*refs: tuple[str, str]) -> Flag:
+        ev = [{"kind": k, "ref": r, "role": "claim"} for k, r in refs]
+        return Flag.model_validate({
+            "run_id": "r", "episode": "E1", "agent": "script_critic",
+            "check": "plot.knowledge_order", "category": "plot_hole", "severity": 3,
+            "confidence": 0.9, "tier": "must_review", "title": "t", "explanation": "e",
+            "evidence": ev, "produced_by": {"model_variant": None, "plan_id": "p"},
+        })  # fmt: skip
+
+    good = flag(("script_line", "E1/line/1.2"), ("fact", "fact/3"))
+    ok, bad = require_stable_refs(
+        [good, flag(("fact", "fact/3")), flag(("scene", "E1/scene/oops/x"))]
+    )
+    assert ok == [good]
+    assert [r.split(":")[0] for _, r in bad] == [
+        "no stable evidence ref (scene/line/shot/kf/cue/clr), R13",
+        "malformed evidence ref",
+    ]

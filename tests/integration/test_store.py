@@ -502,3 +502,37 @@ def test_flag_citing_only_facts_is_dropped(
         {"title": "refers before learning",
          "reason": "no stable evidence ref (scene/line/shot/kf/cue/clr), R13"}
     ]  # fmt: skip
+
+
+def test_failed_unit_rolls_back_its_rows_and_does_not_poison_the_next(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ingest(pg, s3, episode_files(tmp_path))
+    plan, inv = stub_plan()
+    sc = schema.scene
+
+    def story(ep: pipeline.EpisodeRun) -> None:  # a 2.2-style writer, one unit per scene
+        with ep.unit("knowledge.story", "S01E01/sc/1"):  # writes, then fails: rows rolled back
+            ep.conn.execute(update(sc).where(sc.c.script_scene_no == "1").values(story_seq=1))
+            raise RuntimeError("bad transition")
+        with ep.unit("knowledge.story", "S01E01/sc/2"):  # a database error
+            ep.conn.execute(text("SELECT 1/0"))
+        with ep.unit("knowledge.story", "S01E01/sc/3"):  # still runs on a healthy transaction
+            ep.conn.execute(update(sc).where(sc.c.script_scene_no == "2").values(story_seq=2))
+
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    pipeline.add_stage("knowledge.story", story)
+    s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01"], plan=plan, inventory=inv)
+    assert s["status"] == "completed_with_gaps"
+    assert s["episodes"]["S01E01"]["units"] == {"failed": 2, "done": 2}
+    assert s["episodes"]["S01E01"]["flags_kept"] == 2
+    with pg.connect() as conn:
+        seqs = conn.execute(select(sc.c.script_scene_no, sc.c.story_seq).order_by(sc.c.id)).all()
+        errors = (
+            conn.execute(select(schema.work_unit.c.error).order_by(schema.work_unit.c.id))
+            .scalars()
+            .all()
+        )
+    assert [tuple(r) for r in seqs] == [("1", None), ("2", 2)]
+    assert errors[0] == "RuntimeError: bad transition" and "DivisionByZero" in errors[1]
+    assert errors[2:] == [None, None]

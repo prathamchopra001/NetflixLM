@@ -37,7 +37,7 @@ PAGES = [
 ]
 
 
-def build(pages: list[list[tuple[int, str]]]) -> bytes:
+def build(pages: list[list[tuple]]) -> bytes:
     objs: list[bytes] = [b"<< /Type /Catalog /Pages 2 0 R >>"]
     kids = " ".join(f"{3 + 2 * i} 0 R" for i in range(len(pages)))
     objs.append(f"<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>".encode())
@@ -45,7 +45,9 @@ def build(pages: list[list[tuple[int, str]]]) -> bytes:
     for i, lines in enumerate(pages):
         ops = ["BT /F1 12 Tf 14 TL"]
         y = 720
-        for x, text in lines:
+        for x, text, *same_line in lines:  # a third item True puts the text on the previous line
+            if same_line:
+                y += 14
             esc = text.replace("\\", "\\\\").replace("(", r"\(").replace(")", r"\)")
             ops.append(f"1 0 0 1 {x} {y} Tm ({esc}) Tj")
             y -= 14

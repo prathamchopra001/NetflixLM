@@ -98,3 +98,24 @@ def test_ttml_malformed_xml_reports_line_and_empty():
     assert not r.ok and r.errors[0].line == 3
     r = parse_ttml(_ttml(""))
     assert not r.ok and r.errors[0].reason == "Subtitle file has no cues"
+
+
+def test_ttml_cue_errors_carry_source_lines():
+    ttml = (
+        '<tt xmlns="http://www.w3.org/ns/ttml" xml:lang="en">\n'
+        "<body>\n<div>\n"
+        '<p begin="00:00:01.000" end="00:00:02.000">ok</p>\n'
+        '<p begin="00:00:03.000" end="00:00:xx.000">bad time</p>\n'
+        '<p begin="00:00:05.000">no end</p>\n'
+        '<p begin="00:00:08.000" end="00:00:07.000">backwards</p>\n'
+        "</div>\n</body>\n</tt>"
+    )
+    r = parse_ttml(ttml)
+    by_reason = {e.reason.split(":")[0]: e.line for e in r.errors}
+    assert by_reason["cue 2"] == 5 and by_reason["cue 3"] == 6
+    assert by_reason["cue 4"] == 7  # end before start (from the cue check)
+    assert all(e.line is not None for e in r.errors if not e.reason.startswith("ttconv"))
+    assert [c.line for c in r.data.cues] == [4, 7]
+    assert all(e.line is None for e in r.errors if e.reason.startswith("ttconv"))  # 2 bad cues
+    one = parse_ttml(ttml.replace('<p begin="00:00:05.000">no end</p>\n', ""))
+    assert [e.line for e in one.errors if e.reason.startswith("ttconv")] == [5]

@@ -2,6 +2,7 @@
 
 import io
 import re
+from typing import Any
 
 import pdfplumber
 
@@ -20,6 +21,15 @@ _NUMBERED_RE = re.compile(
 _DIALOGUE, _PAREN, _CHARACTER, _TRANSITION = 36, 94, 137, 250
 
 
+def _text_x0(ln: dict[str, Any]) -> float:
+    """x0 of the line's text, skipping a scene number printed in the gutter before a heading."""
+    m = _NUMBERED_RE.match(ln["text"].strip())
+    if m and m.group(1) and HEADING_RE.match(m.group(2)):
+        glyphs = [c for c in ln["chars"] if c["text"].strip()]
+        return float(glyphs[len(m.group(1))]["x0"])
+    return float(ln["x0"])
+
+
 def parse_pdf(data: bytes) -> Parsed[Script]:
     try:
         with pdfplumber.open(io.BytesIO(data)) as pdf:
@@ -29,6 +39,8 @@ def parse_pdf(data: bytes) -> Parsed[Script]:
     lines = [ln for ln in lines if not _SKIP_RE.match(ln["text"].strip())]
     if not lines:
         return fail("PDF has no extractable text (scanned or image-only?)")
+    for ln in lines:
+        ln["x0"] = _text_x0(ln)
     margin = min(ln["x0"] for ln in lines)  # action / heading margin
     items: list[Raw] = []
     speaker: str | None = None

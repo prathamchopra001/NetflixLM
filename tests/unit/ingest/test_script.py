@@ -136,3 +136,28 @@ def test_pdf_numbered_headings_and_no_heading():
 def test_dispatch():
     assert parse("fountain", (FIXTURES / "sample.fountain").read_bytes()).ok
     assert parse("fdx", (FIXTURES / "sample.fdx").read_bytes()).ok
+
+
+def test_pdf_scene_numbers_in_gutters_do_not_shift_the_margin():
+    page = [
+        (72, "12"),
+        (108, "INT. HOUSE - DAY", True),
+        (500, "12", True),
+        (108, "Maya waits."),
+        (266, "MAYA"),
+        (180, "Hello there."),
+        (72, "12A"),
+        (108, "EXT. YARD - NIGHT", True),
+        (500, "12A", True),
+        (108, "Rain."),
+    ]
+    r = parse_pdf(_pdf_builder()([page]))
+    assert r.ok
+    assert _summary(r.data) == [
+        (
+            "12",
+            "INT. HOUSE - DAY",
+            [("action", None, "Maya waits."), ("dialogue", "MAYA", "Hello there.")],
+        ),
+        ("12A", "EXT. YARD - NIGHT", [("action", None, "Rain.")]),
+    ]

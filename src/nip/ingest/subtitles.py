@@ -7,6 +7,7 @@ TTML's declared frame rate is recorded on the track (None for SRT / VTT).
 import logging
 import re
 import xml.etree.ElementTree as ET
+from xml.parsers import expat
 from dataclasses import dataclass
 from fractions import Fraction
 
@@ -130,6 +131,17 @@ class _Capture(logging.Handler):
         self.messages.append(record.getMessage())
 
 
+def _p_lines(raw: bytes) -> list[int]:
+    """Source line of every TTML <p> start tag, in document order (ElementTree keeps no lines)."""
+    lines: list[int] = []
+    xp = expat.ParserCreate(namespace_separator="}")
+    xp.StartElementHandler = lambda name, _: (
+        lines.append(xp.CurrentLineNumber) if name.endswith("ttml}p") else None
+    )
+    xp.Parse(raw, True)
+    return lines
+
+
 def _ms(t: Fraction) -> int:
     return round(t * 1000)
 
@@ -147,21 +159,28 @@ def parse_ttml(data: bytes | str) -> Parsed[SubtitleTrack]:
         doc = imsc_reader.to_model(ET.ElementTree(root))
     finally:
         log.removeHandler(cap)
-    p: Parsed[SubtitleTrack] = Parsed(errors=[Issue(f"ttconv: {m}") for m in cap.messages])
+    p: Parsed[SubtitleTrack] = Parsed()
     body = doc.get_body() if doc else None
     if body is None:
         p.errors.append(Issue("TTML has no body"))
         return p
     found: list[tuple[Fraction | None, Fraction | None, str]] = []
     _ttml_cues(body, Fraction(0), found)
+    lines = _p_lines(raw)
+    if len(lines) != len(found):  # ttconv pruned a <p>: cue-to-line mapping is unreliable
+        lines = [None] * len(found)  # type: ignore[list-item]
     cues: list[Cue] = []
-    for i, (begin, end, text) in enumerate(found, 1):
+    bad: list[int | None] = []
+    for i, ((begin, end, text), line) in enumerate(zip(found, lines, strict=True), 1):
         if begin is None or end is None:
-            p.errors.append(Issue(f"cue {i}: missing or invalid begin/end"))
+            p.errors.append(Issue(f"cue {i}: missing or invalid begin/end", line))
+            bad.append(line)
             continue
-        cues.append(
-            Cue(i, _ms(begin), _ms(end), "\n".join(s.strip() for s in text.strip().split("\n")))
-        )
+        text = "\n".join(t.strip() for t in text.strip().split("\n"))
+        cues.append(Cue(i, _ms(begin), _ms(end), text, line))
+    # ttconv's log does not say which element it choked on: give it the line when only one cue is bad
+    log_line = bad[0] if len(bad) == 1 else None
+    p.errors[:0] = [Issue(f"ttconv: {m}", log_line) for m in cap.messages]
     _check_cues(cues, p)
     declared = (
         FrameRateAttribute.extract(root)

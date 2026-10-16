@@ -195,6 +195,13 @@ CREATE TABLE fact (
 
 CREATE INDEX ON fact USING gist (subject_id, predicate, story);
 CREATE INDEX ON fact USING gist (subject_id, predicate, screen);
+
+-- Consolidation invariant: two active facts with the same subject, predicate, and object never
+-- overlap, because consolidation merges them. Story contradictions are never constraints:
+-- they are data the rules flag.
+ALTER TABLE fact ADD CONSTRAINT fact_consolidated_no_overlap
+  EXCLUDE USING gist (subject_id WITH =, predicate WITH =, object_id WITH =, story WITH &&)
+  WHERE (status = 'active');
 ```
 
 **Consolidation rules (examples):**
@@ -271,6 +278,7 @@ CREATE TABLE run (
   status text NOT NULL,         -- queued | running | completed | completed_with_gaps | failed | cancelled
   code_version text NOT NULL,   -- git SHA of the running image
   previous_run_id bigint REFERENCES run(id),
+  queue_job_id bigint,          -- pgqueuer job; cancellation goes through the queue
   requested_by text NOT NULL,
   started_at timestamptz, finished_at timestamptz
 );
@@ -307,7 +315,7 @@ CREATE TABLE variant_calibration (
 );
 ```
 
-Coverage per agent is a view over `work_unit` (`units_total`, `done + cached`, `failed`, with failed unit keys listed as gaps). The planner reads `variant_calibration` in preference to catalog estimates ([Hardware Adaptation › Memory model](hardware-adaptation.md#memory-model)).
+Coverage per agent is a view over `work_unit` (`units_total`, `done + cached`, `failed`, with failed unit keys listed as gaps). The planner reads `variant_calibration` in preference to catalog estimates ([Hardware Adaptation › Memory model](hardware-adaptation.md#memory-model)). The run queue itself lives in pgqueuer's tables, created by its own migration; `run.queue_job_id` links the two ([D-023](decisions.md#d-023--run-queue-pgqueuer-no-ray-jobs)).
 
 ### Flags, review, audit
 

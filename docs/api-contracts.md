@@ -8,7 +8,7 @@
 | Auth | OIDC bearer token: `Authorization: Bearer <token>`. Expected issuer, signing-key URL, audience, and roles claim come from `NIP_OIDC_ISSUER`, `NIP_OIDC_JWKS_URL`, `NIP_OIDC_AUDIENCE`, `NIP_OIDC_ROLES_CLAIM`. Keycloak is bundled for local use; any OIDC provider works in production. |
 | IDs | Prefixed strings: `run_912`, `flg_48213`, `plan_42`, `src_77`. Evidence uses refs from [Data Model › Evidence Refs](data-model.md#evidence-refs). |
 | Timecodes | SMPTE strings in responses (`00:14:22:05`); frames are available as `frames: [in, out)` on every timed object. |
-| Pagination | `?page=1&page_size=50` (max 200); responses include `total`, `page`, `page_size`. |
+| Pagination | `?page=1&page_size=50` (max 200); responses include `total`, `page`, `page_size`. List endpoints also send a `Content-Range` header (`flags 0-49/312`) for the review UI's React-admin data provider. |
 | Versioning | Additive changes only within `v1`; clients must ignore unknown fields. |
 
 ### Roles
@@ -40,7 +40,7 @@ The current hardware inventory as seen by the probe.
       "node_id": "a1f3…",
       "cpus": 16, "ram_gb": 23.5,
       "gpus": [{"index": 0, "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
-                "vram_total_gb": 8.0, "vram_free_gb": 6.9, "compute_capability": "8.9"}]
+                "vram_total_gb": 8.0, "vram_free_gb": 7.15, "compute_capability": "8.9"}]
     }
   ],
   "autoscaling": {"enabled": false, "max_gpu_nodes": 0}

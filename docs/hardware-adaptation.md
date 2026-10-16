@@ -47,7 +47,7 @@ At startup and whenever the Ray cluster's membership changes, a small Ray task r
       "ram_gb": 23.5,
       "gpus": [
         {"index": 0, "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
-         "vram_total_gb": 8.0, "vram_free_gb": 6.9, "compute_capability": "8.9"}
+         "vram_total_gb": 8.0, "vram_free_gb": 7.15, "compute_capability": "8.9"}
       ]
     }
   ],
@@ -191,9 +191,9 @@ fits if per_gpu_gb ≤ usable_gb(gpu)
 usable_gb  = min(NIP_GPU_MEM_UTILIZATION × vram_total_gb, vram_free_gb − margin)
 ```
 
-vLLM then receives `gpu_memory_utilization = per_gpu_gb / vram_total_gb` (plus small headroom) instead of a blanket default, so co-resident models never compete for the same memory. Non-LLM variants declare a fixed `vram_gb`.
+vLLM then receives an explicit budget instead of its blanket default: `gpu_memory_utilization = per_gpu_gb / vram_total_gb` (plus small headroom), or an exact KV-cache size (`--kv-cache-memory-bytes`) if [EXP-001](experiments.md#exp-001--vllm-memory-headroom-on-the-laptop) shows it starts as reliably. Either way, co-resident models never compete for the same memory. Non-LLM variants declare a fixed `vram_gb`.
 
-**Calibration.** Catalog numbers are estimates. After every load, the measured peak memory for `(variant, GPU model, context)` is stored (`variant_calibration` table) and preferred over the estimate in later Plans, so the planner gets more accurate on each machine it runs on.
+**Calibration.** Catalog numbers are estimates. When a variant is added to the catalog, hf-mem estimates its weights and KV cost from the model's file headers, without downloading it. After every load, the measured peak memory for `(variant, GPU model, context)` is stored (`variant_calibration` table) and preferred over the estimate in later Plans, so the planner gets more accurate on each machine it runs on.
 
 ---
 
@@ -235,7 +235,7 @@ Illustrative planner outputs with the default catalog. The authoritative version
 
 | Machine | Objective | Mode | `text_llm` + `vlm` (shared) | `judge_llm` | Notes |
 |---------|-----------|------|-----------------------------|-------------|-------|
-| Laptop, 1× 8 GB (≈6.9 GB free) | quality | staged, 5 groups | Qwen3.5-4B AWQ, 8k context, images capped at ~1024×576 | Ministral-3-3B FP8 (independent, own group) | Every small model loads with its stage group |
+| Laptop, 1× 8 GB (7.15 GB free, measured idle) | quality | staged, 5 groups | Qwen3.5-4B AWQ, 8k context, images capped at ~1024×576 | Ministral-3-3B FP8 (independent, own group) | Every small model loads with its stage group |
 | Workstation, 1× 24 GB | quality | staged, 3 groups | Qwen3.5-9B FP8 | Gemma-4-12B QAT (independent) | Small models co-reside with the shared model |
 | Workstation, 1× 48 GB | quality | staged, 2 groups | Qwen3.8-27B FP8 | Gemma-4-12B QAT | With `throughput`: resident, Qwen3.8-27B INT4 + Gemma-4-12B |
 | Cloud node, 8× 80 GB | quality | staged, 2 groups | Qwen3.5-397B-A17B FP8, tensor-parallel over 8 GPUs | Gemma-4-31B QAT, replicated across GPUs | With `throughput`: resident, several replicas of Qwen3.5-122B-A10B Int4 plus judge replicas |
@@ -265,7 +265,7 @@ The planner's output. Stored in the `plan` table and in `runs/{run_id}/plan.json
   ],
   "decisions": {
     "text_llm":       {"variant": "qwen3.5-4b-awq", "shared_with": ["vlm"], "replicas": 1,
-                       "gpus_per_replica": 1, "context": 8192, "gpu_memory_utilization": 0.80},
+                       "gpus_per_replica": 1, "context": 8192, "gpu_memory_utilization": 0.83},
     "vlm":            {"variant": "qwen3.5-4b-awq", "shared_with": ["text_llm"],
                        "max_pixels": 589824, "images_per_prompt": 2},
     "judge_llm":      {"variant": "ministral-3-3b-fp8", "independent_family": true, "replicas": 1},
@@ -278,7 +278,7 @@ The planner's output. Stored in the `plan` table and in `runs/{run_id}/plan.json
     "ner":            {"variant": "gliner-x-base", "gpu_fraction": 0.3}
   },
   "skipped_slots": [],
-  "warnings": ["text_llm context reduced 32768 → 8192 to fit 6.4 GB usable VRAM"],
+  "warnings": ["text_llm context reduced 32768 → 8192 to fit 6.65 GB usable VRAM"],
   "amendments": []
 }
 ```
@@ -325,7 +325,7 @@ Every check produces small, idempotent work units (a scene, a subtitle-cue windo
 | Persistent GPU out-of-memory | Retry with smaller batch/context; then downgrade the slot to the next variant for the rest of the run (amendment) |
 | Run ends | The resource request is cleared so the cluster can scale back down |
 
-**Autoscaling backends.** On cloud VMs, the Ray cluster launcher (AWS, GCP, and Azure are supported by the Ray team) adds and removes worker VMs. On Kubernetes, a KubeRay `RayCluster` with `enableInTreeAutoscaling: true` scales Ray worker pods, and a node autoscaler (Cluster Autoscaler or Karpenter) adds the GPU nodes they need.
+**Autoscaling backends.** On cloud VMs, SkyPilot provisions fixed-size clusters ([D-024](decisions.md#d-024--cloud-provisioning-skypilot)), so there is no autoscaling there. On Kubernetes, a KubeRay `RayCluster` with `enableInTreeAutoscaling: true` scales Ray worker pods, and a node autoscaler (Cluster Autoscaler or Karpenter) adds the GPU nodes they need.
 
 ---
 
@@ -334,7 +334,7 @@ Every check produces small, idempotent work units (a scene, a subtitle-cue windo
 | Target | How | What changes |
 |--------|-----|--------------|
 | **Single machine** (laptop, workstation, one cloud VM) | `docker compose up` | Nothing |
-| **VM cluster** | The head VM runs `compose.yaml`; worker VMs, launched by the Ray cluster launcher from `deploy/ray/`, run the same image with `ray start --address=<head>:6379` | Env: `NIP_AUTOSCALE_MAX_GPU_NODES` |
+| **VM cluster** | SkyPilot (`deploy/sky/`) finds and provisions the GPU machines across clouds. The head runs `compose.yaml`; worker nodes run the same image and join Ray on port 6379 | Nothing in the image or `config/`; the SkyPilot task file chooses GPU type and node count |
 | **Kubernetes** | `deploy/helm/nip`: KubeRay `RayCluster` (head + GPU worker groups), API, UI. A plain `RayCluster` is used rather than `RayService`, because the controller deploys and deletes Serve applications at runtime and a `RayService` would re-apply its declared config over them | Env: `NIP_DATABASE_URL` (managed Postgres), `NIP_S3_ENDPOINT` (native object storage), `NIP_OIDC_*` (corporate identity provider), `NIP_AUTOSCALE_MAX_GPU_NODES` |
 
 In every case the image digest and the contents of `config/` are identical. The release checklist verifies this by running the benchmark on the laptop and on the cloud from the same tag ([Phased Plan › Phase 4](phased-plan.md#phase-4--review-scale-out-hardening-weeks-78)).
@@ -349,7 +349,7 @@ Ray and vLLM run inside Linux containers (Ray's native Windows support is beta; 
 |-------|--------------|
 | GPU access | Docker Desktop's WSL2 backend provides the GPU; containers use `gpus: all` (Docker Desktop does not support selecting individual GPUs) |
 | Driver | The CUDA 13 base image needs an NVIDIA Windows driver ≥ 580 |
-| Free VRAM | Usually ~1 GB below total because of the display; the probe's free-memory rule handles this |
+| Free VRAM | Below total even at idle: the dev laptop measured 7,321 of 8,188 MiB free (2026-10-06). The probe re-measures free memory at every run |
 | Pinned memory | Set `VLLM_WSL2_ENABLE_PIN_MEMORY=1` (WSL2 disables pinned memory by default) |
 | RAM | The WSL VM gets 50% of host RAM by default; raise it in `%UserProfile%\.wslconfig` for CPU offload and Ray's object store |
 | Shared memory | Give the Ray container a large `/dev/shm` (`shm_size`) or `ipc: host` |

@@ -26,6 +26,11 @@ ES = (
 )
 
 
+# 2.4's checks that need more than script + subtitles: loc.term (bible or glossary), the others
+# the picture (shot changes, and the drift / offset rate and frames)
+NEEDS_MORE = ["loc.term", "loc.shot_change", "loc.drift", "loc.offset"]
+
+
 def _files(tmp_path: Path, script: str = SCRIPT) -> dict[str, Path]:
     for name, text in [("s.fountain", script), ("en.srt", EN), ("es.srt", ES)]:
         (tmp_path / name).write_text(text, encoding="utf-8")
@@ -42,7 +47,8 @@ def test_script_and_subtitles_run_end_to_end(tmp_path: Path) -> None:
         source_lang="en",
         out_dir=out,
     )
-    assert summary["flags_kept"] == 2 and summary["dropped"] == [] and summary["skipped"] == []
+    assert summary["flags_kept"] == 2 and summary["dropped"] == []
+    assert summary["skipped"] == NEEDS_MORE  # no picture, bible or glossary
     assert [s["stage"] for s in summary["stages"]] == [
         "ingest",
         "picture",
@@ -72,7 +78,7 @@ def test_without_source_track_the_check_is_skipped(tmp_path: Path) -> None:
     s = run_pipeline(
         episode="E1", script=f["script"], subs={"es": f["es"]}, source_lang="en", out_dir=tmp_path
     )
-    assert s["skipped"] == ["loc.readability"] and s["flags_kept"] == 0
+    assert s["skipped"] == ["loc.readability", *NEEDS_MORE] and s["flags_kept"] == 0
 
 
 def test_duplicate_scene_numbers_are_rejected(tmp_path: Path) -> None:
@@ -146,8 +152,8 @@ def test_checks_come_from_agent_packages_and_activation() -> None:
     subs = {Input.SOURCE_SUBS, Input.TARGET_SUBS}
     ctx = {"langs": ["es"], "conn": None, "show": None}
     checks, skipped = build_checks(subs, ctx)
-    assert [str(c.check) for c in checks] == ["loc.readability"] and skipped == []
-    assert build_checks({Input.TARGET_SUBS}, ctx) == ([], ["loc.readability"])
+    assert [str(c.check) for c in checks] == ["loc.readability"] and skipped == NEEDS_MORE
+    assert build_checks({Input.TARGET_SUBS}, ctx) == ([], ["loc.readability", *NEEDS_MORE])
     assert build_checks(subs, ctx, agents={Agent.SCRIPT_CRITIC}) == ([], [])
     with pytest.raises(InputRejected, match="no readability rule pack for language 'xx'"):
         build_checks(subs, ctx | {"langs": ["xx"]})

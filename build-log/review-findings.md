@@ -1,6 +1,6 @@
 # Review Findings
 
-Every Phase 1 wave 1 deliverable was reviewed by an independent reviewer agent that did not write the code (spec compliance first, then code quality), and anything rated Important was sent back to the implementer as a fix round and then re-reviewed. This file records, per deliverable: what the review found, how it was fixed, and the minor findings that were deliberately deferred. It is the "the review caught X, we fixed it by Y" material.
+Every Phase 1 deliverable (wave 1 and wave 2: 1.1 to 1.11) was reviewed by an independent reviewer agent that did not write the code (spec compliance first, then code quality), and anything rated Important was sent back to the implementer as a fix round and then re-reviewed. This file records, per deliverable: what the review found, how it was fixed, and the minor findings that were deliberately deferred. It is the "the review caught X, we fixed it by Y" material.
 
 Severity used by the reviewers: **Critical** (breaks the deliverable or the spec), **Important** (a real defect or spec gap that should be fixed before others depend on it), **Minor** (style, hardening, test gaps, edge cases; may be deferred).
 
@@ -18,18 +18,25 @@ Related: [decisions.md](decisions.md) · [journal.md](journal.md) · [doc-correc
 | 1.4 Timeline, check interface, report | `172e19e` | pass | approved | 0 | 0 | 4 | none needed | n/a |
 | 1.5 Compose stack, API skeleton | `1d1b9f9`, `56cc74b` | fail (error envelope) | changes needed | 0 | 4 | 9 | `56cc74b` | addressed |
 | 1.6 Probe, catalog, planner | `28e859f`, `3cf18c7` | pass | approved | 0 | 2 | 8 | `3cf18c7` | addressed |
+| 1.7 Ray Serve, clients, EXP-001 | `f35045e`, `33fe525`, `989e0ed` (EXP files in `6854081`) | pass | approved | 0 | 2 | 9 | `989e0ed` | addressed |
 | 1.8 part A Media, shots, keyframes | `829a3b3`, `72a7ea5` | pass (one gap) | changes needed | 0 | 3 | 8 | `72a7ea5` | addressed |
+| 1.8 part B Real film, EXP-002 | `6854081`, `be9daac` | pass (one gap) | changes needed | 0 | 3 | 7 | `be9daac` | addressed |
 | 1.9 Corpus, injectors, Label Studio | `d4cb1c2`, `dab96fc` | pass | changes needed | 0 | 4 | 6 | `dab96fc` | addressed |
+| 1.10 Walking skeleton | `77257b6`, `2d0bf6a` | pass | approved | 0 | 0 | 7 | `2d0bf6a` (3 minors) | addressed |
 | 1.11 Eval metrics, MLflow | `a329f4a`, `159b005` | pass | approved | 0 | 2 | 9 | `159b005` | addressed |
-| **Total** | | | | **0** | **18** | **68** | 7 fix rounds | all Important addressed |
+| **Total** | | | | **0** | **23** | **91** | 10 fix rounds (the 1.10 round fixed Minors only) | all Important addressed |
 
-Counts are as stated in the reviews and the ledger. No re-review found a new Critical or Important finding in a fix diff. The 1.2 and 1.4 reviews found nothing Important.
+Counts are as stated in the reviews and the ledger (initial reviews; the re-reviews' extra minors are listed per deliverable). No re-review found a new Critical or Important finding in a fix diff. The 1.2, 1.4 and 1.10 reviews found nothing Important. Across all eleven deliverables: 0 Critical, 23 Important, 91 Minor.
 
 ### What the pattern says (good interview framing)
 
 - **Tests that could not fail.** Three of the Important findings were tests or justifications that did not discriminate: the 1.8 frame-exactness test (would pass with a uniform seek offset), the 1.3 numbered-PDF test (number and heading written as one string, so it could not see a separate-x number), and the 1.11 claim that a shared-ref match was "strictly stricter than IoU" (an extra OR-path can only add matches). In each case the fix included proving the new test fails on the old code.
 - **Two hand-maintained copies drift** (1.1 schema vs migration): fix was a real-database catalog diff, with four injected drifts as proof.
 - **Specs that contradict themselves** (1.6 step 7 vs the docs' own worked example; 1.9's cut labels vs the Flag format) were escalated for a controller ruling instead of silently picking one.
+- **The real run found what the review and the unit tests could not** (wave 2): the zombie EngineCore that made unload 33.1 s instead of 4 s only appeared when the I2 fix ran against real vLLM (1.7); the shared-GPU premise in the ledger was checked against the packer and found wrong, so it was pinned with a test instead of "fixed" (closeout).
+- **Overclaiming caught in prose, not code** (1.8B): two decision rationales that no run supported ("adds fades/dissolves handling", "no tuning knob to overfit") and a lead sentence that hid a verdict flip; the fix was to withdraw them and put the flip first. The 1.10 CPS test and its "17/18 CPS" claim are the same class as the wave-1 tests that could not fail.
+- **Reviewers re-derived numbers from raw artifacts**, not from the notes: 1.7's reviewer recomputed the KV arithmetic and the planner's laptop examples by hand; 1.8B's re-queried the MLflow DB, recomputed TransNetV2's false negatives from the saved probabilities and re-scored with widened masks; 1.10's cross-checked flag counts independently.
+- **A written bar can be wrong about the world** (EXP-001): by its own success criterion the answer was gmu 0.86; the evidence (0/3 under pressure at 0.75 and 0.83, a mechanism visible in vLLM's log) led to a controller ruling for exact KV budgets, with the reviewer listing what the evidence did not prove.
 - **Observed behaviour beat assumptions** (1.5 `KC_IMPORT_REALM` ignored by Keycloak 26.6; 1.9 Label Studio exporting only annotated tasks unless `download_all_tasks=true`), which is why live verification was part of the fix rounds.
 
 ---
@@ -156,6 +163,39 @@ Counts are as stated in the reviews and the ledger. No re-review found a new Cri
 
 **Could not be verified:** hf-mem attribute names against 0.5.6 (tests use a fake; the notes' run was ad hoc), `tp_options` against attention-head divisibility, probe results inside WSL/Docker, catalog sizes/ranks/overheads (implementer estimates), license policy (no `config/licenses.yaml`), multi-node packing (only single-node inventories tested).
 
+## 1.7 Ray Serve deployments, clients, EXP-001
+
+**Review:** spec pass (every item compliant, with one integration blocker outside 1.7's file ownership, I1), quality approved with two Important items. Critical 0, Important 2, Minor 9. Reviewer checks (read-only): `ruff check` on the 1.7 files clean; `pytest tests/unit/runtime/test_serving.py test_clients.py` 12 passed in 4.2 s; `stub_instance` over every Pydantic model in `nip.contracts`: 13 ok, 2 fail (`Fact`, `Flag`, custom validators). No GPU, Docker or MLflow access.
+
+**Critical: none.** The reviewer examined the failure path specifically: a failed vLLM start stops its process group before raising, `run` tears the whole group down in `finally` (including the app that failed and any earlier ones), `max_constructor_retry_count=1` stops Serve's 20-attempt default, and the 6 real failed starts (the active-pressure trials) all returned to idle (66/66 in total).
+
+**Important**
+1. **I1 With the stock catalog the laptop Plan served the bf16 base model.** `Variant.repo` is `checkpoint or base_model`, and `config/catalog.yaml` had no `checkpoint` for `qwen3.5-4b-awq`, so `apps()` would pass the 8.68 GiB bf16 repo to `vllm serve` on an 8 GB GPU and every real laptop run would fail at the LLM group. EXP-001 and the integration test both overrode the checkpoint in code, so **no real run had ever used the shipped path**, and a unit test even asserted the base model. **Fixed** (`989e0ed`, [B-082](decisions.md#b-082--checkpoint-for-qwen35-4b-awq-is-cyankiwiqwen35-4b-awq-4bit-in-the-catalog)): checkpoint added to the catalog, the assertion flipped, the overrides removed, and a new `--setting plan` arm runs the true shipped path (probe, planner, `apps`).
+2. **I2 `VllmServer.stop()` skipped the process-group kill when the main process had already exited.** The group exists because EngineCore is a separate child; if the API server dies but EngineCore survives, the orphan keeps its VRAM and the replica restart that the architecture relies on then fails for memory. **Fixed** ([B-087](decisions.md#b-087--stop-always-kills-the-process-group-and-liveness-ignores-zombies)): always SIGTERM the group, wait, SIGKILL after 30 s. **The first real run of the fix found a second problem the review could not see**: unload took 33.1 s because the orphan became a zombie under the container's PID 1; liveness now ignores zombies and unload is 4.0 s ([C-012](experiments.md#c-012--unload-time-331-s-down-to-40-s-the-zombie-enginecore)).
+
+**The EXP-001 evidence review (evidence only; the controller rules)**
+- **Traceability:** the table is the output of `table` over MLflow runs tagged `exp=EXP-001`, with all 66 run IDs listed; pilots tagged separately; backfilled metrics trace to logged artifacts, not edits. Internal arithmetic checks (960 MiB = 1,006,632,960 B; 2.64x = 2 x 60 / 44.6).
+- **Success bar as written:** highest 10/10 setting is 0.86; exact KV gives less KV, so by the bar the planner does not switch. The implementer reported this correctly.
+- **Proposal 1 (exact KV instead):** *partly supported*; for and against are listed in the [EXP-001 takeaway](experiments.md#takeaway) (synthetic pressure with n = 3; gmu 0.86 also survived at 1.52x; the planner would already skip the LLM at 6.04 to 6.07 GiB free unless the desktop grows after probing; about 47 MiB device headroom and tokens/s about 82 under pressure; variant (c) unmeasured).
+- **Proposal 3 (AWQ repo):** supported (served in all 66 trials plus the integration test); third-party, provenance not verified.
+- **KV 44.6 MiB/1k:** supported to about +-1.5 % (range 44.0 to 44.7 per 1,000; marginal slope across the gmu settings about 44.0).
+- **Startup peak 6.25 GiB:** the number is supported (6,397 +- 9 and 6,400 +- 2 MiB, idle desktop); **the attribution was inconsistent** (called "profiling" while also saying exact KV skips profiling), and the steady estimate for exact KV (4.43 + 0.94 GiB) is about 5.4 GiB, so about 0.9 GiB came from some other warmup step. The fix round corrected the attribution from vLLM's source and left about 1.8 GiB explicitly unattributed.
+- **Background caveat:** the 10/10 trials ran at 7,643 to 7,743 MiB free (desktop holding about 450 MiB), an unusually idle laptop.
+
+**Re-review: both ADDRESSED; the ruling is implemented correctly.** The reviewer re-derived the planner's units (GiB throughout), checked that the margin is subtracted once and that `plan()` stays pure, reproduced the laptop worked examples by hand (7.15 free: usable 6.65, 16k needs max(5.92, 6.25), gmu 0.79, KV 2,170 MiB; 7.6 free 2,631; 8.0 free 2,734; 6.6 free skipped), and confirmed the 48 GB case is not starved ([C-019](experiments.md#c-019--exact-kv-budget-vs-the-old-gmu-sizing-on-big-gpus)). New Critical/Important: none. The reviewer read `/proc/<pid>/stat` handling (split on the last `)`), and the zombie-aware liveness as correct. Verdict: "1.7 can close; N1, N2 and N4 are worth a one-line follow-up before EXP-015."
+
+**Deferred minors**
+- M1 (the teardown error masked the deploy error): **fixed**. M3 (`assert` for input validation, vanishes under `-O`): **fixed** (`ServingError`). M4 (a bench exception skipped teardown and MLflow in an EXP trial): **fixed**. M7 (every non-PNG image labelled JPEG): **fixed** (sniffs PNG/GIF/WebP). M8 (truncated `pyproject.toml` comment): **fixed**.
+- M2 (each group re-measures its own idle, so small leaks compound; or desktop growth aborts a run): **declined** with a reason ([B-077](decisions.md#b-077--teardown-waits-for-vram-to-return-to-idle-plus-256-mib-measured-per-group)).
+- M5 (stub gaps: `exclusiveMinimum + 1` can exceed `maximum`, `uniqueItems`, `pattern`/`maxLength` ignored; `Fact` and `Flag` need a hand-made stub): recorded for Phase 2.
+- M6 (`LLMClient` does not go through `instructor` as D-025 says): deferred to 2.1.
+- M9 (the fifth laptop load, the judge, is never exercised; the staged loop is verified on 4 of 5 loads): open until the ministral weights are pulled (4.6).
+- **Re-review minors:** N1 (1k = 1,000 in the calibration vs 1,024 in the planner, about 2.4 % low): **fixed in the closeout** ([B-115](decisions.md#b-115--kv-calibration-restated-per-1024-tokens-446---458)). N2 (on a GPU shared with actors the exact budget absorbs the leftover): premise checked and found wrong, **pinned with a test** ([B-117](decisions.md#b-117--shared-gpu-exact-kv-the-premise-was-wrong-pinned-with-a-test-instead-of-changed)). N3 (table tests do not assert `kv_cache_bytes`): **fixed** (`test_expected_kv_budgets`). N4 (`kv_cache_bytes` accepts 0): **fixed** ([B-116](decisions.md#b-116--the-kv-budget-must-be-positive-zero-is-rejected-not-ignored)). N5 (`stop()` breaks after SIGKILL without waiting for the group to die): open. N6 (the GPU integration test skips when the probe leaves no room for the LLM, so a busy desktop can make it pass vacuously; the group-order assertion was also dropped): open. N7 (docs not updated): in [doc-corrections.md](doc-corrections.md).
+
+**Could not be verified by the reviewer:** that MLflow "EXP-001" holds the 66 runs with the tabled values (Postgres in a Docker volume, stack down); the integration run output and timings (only the notes); whether `serve.delete` of an app that never reached the controller is a no-op in Ray Serve 2.58; vLLM 0.30 with TP > 1 in a fractional or multi-GPU Serve replica; that the stack was left down.
+
+**Process note:** the EXP files went into 1.8B's commit through that agent's directory pathspec (not a 1.7 fault; [B-121](decisions.md#b-121--commit-by-explicit-file-paths-not-directory-pathspecs)).
+
 ## 1.8 part A: Media probe, shots, keyframes
 
 **Review:** spec pass with one gap, quality changes needed. Critical 0, Important 3, Minor 8. The reviewer verified shot-run arithmetic (cuts strictly increasing, never 0 or N, never zero-length) and ran `parse_probe` on edge-case input.
@@ -179,6 +219,23 @@ Counts are as stated in the reviews and the ledger. No re-review found a new Cri
 
 **Could not be verified:** real-film behaviour and TransNetV2 on gradual transitions (EXP-002), the PySceneDetect fade detector (absent), Linux/Docker FFmpeg libs, the LGPL claim beyond the quoted configure line, the decode/VRAM/fps numbers (implementer's runs).
 
+## 1.8 part B: real-film run and EXP-002
+
+**Review:** spec pass with one gap (S1), quality **changes needed**. Critical 0, Important 3, Minor 7. Checks (read-only): `pytest tests/unit/eval/test_exp002_shots.py` 3 passed; the reviewer queried `data/mlflow/mlflow.db` (9 default runs, per-run F1, precision, recall and seconds equal the notes); recomputed TransNetV2's 28 false negatives from the saved probabilities (8 in frames 1,036 to 1,572, 15 in 13,104 to 14,455, median 0.22, 7 below 0.1, 10 in 0.1 to 0.3, 11 in 0.3 to 0.5; median 0.93 on found cuts), all matching the notes; recomputed with mask windows widened by the tolerance (only TransNetV2 changes, 0.917 to 0.921); the label file is 183 cuts, sorted, unique. The scorer was judged correct (a maximum matching for a uniform window, no reuse, inclusive +-2).
+
+**Important**
+1. **I1 The ground truth's provenance was not in the repo.** The per-event decisions and contact sheets were in git-ignored `data/exp002/labelling/` and the label header said nothing about how cuts were verified (the brief required it). **Fixed** (`be9daac`): `sintel_cuts.provisional.verification.json` and `sintel_cuts.provisional.decisions.txt` committed next to the labels, generated by `label_sheets.py verification` ([B-092](decisions.md#b-092--provisional-labels-by-candidate-union-and-contact-sheets-with-a-committed-verification-record)).
+2. **I2 The notes overclaimed and buried the flip.** The decision text said TransNetV2 "adds fades/dissolves handling" (every dissolve was masked, so there is no evidence) and has "no tuning knob to overfit as badly as AdaptiveDetector" (while the same paragraph recommended tuning TransNetV2's threshold); and the lead sentence "bar met" hid that the same-label tuned comparison (+0.021 for Adaptive) is above the bar in the other direction. **Fixed:** both rationales withdrawn, the flip stated first in the notes and Takeaway, and the keep-TransNetV2 call reworded as cost/risk ([B-093](decisions.md#b-093--exp-002-decision-keep-transnetv2-provisionally-as-a-costrisk-call-not-a-result)).
+3. **I3 The tuned numbers were not in MLflow.** The Takeaway's headline numbers (tuned 0.946 / 0.891 / 0.967, held-out, resize F1s) existed only as stdout in git-ignored logs; only the defaults traced to MLflow. **Fixed:** `sweep`, tuned selection, `split` and `resize-test` log to MLflow (24 + 3 + 6 + 8 runs), reruns replace their own earlier runs, and the notes have a "where every number comes from" table.
+
+**Re-review: all three ADDRESSED**, with the MLflow query reconciling the tuned, held-out, sweep and resize values. New minors from the fix: the report says held-out TransNetV2 **0.928** where the runs give 0.9274 (0.927 is used in this log); the labels header does not link the verification file; the verification file is *reconstructed* (hard-coded zoom set `{26, 41, 209, 211, 212, 574}` plus frame 15867; `first_pass_sheet` computed as `event // ROWS`), so it records the agent's recollection, not a trace; `_clear` builds a client per point; the report's header still says "bar met at defaults" above the appended correction.
+
+**Deferred minors**
+- M1 (precision 1.00 is also seed-dependent through anchoring): written into the bias section. M2 (`shown/*` naming), M4 (`run` defaults to `repeat=1` while the timings are 3 repeats), M6 (`split` order dependence): docstring notes. M3 (mask edges not widened by the tolerance, 5 labels, +0.004): recorded as a known limit. M7 (only 3 tests): a randomized brute-force check against scipy added (200 cases).
+- M5 (`label_sheets.sheets()` duplicates `_render`): left open as a one-off helper.
+
+**Could not be verified by the reviewer:** that the agent actually inspected each of the 646 events (the rate-limit episode and the redo; the sheets are not in the diff); part A real-film numbers beyond the Sintel default runs; the resize and sweep tables (not recomputed); label positions against Label Studio's numbering (these labels bypass `pull`); that nothing from the blind draft survives. Treat the 183 cuts and 20 masks as unverified until a human pass.
+
 ## 1.9 Corpus, injectors, Label Studio
 
 **Review:** spec pass, quality changes needed. Critical 0, Important 4, Minor 6. The reviewer ran a cross-task check: a real cuts row raises `KeyError: 'label_id'` in `eval/metrics.py` `load_labels`.
@@ -200,6 +257,23 @@ Counts are as stated in the reviews and the ledger. No re-review found a new Cri
 - Spec note: the manifest lists Cosmos Laundromat as `CC-BY-4.0` where docs/evaluation.md line 23 says `CC BY 3.0`; no note explains it (see [doc-corrections.md](doc-corrections.md), unresolved).
 
 **Could not be verified:** frame mapping beyond the single PSNR point (global frame 3000), the real downloads and timings, the Label Studio container run, and whether `compose.yaml` provides a `labeling` profile (it does not; deferred from 1.5).
+
+## 1.10 Walking skeleton: `loc.readability` end to end
+
+**Review:** spec pass, quality **approved**. **Critical 0, Important 0, Minor 7.** The reviewer checked every requirement (rules, rule-pack values, tag fallback, activation, severity, verification not importing agents, pipeline, CLI wiring, real Sintel run, tests, both exit criteria) and then adjudicated the implementer's four self-reported concerns: (a) the circular 1.00 is real and slightly worse than stated (ref-only labels mean a flag for the wrong rule on a planted cue still scores TP), acceptable for a skeleton because disclosed, but the number must not be cited as check quality until the seconv-lint oracle exists; (b) gap-closing as 15 of 20 flags all `must_review` is documented behaviour and a product decision, not a defect; (c) the file-based `nip run` is an accepted deviation (the documented form needs the store); (d) the 9 s startup is real and owned by other modules' eager imports.
+
+**Minor** (no Important, so the fix round took only the load-bearing ones)
+- M1 **fixed** (`2d0bf6a`): the rule-pack path `parents[4]/config/languages` would break in the non-editable Docker install, so every language would be rejected with "no rule pack"; the same pattern was in `picture.py` and `catalog.py`; one shared `config_dir()` ([B-112](decisions.md#b-112--nip_config_dir-with-auto-detection)). The reviewer's point that this wants one shared fix, not per-module patches, is why it is a helper.
+- M2 **fixed**: the CPS test text was 16 characters, not 17, so it passed whether or not line breaks were counted and never exercised the 17-CPS boundary (and had a dead no-op expression); the notes' claim "17/18 CPS with spaces counted and line breaks not" was inaccurate. Now two assertions that each fail under the wrong rule, with the lengths asserted. This is another "test that could not fail" finding.
+- M5 **fixed**: eager torch/mlflow/scipy imports gave every `nip` call a 9 s startup; `nip --help` 10.4 to 10.9 s to 1.1 to 1.2 s ([C-013](experiments.md#c-013--nip-cli-startup-109-s-down-to-11-s-lazy-imports)).
+- M3 **accepted:** `nip run` occupies the documented command name with an incompatible signature; Phase 2 must replace it (a breaking CLI change); kept as a doc correction ([B-103](decisions.md#b-103--srcnippipelinepy-is-the-phase-1-composition-root-and-nip-run-takes-files)).
+- M4 **disclosed:** benchmark scoring is self-referential (shared rule pack, ref-only labels, machine-triaged native labels with `reviewed: false` where evaluation.md requires a person); needs human sign-off and the D-030 oracle before any number is quoted ([C-018](experiments.md#c-018--walking-skeleton-benchmark-prf1-100-on-planted-readability-errors-and-why-it-proves-little)).
+- M6 open: a last-cue overrun is dropped into `dropped.jsonl` by the "inside the episode" rule rather than reported (spec-consistent; worth a dedicated "cue outside picture" finding later).
+- M7 open: robustness nits (`ev.quote not in span.text` with `span.text is None`, `--picture` lacks `dir_okay=False`, a `--script` with a subtitle extension crashes with AttributeError instead of `INPUT_REJECTED`).
+
+**Re-review (scoped to M1, M2, M5): all three ADDRESSED**, no new Critical or Important. The reviewer grep-checked that no repo-relative config path remains (only `media.py:20`'s FFmpeg lookup, not config and overridable by `NIP_FFMPEG_DIR`), verified Dockerfile `WORKDIR /app`, `COPY config ./config` and `ENV NIP_CONFIG_DIR=/app/config` agree and nothing in compose masks `/app/config`, showed with `importtime` that `import nip.cli` pulls in no torch, mlflow or scipy, and confirmed the edit to 1.8's `test_shots.py` (patch moved to `shots.detect_shots`) kept its assertions. New minors: `load_catalog` is not exercised under `NIP_CONFIG_DIR`; anyone importing `detect_shots` from `nip.timeline.picture` would break (no caller found).
+
+**Could not be verified by the reviewer:** test counts (not re-run); that the Sintel `picture.json` (produced by a scratch conversion from 1.8B artefacts) matches `analyze_picture` output beyond the reported 398/398 keyframes and 162 shots; the real-run numbers; M1's Docker failure was inferred from the install command and not run (the image was not built).
 
 ## 1.11 Eval metrics and MLflow logging
 

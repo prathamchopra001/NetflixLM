@@ -80,6 +80,55 @@ Every entry names the deliverable (from [docs/phased-plan.md](../docs/phased-pla
 | [B-070](#b-070--parallel-agents-on-disjoint-paths-with-path-scoped-commits) | process | Parallel agents with path-scoped commits |
 | [B-071](#b-071--sdd-workspace-is-kept-not-deleted) | process | SDD workspace is kept |
 | [B-072](#b-072--the-planner-follows-the-algorithm-where-the-docs-worked-examples-disagree) | 1.6 | Planner follows the algorithm over the docs' worked examples |
+| [B-073](#b-073--one-serve-app-per-variant-vllm-as-a-child-process-group-placeholders-for-actor-slots) | 1.7 | One Serve app per variant, vLLM as a child process group, actor placeholders |
+| [B-074](#b-074--max_constructor_retry_count1-on-every-app) | 1.7 | `max_constructor_retry_count=1` |
+| [B-075](#b-075----enforce-eager-on-gpus-of-16-gib-or-less-fp8-kv-not-set) | 1.7 | `--enforce-eager` on GPUs of 16 GiB or less, fp8 KV not set |
+| [B-076](#b-076--serve-http-on-00008000-clients-default-to-1270018000) | 1.7 | Serve HTTP on 0.0.0.0:8000, clients on 127.0.0.1 |
+| [B-077](#b-077--teardown-waits-for-vram-to-return-to-idle-plus-256-mib-measured-per-group) | 1.7 | Teardown waits for idle + 256 MiB, per group |
+| [B-078](#b-078--deploys-inside-a-group-are-sequential) | 1.7 | Deploys inside a group are sequential |
+| [B-079](#b-079--only-the-llm-client-in-phase-1-stubs-are-minimal-valid-schema-instances-instructor-deferred) | 1.7 | Only the LLM client in Phase 1, minimal-valid stubs, instructor deferred |
+| [B-080](#b-080--dev-compose-override-instead-of-editing-composeyaml-openai-added-unpinned) | 1.7 | Dev compose override, `openai` unpinned |
+| [B-081](#b-081--exp-001-method-interleaved-rounds-one-start-per-trial-exact-kv-gate-fixed-length-decoding) | 1.7 | EXP-001 method |
+| [B-082](#b-082--checkpoint-for-qwen35-4b-awq-is-cyankiwiqwen35-4b-awq-4bit-in-the-catalog) | 1.7 | AWQ checkpoint in the catalog (controller ruling) |
+| [B-083](#b-083--exact-kv-budgets-on-single-gpu-engines-sized-by-the-planner-from-probed-free-vram) | 1.7 | **Exact KV budgets sized from probed free VRAM** (controller ruling, EXP-001 decision) |
+| [B-084](#b-084--exp-001-calibration-applied-to-the-catalog-and-the-awq-checkpoint-added) | 1.7 | EXP-001 calibration applied to the catalog (controller ruling) |
+| [B-085](#b-085--the-startup-peak-is-a-fit-floor-not-subtracted-from-the-kv-budget) | 1.7 | Startup peak is a fit floor (controller ruling) |
+| [B-086](#b-086--additive-contract-and-catalog-fields-slotdecisionkv_cache_bytes-variantstartup_peak_gb) | 1.7 | Additive fields `kv_cache_bytes`, `startup_peak_gb` (controller ruling) |
+| [B-087](#b-087--stop-always-kills-the-process-group-and-liveness-ignores-zombies) | 1.7 | `stop()` kills the process group, zombie-aware |
+| [B-088](#b-088--exact-kv-applies-to-every-single-gpu-engine-leftover-goes-to-kv-only-when-the-engine-is-alone-on-its-gpu) | 1.7 | Exact KV on every single-GPU engine (controller ruling) |
+| [B-089](#b-089--cut-labels-use-the-pull-object-format-the-masks-go-in-a-separate-sidecar) | 1.8B | Cut labels in `pull` format, masks in a sidecar |
+| [B-090](#b-090--the-exp-002-headline-metric-is-masked-the-unmasked-f1-is-always-reported) | 1.8B | Masked headline metric, unmasked always reported |
+| [B-091](#b-091--seconds-per-video-minute-is-the-wall-time-of-the-full-detector-one-process-3-repeats-defaults) | 1.8B | Seconds per video-minute definition |
+| [B-092](#b-092--provisional-labels-by-candidate-union-and-contact-sheets-with-a-committed-verification-record) | 1.8B | Provisional labels: candidate union, contact sheets, verification record |
+| [B-093](#b-093--exp-002-decision-keep-transnetv2-provisionally-as-a-costrisk-call-not-a-result) | 1.8B | EXP-002: keep TransNetV2 provisionally (cost/risk) |
+| [B-094](#b-094--no-change-to-part-a-after-exp-002-and-where-the-experiment-files-live) | 1.8B | No part A change; file locations |
+| [B-095](#b-095--tears-of-steel-is-not-labelled-so-half-of-exp-002-is-open) | 1.8B | Tears of Steel not labelled |
+| [B-096](#b-096--one-flag-per-cue) | 1.10 | One flag per cue |
+| [B-097](#b-097--gap-and-overlap-rules-belong-to-the-later-cue) | 1.10 | Gap and overlap rules belong to the later cue |
+| [B-098](#b-098--durations-cps-and-gaps-are-measured-in-frames-not-milliseconds) | 1.10 | Frames, not milliseconds |
+| [B-099](#b-099--rule-pack-layout-section-wise-merge-no-silent-fallback-to-another-language) | 1.10 | Rule pack layout |
+| [B-100](#b-100--gap-closing-is-part-of-locreadability-severity-2-tier-follows-confidence) | 1.10 | Gap-closing: severity 2, tier follows confidence |
+| [B-101](#b-101--requires--source_subs-target_subs-no-source-track-means-the-check-is-skipped) | 1.10 | `requires` and skip without a source track |
+| [B-102](#b-102--verification-is-nipverificationverify-with-the-re-check-injected-dropped-flags-are-kept-apart) | 1.10 | Verification with injected re-check; drops kept apart |
+| [B-103](#b-103--srcnippipelinepy-is-the-phase-1-composition-root-and-nip-run-takes-files) | 1.10 | `pipeline.py` composition root, `nip run` takes files |
+| [B-104](#b-104--no-plan-for-the-walking-skeleton-run) | 1.10 | No Plan for the walking skeleton |
+| [B-105](#b-105--keyframes-live-on-the-timeline-as-one-frame-spans) | 1.10 | Keyframes as timeline spans |
+| [B-106](#b-106--duplicate-scene-numbers-are-rejected-at-ingest-not-as-a-timeline-crash) | 1.10 | Duplicate scene numbers rejected at ingest |
+| [B-107](#b-107--the-walking-skeleton-benchmark-set-and-the-machine-triaged-native-labels) | 1.10 | Benchmark set name, machine-triaged native labels |
+| [B-108](#b-108--the-locreadabilityv1-injector-isolated-cues-one-kind-per-pick-ref-based-labels) | 1.10 | `loc.readability.v1` injector |
+| [B-109](#b-109--the-sintel-picture-stage-is-reused-from-the-cached-18b-run) | 1.10 | Sintel picture stage reused from the cached run |
+| [B-110](#b-110--cli-wiring-executed) | 1.10 | CLI wiring executed |
+| [B-111](#b-111--cli-import-cost-accepted-for-now-superseded-by-b-113) | 1.10 | CLI import cost accepted (**Superseded** by B-113) |
+| [B-112](#b-112--nip_config_dir-with-auto-detection) | 1.10 | `NIP_CONFIG_DIR` with auto-detection |
+| [B-113](#b-113--lazy-torch-mlflow-and-scipy-imports-in-the-cli-superseding-b-111) | 1.10 | Lazy imports in the CLI |
+| [B-114](#b-114--the-closeout-fixes-only-the-load-bearing-minors-everything-else-is-deferred-and-listed) | closeout | Closeout fixes only load-bearing minors |
+| [B-115](#b-115--kv-calibration-restated-per-1024-tokens-446---458) | closeout | KV calibration per 1,024 tokens (44.6 -> 45.8) |
+| [B-116](#b-116--the-kv-budget-must-be-positive-zero-is-rejected-not-ignored) | closeout | KV budget must be positive |
+| [B-117](#b-117--shared-gpu-exact-kv-the-premise-was-wrong-pinned-with-a-test-instead-of-changed) | closeout | Shared-GPU exact KV: pinned, not changed |
+| [B-118](#b-118--closeout-hygiene-ray-head-init-true-laptop-only-dev-realm-gitignore-pattern-and-timecode-strictness) | closeout | Closeout hygiene |
+| [B-119](#b-119--phase-1-is-closed-with-caveats-after-an-exit-criteria-check-run-against-the-commit) | closeout | Phase 1 closed with caveats |
+| [B-120](#b-120--phase-2-plan-rulings-r1-to-r15-adopted) | process | Phase 2 plan rulings R1 to R15 adopted |
+| [B-121](#b-121--commit-by-explicit-file-paths-not-directory-pathspecs) | process | Commit by explicit file paths |
 
 ---
 
@@ -543,6 +592,275 @@ Every entry names the deliverable (from [docs/phased-plan.md](../docs/phased-pla
 - **Date / commit:** 2026-10-16 · `172e19e` · 1.4
 - A script with two scenes numbered the same (the 1.3 parser only warns; auto-numbering can collide with explicit numbers) makes `{ep}/sc/{no}` ambiguous, so `Timeline` raises `ValueError("duplicate timeline refs: ...")`. The alternative (suffixing) would invent refs. **Consequence:** such a script cannot run until renumbered. Reviewer M3: a raw `ValueError` is a poor user-facing failure; the better home is ingest validation, carried into the 1.10 dispatch.
 
+## 1.7 Serving and EXP-001
+
+### B-073 · One Serve app per variant, vLLM as a child process group, placeholders for actor slots
+
+- **Date / commit:** 2026-10-16 · `f35045e`, `33fe525` · 1.7
+- **Choice:** `serving.apps(plan, catalog, inventory, slots)` turns a stage group into Ray Serve applications: one per non-stub variant (`nip-<variant>`, route `/models/<variant>`); slots that share a variant (vlm + text_llm, a reusing judge) share one app; `num_gpus = gpu_fraction` if set, else `gpus_per_replica`. vLLM flags come from the Plan: model repo (`checkpoint` or `base_model`), `--served-model-name`, `--tensor-parallel-size`, `--max-model-len`, `--gpu-memory-utilization`, `--enforce-eager`, and for a vlm riding on the variant `--limit-mm-per-prompt.image` and `--mm-processor-kwargs {"max_pixels": ...}` read from `decisions[vlm]` (as the 1.6 review asked). The replica (`VllmServer`) runs `vllm serve ... --host 127.0.0.1 --port <free>` in its own process group, polls `/health` (900 s timeout, fails early with the log tail if the process exits), forwards requests with httpx, and `check_health` fails if the child died.
+- **Actor slots** (whisper, OCR, embedders, detector) deploy a `Placeholder` that holds the Plan's GPU fraction and answers `{"variant", "stub": true}` until their backends ship (2.5, 2.6, 2.8, 3.x). Why: staged scheduling stays real (Ray accounts the fractions) without loading models no Phase 1 check uses.
+- **Why Serve load/unload through `serve.run(name, route_prefix)` and `serve.delete(name)`:** it is what the architecture specifies; no REST PUT. Resident mode is one `resident` group through the same loop. The review marked this whole item compliant.
+
+### B-074 · `max_constructor_retry_count=1` on every app
+
+- **Date / commit:** 2026-10-16 · `f35045e` · 1.7
+- **Context:** Ray Serve 2.58 defaults `max_constructor_retry_count` to 20 (threshold min(count, replicas x 3)), so a vLLM start that fails for lack of memory would be retried 20 times (checked in the image).
+- **Choice:** 1. A start that fails for memory fails again; retry-smaller or downgrade is the scheduler's job (Elasticity). **Consequence:** one bad replica fails a multi-replica deploy. The reviewer confirmed it bounds the failure path; all 6 failed real starts returned to idle.
+
+### B-075 · `--enforce-eager` on GPUs of 16 GiB or less; fp8 KV not set
+
+- **Date / commit:** 2026-10-16 · `f35045e` · 1.7
+- The docs say "small GPUs" without a number: used `smallest GPU <= 16 GiB`. `--kv-cache-dtype fp8` is not set until EXP-018 decides it (the architecture says "where supported"). Recorded as a known deferral, not a gap.
+
+### B-076 · Serve HTTP on 0.0.0.0:8000, clients default to 127.0.0.1:8000
+
+- **Date / commit:** 2026-10-16 · `f35045e` · 1.7
+- Serve runs a proxy on every node, so in-cluster callers stay local; no new environment variable.
+
+### B-077 · Teardown waits for VRAM to return to idle plus 256 MiB, measured per group
+
+- **Date / commit:** 2026-10-16 · `f35045e`, `989e0ed` · 1.7
+- **Choice:** `teardown` = `serve.delete` then wait until NVML used VRAM is at most the idle level + 256 MiB (120 s timeout), on this node only (multi-node needs the probe per node as Ray tasks, left to the controller). `run(plan, ..., work)` measures idle before each group, deploys, calls `work(group)`, tears down in `finally`.
+- **Review M2 (declined, with reason):** because idle is re-measured per group, a leak under 256 MiB per group compounds across the 5 laptop groups (up to about 1.25 GiB) without tripping; and the opposite, desktop VRAM growth during a long group, can fail teardown on WSL2. A run-level check back to the run-start idle would abort finished runs whenever the Windows desktop grows, so it was not added; the integration test compares the end state with the run-start idle instead. Measured: within tolerance in 66/66 trials.
+
+### B-078 · Deploys inside a group are sequential
+
+- **Date / commit:** 2026-10-16 · `f35045e` · 1.7
+- `serve.run` blocks per app. Fine for the laptop (one big model per group); parallel loads are to be revisited when a cloud group holds several engines.
+
+### B-079 · Only the LLM client in Phase 1, stubs are minimal valid schema instances, instructor deferred
+
+- **Date / commit:** 2026-10-16 · `f35045e` · 1.7
+- **Choice:** `LLMClient(variant, base_url)` uses the openai SDK against `/models/<variant>/v1`, temperature 0, `response_format` = JSON schema of the Pydantic model, images as data URLs, responses buffered (no streaming), and returns the validated model. `StubLLM` returns `stub_instance(schema)`: required fields only, first enum member, lower bounds, `minItems` elements, `minLength` padding, `prefixItems` for tuples, formats for date/date-time/uri. `clients.llm(plan, catalog, slot)` picks the stub when the variant's engine is `stub`. The asr / ocr / detector / embedder / ner clients come with the deliverables that first call them (no Phase 1 consumer).
+- **Known limits (review M5, M6):** `stub_instance(Fact)` and `stub_instance(Flag)` fail because of custom validators (13 contract models ok, 2 fail per the reviewer); a hand-made stub or schema-level bounds are needed in Phase 2 (2.1 owns `Fact` extraction). D-025 says `instructor` wraps the client with one repair retry; that is deferred to 2.1, the first structured-extraction consumer (the notes had no deferral until the fix round).
+
+### B-080 · Dev compose override instead of editing `compose.yaml`; `openai` added unpinned
+
+- **Date / commit:** 2026-10-16 · `6854081` (exp files), `f35045e` (dependency) · 1.7
+- `compose.yaml` belongs to 1.5 ([B-068](#b-068--compose-ownership-15-owns-composeyaml-including-mlflow)). `eval/exp/exp001.compose.yaml` bind-mounts the repo's `./models` (the global rule: weights live in the repo, on D:), `./src`, `./eval`, `./tests`, `./config` (PYTHONPATH `/app/src:/app`) and sets `HF_HUB_OFFLINE=1`, so code changes need no 23 GB image rebuild. Proposal for `compose.yaml`: ray-head and api should mount the same host `./models`.
+- `uv add openai` wrote `>=3.31.0`, which would have upgraded the 3.16.2 that the vLLM image ships; changed to plain `openai`. Review M8: the `pyproject.toml` comment was truncated, fixed.
+
+### B-081 · EXP-001 method: interleaved rounds, one start per trial, exact-KV gate, fixed-length decoding
+
+- **Date / commit:** 2026-10-16 · `6854081` (script) · 1.7
+- Rounds are interleaved (each round runs every setting once) so desktop drift hits all settings alike; one vLLM start per trial with retries off; the exact-KV arm uses gmu 0.5 only as vLLM's startup gate; `ignore_eos` for fixed-length decoding (8 prompts x 128 tokens); NVML peak sampled every 0.2 s. Added two desktop-pressure arms that the design did not have (see [EXP-001](experiments.md#exp-001--vllm-memory-headroom-on-the-laptop)) because the main trials ran on an unusually idle desktop.
+- Review M4 fixed: any bench error other than `ServingError` skipped teardown, the MLflow run and the sampler stop and left the app deployed; benchmark errors are now tagged and teardown and logging still run.
+
+### B-082 · Checkpoint for `qwen3.5-4b-awq` is `cyankiwi/Qwen3.5-4B-AWQ-4bit`, in the catalog
+
+- **Date / commit:** 2026-10-16 · `989e0ed` · 1.7 · **Controller ruling** (review Important I1)
+- **Context:** the catalog had no AWQ repo, so `Variant.repo` (= `checkpoint or base_model`) was the 8.68 GiB bf16 `Qwen/Qwen3.5-4B`; every real laptop run would have failed at the LLM group. EXP-001 and the integration test had overridden it in code, so no run used the shipped path.
+- **Options and choice:** see [C-016](experiments.md#c-016--which-awq-checkpoint-for-qwen35-4b-awq). `config/catalog.yaml` now has `checkpoint: cyankiwi/Qwen3.5-4B-AWQ-4bit` (3.78 GiB, Apache-2.0); the unit assertion was flipped to the AWQ repo; the overrides were removed from the integration test and the EXP script, so both use the stock catalog. The EXP's historical `kv-planner` budget is frozen as `KV_PLANNER_BYTES = 1,006,632,960` because the catalog's KV figure changed and recomputing would change what that variant means.
+- **Caveat:** third-party quantization; licence and provenance as reported on the Hub, not verified by the reviewer.
+
+### B-083 · Exact KV budgets on single-GPU engines sized by the planner from probed free VRAM
+
+- **Date / commit:** 2026-10-16 · `989e0ed` · 1.7 · **Controller ruling** (the EXP-001 decision)
+- **Context:** [EXP-001](experiments.md#exp-001--vllm-memory-headroom-on-the-laptop). By the written bar the laptop calibration is gmu 0.86 and exact KV does not qualify (21,597 vs at least 35,746 tokens at idle). But under WSL2 CUDA in the container reports a fixed 6.93 GiB free, so vLLM's startup check never fails below gmu 0.866, and with Windows memory in active use its profiler counts that memory as its own non-torch memory (6.15 vs 4.25 GiB). gmu 0.75 and 0.83 started 0/3; gmu 0.86 started 3/3 at 1.52 sequences; exact KV started 13/13 at 2.64.
+- **Options (from the notes):** (a) gmu 0.86 per the bar: most KV at idle, collapses to 1.5x under load, and the Plan's own gmu (0.77) fails outright; (b) exact KV equal to the planner's own estimate (2 x 8k), gmu only as startup gate; (c) exact KV sized to fill the usable budget, more KV than (b) when there is room, not measured as an arm.
+- **Ruling:** exact KV budgets on single-GPU engines, **sized by the pure planner from the probed free VRAM** (NVML on the host reports Windows usage truthfully, unlike WSL2 CUDA's constant 6.93 GiB). That is (c) in effect: `kv_cache_bytes` = min(room - weights - overhead, KV(default context x 2)), floored to MiB, where `room` is the engine's allocation plus the GPU's leftover when it is the only engine on that GPU. `gpu_memory_utilization` stays `ceil2(per_gpu/total)` (0.79 on the laptop) and now only gates the start (at most 0.866 passes the WSL2 check). Engines with tp > 1 keep gmu sizing. `plan()` stays pure: free VRAM comes in only through the inventory.
+- **Cost if wrong (recorded by the controller):** the probe is taken at plan time. In staged mode the LLM group loads last, so if the desktop grows between probe and deploy the budget can exceed what is physically free; vLLM's check cannot catch it (it sees 6.93 GiB), so the start fails or WDDM pages memory (slow) until Phase 4's OOM-amendment path re-plans. Mitigation available: re-probe at group boundaries. It also deviates from the bar's "at least as much KV", which was measured at idle only, and gives less KV than gmu 0.86 at idle if the budget is conservative.
+- **Review view:** partly supported (synthetic pressure, n = 3; gmu 0.86 also survived; marginal 47 MiB headroom under pressure); see the EXP-001 takeaway. **Result:** the laptop Plan at the docs' 7.15 GB free went from {8k, gmu 0.77} to {16k, gmu 0.79, KV 2,170 MiB}.
+
+### B-084 · EXP-001 calibration applied to the catalog, and the AWQ checkpoint added
+
+- **Date / commit:** 2026-10-16 · `989e0ed` · 1.7 · **Controller ruling**
+- Catalog `qwen3.5-4b-awq`: `kv_mb_per_1k_tokens` 60 to **44.6**; `overhead_gb` 1.2 to **0.53** (steady non-KV = NVML peak minus vLLM KV: 4.47 / 4.46 / 4.53 GiB at gmu 0.80 / 0.83 / 0.86, max taken, weights 4.0); new optional `startup_peak_gb: 6.25` (was the planner's 6.14 estimate); the checkpoint ([B-082](#b-082--checkpoint-for-qwen35-4b-awq-is-cyankiwiqwen35-4b-awq-4bit-in-the-catalog)). Per-GPU need is now `max(weights/tp + KV(ctx x 2)/tp + overhead, startup_peak_gb)`.
+- Only this variant was measured, so only it changed; every other variant keeps its estimates. The 44.6 was later restated as 45.8 per 1,024 tokens ([B-115](#b-115--kv-calibration-restated-per-1024-tokens-446---458)).
+
+### B-085 · The startup peak is a fit floor, not subtracted from the KV budget
+
+- **Date / commit:** 2026-10-16 · `989e0ed` · 1.7 · **Controller ruling** (interpretation of "minus measured startup overhead")
+- **Reasoning:** the two runs with different KV (gmu 0.75 at 1.56 GiB, the exact 0.94 GiB budget) both peaked at 6.25 GiB, so the peak occurs before the KV cache is allocated and the two are never resident together. KV = usable - weights - *steady* overhead (0.53), and the peak only decides whether the variant fits at all. Subtracting the peak would leave 0.40 GiB of KV at 7.15 GB free, below one 8k pair (0.70 GiB), and the laptop would lose its LLM.
+- **Cost if wrong:** an occasional start failure; the measured steady overhead was 54 to 107 MiB above the model at 16k, inside the 0.5 GiB margin.
+
+### B-086 · Additive contract and catalog fields: `SlotDecision.kv_cache_bytes`, `Variant.startup_peak_gb`
+
+- **Date / commit:** 2026-10-16 · `989e0ed` · 1.7 · **Controller ruling**
+- `SlotDecision.kv_cache_bytes` (`int | None = None`, later `gt=0`, [B-116](#b-116--the-kv-budget-must-be-positive-zero-is-rejected-not-ignored)) and the optional `Variant.startup_peak_gb`. Existing fields are unchanged and `extra="forbid"` still holds; the contract round-trip passes in every table case. Cost if wrong: one field rename. (The ledger line says "Plan.kv_cache_bytes"; the field lives on `SlotDecision`, which is how the code and the review name it.)
+
+### B-087 · `stop()` always kills the process group, and liveness ignores zombies
+
+- **Date / commit:** 2026-10-16 · `989e0ed` · 1.7 (review Important I2)
+- **Context:** `stop()` skipped the group kill when the main `vllm serve` process had already exited, but the EngineCore is a separate child (that is why the group exists). An orphan would keep its VRAM, the restart that the architecture relies on would then fail for memory, and teardown would only raise.
+- **Choice:** always SIGTERM `-pgid` (ignoring `ProcessLookupError`), wait while `_group_running`, SIGKILL after 30 s. On the first real run unload took 33.1 s because the orphan became a zombie under PID 1; liveness now reads `/proc/*/stat` and skips state `Z` ([C-012](experiments.md#c-012--unload-time-331-s-down-to-40-s-the-zombie-enginecore)). Also: the failed-start path calls `stop()` and `__del__` calls it again, which the re-review judged safe while any member holds the pgid.
+- **Mypy detail:** `os.killpg` and `signal.SIGKILL` do not exist in the win32 stubs and `assert sys.platform` did not narrow inside the method, so the code uses `os.kill(-pgid, SIGTERM/9)`.
+
+### B-088 · Exact KV applies to every single-GPU engine; leftover goes to KV only when the engine is alone on its GPU
+
+- **Date / commit:** 2026-10-16 · `989e0ed` · 1.7 · **Controller ruling**
+- The planner cannot tell WSL2 from bare Linux, and on Linux the exact budget equals what gmu sizing would give, capped at the default context x 2. Consequence: big single GPUs get at most 2 full-context sequences of KV per replica (for example 27b-fp8 on 48 GB: 10.0 GiB). Co-resident engines get exactly their sized KV (test: 1x 86 GB throughput). Numbers in [C-019](experiments.md#c-019--exact-kv-budget-vs-the-old-gmu-sizing-on-big-gpus). Revisit with EXP-015 (throughput objective on cloud). Re-review minors N1, N2, N4 became B-115, B-117, B-116.
+
+## 1.8 Part B: real-film run and EXP-002
+
+### B-089 · Cut labels use the `pull` object format, the masks go in a separate sidecar
+
+- **Date / commit:** 2026-10-16 · `6854081` · 1.8B · follows [B-049](#b-049--cut-labels-are-a-separate-json-file-not-flags)
+- The labels file is exactly the one-object JSON that `labeling.py pull` writes (`{title, check, fps, labeller: "agent-provisional", frame_convention, unlabelled_clips, cuts}`), filename `sintel_cuts.provisional.json`, so the later human labels drop in. The windows where no cut is defined (dissolves, credits) are a sidecar `sintel_cuts.provisional.masks.json` (`regions: [{start, end, kind, note}]`, inclusive frames) that the scorer reads together with the labels. Proposal for the labelling README: document the sidecar. (The earlier build-log wording `labeller: agent` was the ruling's shorthand; the stored value is `agent-provisional`.)
+
+### B-090 · The EXP-002 headline metric is masked, the unmasked F1 is always reported
+
+- **Date / commit:** 2026-10-16 · `6854081` · 1.8B
+- **Rationale:** a dissolve has no single "first frame of the new shot" (a detector may flag the start, middle or end), and 16 % of Sintel is end credits. Predicted cuts inside a masked window are dropped before scoring (and the labels inside, one: the cut to the credits at 17858). **Effect at defaults:** TransNetV2 0.917 masked vs 0.901 unmasked, Content 0.839 vs 0.817, Adaptive 0.880 vs 0.875, so the ranking does not change. Naming caveat (review M2): `shown/*` here means "masked headline" while in `eval.report` it means "flags shown to the user"; documented in the script docstring.
+
+### B-091 · Seconds per video-minute is the wall time of the full detector, one process, 3 repeats, defaults
+
+- **Date / commit:** 2026-10-16 · `6854081` · 1.8B
+- TransNetV2 includes TorchCodec decode + resize + model + model load; PySceneDetect includes OpenCV decode. Not GPU-seconds. For the comparison table, "wall s per content-hour" is the same number x 60. Only the 3-repeat defaults support speed claims (sweep-run seconds are single runs). Review M4: the docstring command now says `--repeat 3`.
+
+### B-092 · Provisional labels by candidate union and contact sheets, with a committed verification record
+
+- **Date / commit:** 2026-10-16 · `6854081`, `be9daac` · 1.8B (review Important I1)
+- **Method:** union of three detectors at deliberately low thresholds plus a frame-difference scan, merged to 646 events, every event inspected as a 6-frame contact sheet (details and bias numbers in [EXP-002](experiments.md#where-the-labels-came-from-and-how-they-are-biased)). The frame-difference scan exists because the candidate set is detector-seeded: it looks for cuts no detector flagged. It found nothing new (labelled cuts it found: 0), which is weak evidence that few exist, not proof.
+- **Review fix (I1):** the per-event decisions and the per-cut verification record were only in git-ignored `data/`; now committed as `sintel_cuts.provisional.decisions.txt` and `sintel_cuts.provisional.verification.json`, generated by `label_sheets.py verification`.
+- **Integrity rule that came out of the rate-limit incident:** decisions made without a real view of the image were discarded, not patched; only decisions on actually shown images survive ([journal](journal.md#2026-10-16--18b-the-provisional-labels-method-bias-and-a-blind-first-draft)).
+
+### B-093 · EXP-002 decision: keep TransNetV2 provisionally, as a cost/risk call, not a result
+
+- **Date / commit:** 2026-10-16 · `be9daac` · 1.8B (review Important I2) · decision proposal, accepted as provisional
+- **Context:** the bar's verdict flips with tuning (defaults +0.037 TransNetV2; tuned on the same labels +0.021 Adaptive; held out +0.016 Adaptive), the labels are agent-made and detector-seeded, and dissolves were masked.
+- **Choice:** keep TransNetV2 in Phase 1 because it is pinned in the docs and integrated and tested in part A; swapping on a 0.016 to 0.021 gap on seeded labels would not be justified. **Withdrawn after review:** two rationales not supported by any run ("adds fades/dissolves handling", "no tuning knob to overfit"). **Proposed, not applied:** `timeline.shots.threshold` 0.5 to 0.2 pending human labels (config is not 1.8B's); re-run with human-verified labels for Sintel and Tears of Steel; the experiment's own rule decides if a tuned Adaptive is at least 0.02 above a tuned TransNetV2.
+- **Cost if wrong:** Phase 1 ships a slightly conservative default (recall 0.85 on this film) and a heavier dependency than needed. Full entry: [EXP-002](experiments.md#exp-002--shot-detection-transnetv2-vs-pyscenedetect).
+
+### B-094 · No change to part A after EXP-002, and where the experiment files live
+
+- **Date / commit:** 2026-10-16 · `6854081` · 1.8B
+- `src/nip/timeline/` untouched: no bug found, the resize-filter test ([C-014](experiments.md#c-014--transnetv2-input-resize-filter-torchcodec-bilinear-vs-ffmpeg-bicubic)) found no effect, and the ffmpeg-CLI-is-faster finding ([C-015](experiments.md#c-015--decode-backend-and-keyframe-cost-on-real-film)) does not outweigh exact seek. Files: `eval/exp/exp002_shots.py` (experiment, scorer, sweeps), `eval/exp/label_sheets.py` (labelling helpers), `eval/labeling/labels/` (labels, masks, verification, decisions), `tests/unit/eval/test_exp002_shots.py`. Optional wiring if wanted: `eval_app.add_typer(exp002_app, name="exp002")`; the commands run as `python -m eval.exp.exp002_shots ...`. `docs/project-structure.md` has no `eval/exp/` (see doc corrections).
+
+### B-095 · Tears of Steel is not labelled, so half of EXP-002 is open
+
+- **Date / commit:** 2026-10-16 · `6854081` · 1.8B
+- The brief asked for Sintel's cuts only, so Tears of Steel has speed and cut counts but no F1. Suggested follow-up: label it with the same `label_sheets` tooling or in Label Studio. Stays on the deferred list.
+
+## 1.10 Walking skeleton
+
+### B-096 · One flag per cue
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- A cue that breaks several rules gets one flag whose title lists all of them ("Cue 11: reading speed 100.0 CPS (max 17); duration 0.50 s (min 5/6 s)"); severity is the worst rule's. Why: one reviewer action per cue, and labels (one per planted cue) match one flag. **Alternative rejected:** one flag per (cue, rule), more precise per-rule counting but an edit that breaks two rules would score one false positive.
+
+### B-097 · Gap and overlap rules belong to the later cue
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- The claim is the cue whose start is too close; the previous cue is `context` evidence (ignored by eval matching). "Previous" is the previous in file order (`idx - 1`), so an out-of-order cue shows up as an overlap.
+
+### B-098 · Durations, CPS and gaps are measured in frames, not milliseconds
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10 · answers the 1.4 review's open question
+- The Netflix rules are stated in frames (2-frame gap, 20 frames at 24 fps) and `Span` carries frames only, so the check uses the timeline's frame axis (the picture's probed rate; 24 without a picture). **Cost:** plus or minus 1 frame of rounding vs ms timing: Sintel cue 11 is 17.14 CPS in frames and 17.24 in ms (both exceed the 17 limit, so it is flagged either way).
+
+### B-099 · Rule pack layout: section-wise merge, no silent fallback to another language
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- `config/languages/{_base,en,es,fr,de}.yaml`, one `readability:` section per file, packs merge section-wise (`_base` to `es` to `es-419`). Shared limits live in `_base` (42 chars, 2 lines, 5/6 s to 7 s, 2-frame gap, gaps under 1/2 s closed to 2); reading speed lives only in the language files (adult/children: en 20/17, es/fr/de 17/13). Fractions are stored exactly as strings (`5/6`). **A language without a pack is rejected** (`INPUT_REJECTED: no readability rule pack for language 'it'`) rather than silently getting another language's CPS. `es-ES.yaml` is not created: per the doc it only overrides address forms, which this check does not use. Children's CPS is stored; `audience="adult"` by default and no CLI option exposes it yet.
+
+### B-100 · Gap-closing is part of `loc.readability`, severity 2, tier follows confidence
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10 · reviewer adjudicated
+- Gaps strictly between `min_gap_frames` and 1/2 s (3 to 11 frames at 24 fps, 3 to 12 at 25) are flagged with severity 2 ("should be closed to 2"); every other violation is severity 3. Confidence is 1.0 for all (pure rules), so every flag lands in `must_review`. **Open product call:** 15 of the 20 flags on the clean Sintel tracks are gap-closing ones; if reviewers find that too noisy, lower its confidence below 0.70 so it is suppressed by default, or move it to `loc.shot_change`'s timing group. The reviewer judged it in spec (the rule-pack row says gaps of 3 to 11 frames are closed to 2; tier is assigned purely by confidence) and a product decision, not a defect.
+
+### B-101 · `requires = {source_subs, target_subs}`; no source track means the check is skipped
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- Per the activation matrix, although the rules read only target tracks. Without a source track the check is skipped and listed in `run.json` `skipped` (coverage 0.0 for the agent). Doc correction filed (the matrix marks source subs required for readability but it is unused).
+
+### B-102 · Verification is `nip.verification.verify` with the re-check injected; dropped flags are kept apart
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- Step 1 resolves evidence (ref exists with the same kind, frames equal the timeline's, quote is in the stored text, frames inside the episode); step 2 re-checks the rule. Verification must not import agents (project-structure), so `verify(flags, tl, rechecks)` takes a `{check_id: callable}` map; the pipeline passes `Readability.recheck`, which recomputes the finding for the claimed cue on the current timeline and requires the same title. Step 1 also requires evidence frames to equal the timeline's, which catches a stale cached flag. Steps 3 (LLM judge) and 4 (routing/dedup) are not built; the tier stays as assigned at emission (1.4 decision). `flags.jsonl` holds verified flags (fed to `nip eval run`), `dropped.jsonl` the dropped ones with `verification.*: "fail"`.
+- **Review M6/M7 (open):** a flag on a last cue that overruns the picture by a frame is dropped by the "inside the episode" rule rather than reported; `ev.quote not in span.text` is unguarded against `span.text is None`.
+
+### B-103 · `src/nip/pipeline.py` is the Phase-1 composition root, and `nip run` takes files
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10 · accepted deviation (reviewer M3)
+- project-structure.md has no such module (runs flow api to `runtime.controller` to scheduler from the store), and nothing is in the store yet, so `nip run --episode E --script F --subs LANG=F ... [--source-lang en] [--video F] [--picture picture.json] --out-dir D` takes files and writes JSON. `--picture` reuses `nip timeline picture` output (fps must equal the probe's, else rejected). **Phase 2 must replace it** with the documented `--show/--episodes` form backed by the store (a breaking CLI change) and move the stage sequence into `runtime.scheduler`; flag ids are null until the store assigns them.
+
+### B-104 · No Plan for the walking skeleton run
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- `plan_id = "none"`, `mode = staged`, `judge_independent = false` in the report and `produced_by`, because the check uses no model slot.
+
+### B-105 · Keyframes live on the timeline as one-frame spans
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- `build_timeline(..., keyframes=[(shot, n, frame)])` adds `keyframe` spans `{ep}/kf/{shot}.{n}` (shot = index, as 1.4's shot refs), needed for the exit criterion "timeline with shots and keyframes". Nothing cites them yet.
+
+### B-106 · Duplicate scene numbers are rejected at ingest, not as a `Timeline` crash
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10 · refines [B-066](#b-066--duplicate-timeline-refs-are-rejected)
+- The pipeline rejects them with `INPUT_REJECTED: <file>: duplicate scene numbers ['1']; renumber them` (exit 1) instead of the `ValueError` that 1.4's review M3 flagged. Test: `test_duplicate_scene_numbers_are_rejected`.
+
+### B-107 · The walking-skeleton benchmark set and the machine-triaged native labels
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- **Set name:** `walking-skeleton`, not `smoke` (which the docs define as a 2-minute excerpt with about 30 errors across all checks). Labels under `eval/labels/walking-skeleton/`; injected labels are regenerated from seeds and live under `data/runs/1.10/`. MLflow runs go to a local sqlite store `data/runs/1.10/mlflow.db` (tag `exp=WS-1.10`, not an EXP id).
+- **Native labels:** the 6 clean-run flags for Sintel es are machine-triaged, not by a person as evaluation.md requires: confirmed with an independent ms-based recompute (pysubs2, same limits), written with `injector: "native-triage"`, `reviewed: false`. A person should sign them off.
+
+### B-108 · The `loc.readability.v1` injector: isolated cues, one kind per pick, ref-based labels
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10
+- Edits only isolated cues (both neighbours at least 600 ms away, 1 to 6 s long, no two picks adjacent) so an edit can never create a violation on an unlabelled cue; one kind per pick, rotating so all six kinds appear before any repeats; ms-level edits chosen to break the rule at any common frame rate (min duration to 500 ms; max to 8 s; gap to 20 ms; CPS to 1.5x the limit, at least 900 ms). Labels cite the cue ref, not frames (the injector has no frame rate), and `metrics.py` matches ref-only labels by shared ref. `episode` defaults to the corpus title directory, `lang` to the `<lang>_` file prefix. Limits come from the same rule pack the check uses, which is why the 1.00 score is circular ([C-018](experiments.md#c-018--walking-skeleton-benchmark-prf1-100-on-planted-readability-errors-and-why-it-proves-little)). `pysubs2.load` autodetection failed on a synthetic SRT, so the injector passes `format_` from the file extension.
+
+### B-109 · The Sintel picture stage is reused from the cached 1.8B run
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10 · permitted by the brief
+- 1.10 converted 1.8B's cached EXP-002 "picture" run (`data/exp002/runs/picture/sintel/`: 161 cuts, 21,312 frames, 398 keyframe JPEGs, same code path and config, threshold 0.5) into `analyze_picture`'s `picture.json` with a scratch script (shots = `shots_from_cuts`, keyframe records recomputed with `keyframe_frames` and checked against the files on disk: 398 = 398). No GPU run was needed. **Caveat carried into the exit verification:** the picture stage was not re-run live; the timeline uses the probe's 21,313-frame duration while the shots end at 21,312.
+
+### B-110 · CLI wiring executed
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10 · executes [B-067](#b-067--cli-wiring-is-a-separate-integration-step)
+- `src/nip/cli.py` wires `eval` (with `corpus` and `labels` nested), `timeline`, `plan` and `run`. 1.7's `serving.py` has no Typer app, so nothing was wired for it. Test: `nip --help` lists run/eval/timeline/plan; `nip eval --help` lists run/compare/corpus/labels. `nip doctor`, `nip models`, `nip ingest`, `nip eval inject` are in the docs' CLI table but are not wired (none is a Phase 1 deliverable; injectors are Python-callable only).
+
+### B-111 · CLI import cost accepted for now (superseded by B-113)
+
+- **Date / commit:** 2026-10-16 · `77257b6` · 1.10 · **Superseded by [B-113](#b-113--lazy-torch-mlflow-and-scipy-imports-in-the-cli-superseding-b-111)**
+- `nip` imported torch and mlflow at startup (about 9 s) because `nip.timeline.picture` and `eval.report` import them at module level. The implementer accepted it with the upgrade path written down (lazy imports); the review marked it a Minor (M5) owned by those modules, and the fix round did it. `cli.py` also sets `MLFLOW_DISABLE_AGENT_HINT=1` by default to silence the INFO line MLflow 3.17 prints on import.
+
+### B-112 · `NIP_CONFIG_DIR` with auto-detection
+
+- **Date / commit:** 2026-10-16 · `2d0bf6a` · 1.10 fix round (review M1)
+- **Context:** `readability.rule_pack` resolved `parents[4] / "config" / "languages"` from `__file__`. The nip image installs non-editable (`uv pip install .`), so in site-packages that path points outside `/app/config` and every language would be rejected. `picture.py` used the same `parents[]` pattern, and `load_catalog` and `nip plan --catalog` were cwd-relative.
+- **Choice:** one helper, `nip.config.config_dir()`: `$NIP_CONFIG_DIR`, else the source tree's `config/` (detected by `config/pipeline.yaml` next to `src/`, i.e. an editable install), else `./config`. Every reader (`rule_pack`, `timeline_config`, `load_catalog`, `nip plan --catalog`) resolves it at call time. The Dockerfile sets `ENV NIP_CONFIG_DIR=/app/config`; `.env.example` documents it. An editable checkout needs no setting and the image is explicit. Tests: `tests/unit/test_config.py` (3: source-tree default, installed-package fallback, env override). The image was not built. **Left:** `media.py`'s repo-relative FFmpeg lookup (already overridable by `NIP_FFMPEG_DIR`); `load_catalog` untested under `NIP_CONFIG_DIR`.
+
+### B-113 · Lazy torch, mlflow and scipy imports in the CLI, superseding B-111
+
+- **Date / commit:** 2026-10-16 · `2d0bf6a` · 1.10 fix round (review M5)
+- torch is imported inside `picture.analyze_picture` (via `shots`), mlflow inside `eval.report.run/compare`, scipy inside `eval.metrics`'s `run`. `nip --help` went from 10.4 to 10.9 s to 1.1 to 1.2 s ([C-013](experiments.md#c-013--nip-cli-startup-109-s-down-to-11-s-lazy-imports)). 1.8's picture CLI test now patches `shots.detect_shots`; the reviewer confirmed its assertions are unchanged. Anyone doing `from nip.timeline.picture import detect_shots` would now break (no caller found).
+
+## Phase 1 closeout
+
+### B-114 · The closeout fixes only the load-bearing minors; everything else is deferred and listed
+
+- **Date / commit:** 2026-10-16 · `09c87f8` · closeout · scope from the controller's ledger
+- Six items from the ledger were fixed (see B-115 to B-118); the other deferred minors per deliverable are listed in `notes/phase1-exit.md` and in [review-findings.md](review-findings.md). Not done on purpose: Tears of Steel labels and human verification of Sintel's, lowering `timeline.shots.threshold` to 0.2, EXP-005's 32k arm (ruling R4), real-model knowledge arms (gated on EXP-001, R7), and the minors of 1.1 through 1.11. Cost if wrong: minors resurface in Phase 2; the list is the guard.
+
+### B-115 · KV calibration restated per 1,024 tokens (44.6 -> 45.8)
+
+- **Date / commit:** 2026-10-16 · `09c87f8` · closeout · supersedes the 44.6 figure of [B-084](#b-084--exp-001-calibration-applied-to-the-catalog-and-the-awq-checkpoint-added) (re-review minor N1)
+- **Context:** EXP-001 measured 35,746 tokens in 1.56 GiB and 21,597 in 0.94 GiB, which is 45.76 and 45.64 MiB per 1,024 tokens; 44.6 to 44.7 was per 1,000. The planner's `_kv_gb` divides context by 1,024, so it underestimated per-token KV by about 2.4 %.
+- **Choice:** catalog `qwen3.5-4b-awq.kv_mb_per_1k_tokens` 44.6 to **45.8**. **Effect:** only the 24 GB cap test moved (2,854 to 2,931 MiB); the laptop KV is free-VRAM-bound (2,170 MiB unchanged); all six table Plans are unchanged. Test: `test_catalog_kv_calibration_uses_1024_token_blocks`. At 16k the real figure is about 38, so the planner stays conservative there.
+
+### B-116 · The KV budget must be positive: zero is rejected, not ignored
+
+- **Date / commit:** 2026-10-16 · `09c87f8` · closeout (re-review N4)
+- `SlotDecision.kv_cache_bytes` is `Field(gt=0)`; `vllm_args` tests `is not None` (before, `if d.kv_cache_bytes:` silently fell back to gmu sizing on 0); the planner asserts the computed value is positive. Test: `test_a_zero_kv_budget_is_rejected_not_ignored`.
+
+### B-117 · Shared-GPU exact KV: the premise was wrong, pinned with a test instead of changed
+
+- **Date / commit:** 2026-10-16 · `09c87f8` · closeout (re-review N2, ledger item 4)
+- **Premise (from the review):** on a GPU shared with actors the exact budget absorbs all leftover memory, leaving the actors' unmeasured `vram_gb` protected only by the 0.5 GiB margin. **What the code does:** the packer places vLLM first, then actors and replicas, and puts actor sizes into `cluster.free` before the KV room is computed, so the actors were already reserved. Checked on 20/24/32/48 GB resident inventories: engines + actors sum to at most usable.
+- **Choice:** change nothing, pin it: `test_exact_kv_leaves_the_actors_their_catalog_sizes_on_a_shared_gpu` (48 GB resident: actors above 5 GiB reserved, total equals usable). **What remains true:** actor sizes are catalog estimates, and the only cushion beyond them is the 0.5 GiB margin / 10 % utilization slack.
+
+### B-118 · Closeout hygiene: ray-head `init: true`, laptop-only dev realm, `.gitignore` pattern and timecode strictness
+
+- **Date / commit:** 2026-10-16 · `09c87f8` · closeout
+- `compose.yaml` ray-head gets `init: true` (tini reaps the orphaned EngineCore zombies, [C-012](experiments.md#c-012--unload-time-331-s-down-to-40-s-the-zombie-enginecore)). `.env.example` ships `NIP_KEYCLOAK_DEV_REALM=true` as a comment with a "LAPTOP ONLY" note (the 1.5 re-review minor: copying the template to a cloud host would enable the dev realm). `.gitignore` gets `/eval/*-s[0-9]*-[0-9]*T[0-9]*/` for run output directories (a blanket `/eval/*/` would have ignored the `eval/corpus` and `eval/exp` source packages; verified new files there stay visible). Timecode: `ms_to_frame` rejects negative ms, `frame_to_ms` negative frames (beyond the ask, for symmetry; no caller broke), and every function rejects non-`Fraction` fps (TypeError) and fps <= 0.
+
+### B-119 · Phase 1 is closed with caveats, after an exit-criteria check run against the commit
+
+- **Date / commit:** 2026-10-16 · `09c87f8` · closeout
+- Results (details in the [journal](journal.md#2026-10-16--phase-1-exit-criteria-verified-against-09c87f8)): 1 ingest to timeline PASS; 2 flags with resolvable evidence PASS (11/11); 3 planner tables PASS; 4 CI without a GPU PASS locally (304 passed, 1 skipped; migration test 1 passed); 5 experiment entries complete with caveats (EXP-002 decision provisional) and this build-log merge closes "journal up to date" (finding F-2); 6 CLI PASS with findings (F-1 report flag summaries carry no evidence or id by design; F-3 several documented commands not wired). The GitHub Actions workflow itself was not run.
+
 ## Process decisions
 
 ### B-067 · CLI wiring is a separate integration step
@@ -569,3 +887,15 @@ Every entry names the deliverable (from [docs/phased-plan.md](../docs/phased-pla
 ### B-071 · SDD workspace is kept, not deleted
 
 - **Date:** 2026-10-16 · **Controller ruling.** The git-ignored `.superpowers/` workspace holds the agents' notes, reports and reviews that are source material for this folder, and the user said not to delete things; it stays.
+
+### B-120 · Phase 2 plan rulings R1 to R15 adopted
+
+- **Date:** 2026-10-16 (ledger, after the rate-limit interruption) · **Controller ruling**
+- **Context:** the Phase 2 plan was saved in `briefs/phase2-plan.md` with one brief per deliverable (2.0 to 2.9B). **Ruling:** adopt its planner rulings R1 to R15, among them R1 (adds deliverable 2.0, the store spine), R3 (a synthetic show replaces Beverly Hillbillies for the knowledge experiments), R4 (EXP-005's 32k arm deferred to cloud) and R7 (real-model knowledge arms gated on EXP-001). EXP-001 has since completed ([B-083](#b-083--exact-kv-budgets-on-single-gpu-engines-sized-by-the-planner-from-probed-free-vram)).
+- **Cost if wrong (recorded):** Phase 2 knowledge numbers come from synthetic data only. Phase 2 is not started in this build log.
+
+### B-121 · Commit by explicit file paths, not directory pathspecs
+
+- **Date:** 2026-10-16 · process, after the 1.8B incident · extends [B-070](#b-070--parallel-agents-on-disjoint-paths-with-path-scoped-commits)
+- **Context:** B-070's pathspec commit stops cross-agent sweeping of *staged* files, but a pathspec naming a directory (`eval/exp`) also commits every untracked file in it. 1.8B's commit `6854081` therefore included 1.7's untracked `eval/exp/exp001.compose.yaml` and `eval/exp/exp001_vllm_headroom.py`; the committed blobs are 1.7's final versions (verified clean against HEAD), so no separate 1.7 commit holds them.
+- **Choice:** 1.8B's fix round (`be9daac`) listed its five files explicitly. History was not rewritten (nothing is pushed, and the blobs are correct); owners were told to expect the files already in HEAD.

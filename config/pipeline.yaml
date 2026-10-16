@@ -1,0 +1,10 @@
+# Pipeline thresholds and policies. Only keys that code reads live here.
+timeline:
+  shots:
+    # TransNetV2 transition probability above this marks a cut.
+    threshold: 0.5
+  keyframes:
+    # Middle frame of every shot, plus one every `interval_s` for shots longer than `long_shot_s`.
+    long_shot_s: 4.0
+    interval_s: 2.0
+    jpeg_quality: 90

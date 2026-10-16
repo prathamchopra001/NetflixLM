@@ -7,9 +7,9 @@ TTML's declared frame rate is recorded on the track (None for SRT / VTT).
 import logging
 import re
 import xml.etree.ElementTree as ET
-from xml.parsers import expat
 from dataclasses import dataclass
 from fractions import Fraction
+from xml.parsers import expat
 
 import pysubs2
 from ttconv import model as tt_model
@@ -178,7 +178,7 @@ def parse_ttml(data: bytes | str) -> Parsed[SubtitleTrack]:
             continue
         text = "\n".join(t.strip() for t in text.strip().split("\n"))
         cues.append(Cue(i, _ms(begin), _ms(end), text, line))
-    # ttconv's log does not say which element it choked on: give it the line when only one cue is bad
+    # ttconv's log does not name the element: give it the line only when exactly one cue is bad
     log_line = bad[0] if len(bad) == 1 else None
     p.errors[:0] = [Issue(f"ttconv: {m}", log_line) for m in cap.messages]
     _check_cues(cues, p)

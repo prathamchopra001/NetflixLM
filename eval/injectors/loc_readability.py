@@ -13,6 +13,7 @@ import pysubs2
 
 from eval.injectors.base import Injector, Label, Target, register
 from nip.agents.localization.readability import rule_pack
+from nip.contracts import refs
 
 MARGIN_MS = 600  # > 1/2 s (gap-closing window) + a frame at any common rate
 KINDS = ("chars_per_line", "lines", "reading_speed", "min_duration", "max_duration", "gap")
@@ -113,7 +114,7 @@ class LocReadability(Injector):
                     episode=episode,
                     check=self.check,
                     lang=lang,
-                    target=Target(kind="subtitle_cue", refs=[f"{episode}/{lang}/{i + 1}"]),
+                    target=Target(kind="subtitle_cue", refs=[refs.cue(episode, lang, i + 1)]),
                     description=f"cue {i + 1}: {kind}",
                     injector=self.id,
                     seed=seed,

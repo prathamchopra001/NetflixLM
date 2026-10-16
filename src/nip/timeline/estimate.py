@@ -12,6 +12,7 @@ from collections.abc import Mapping, Sequence
 from fractions import Fraction
 from itertools import accumulate
 
+from nip.contracts import refs
 from nip.contracts.flag import EvidenceKind
 from nip.contracts.timeline import Span, Timeline
 from nip.ingest.media import MediaInfo
@@ -75,15 +76,16 @@ def build_timeline(
         tc_in, tc_out = (frame_to_smpte(x + start, fps, drop) for x in f)  # out is exclusive
         return Span(kind=kind, ref=ref, frames=f, tc_in=tc_in, tc_out=tc_out, **kw)
 
-    timed_spans = [timed(EvidenceKind.SHOT, f"{episode}/shot/{i}", s) for i, s in enumerate(shots)]
+    timed_spans = [timed(EvidenceKind.SHOT, refs.shot(episode, i), s) for i, s in enumerate(shots)]
     timed_spans += [
-        timed(EvidenceKind.KEYFRAME, f"{episode}/kf/{i}.{n}", (f, f + 1)) for i, n, f in keyframes
+        timed(EvidenceKind.KEYFRAME, refs.keyframe(episode, i, n), (f, f + 1))
+        for i, n, f in keyframes
     ]
     for lang, track in (subtitles or {}).items():
         for c in track.cues:
             a = ms_to_frame(c.start_ms, fps)
             f = (a, max(ms_to_frame(c.end_ms, fps), a + 1))  # a sub-frame cue keeps one frame
-            ref = f"{episode}/{lang}/{c.idx}"
+            ref = refs.cue(episode, lang, c.idx)
             timed_spans.append(timed(EvidenceKind.SUBTITLE_CUE, ref, f, lang=lang, text=c.text))
 
     bounds = scene_bounds(script, fps)
@@ -95,7 +97,7 @@ def build_timeline(
     scenes = [
         Span(
             kind=EvidenceKind.SCENE,
-            ref=f"{episode}/sc/{s.number}",
+            ref=refs.scene(episode, s.number),
             frames=(a, min(b, end)) if a < end else None,
             text=s.heading,
             scene=f"{episode} · Sc {s.number} (script estimate)",

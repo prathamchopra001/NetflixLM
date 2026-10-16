@@ -31,18 +31,27 @@ class Timeline(Contract):
     start_tc_frames: int = 0
     drop_frame: bool = False
     source: Literal["script_estimate", "picture"] = "script_estimate"
-    spans: list[Span]  # scenes in script order, then shots, then cues per language
+    spans: tuple[Span, ...]  # scenes in script order, then shots, then cues per language
 
+    # ref -> span index, rebuilt whenever `spans` is a different object (model_copy(update=...),
+    # assignment), so a copy never resolves its original's spans. A tuple cannot be appended to.
     _by_ref: dict[str, Span] = PrivateAttr(default_factory=dict)
+    _indexed: object = PrivateAttr(default=None)
 
     def model_post_init(self, _: object) -> None:
-        self._by_ref = {s.ref: s for s in self.spans}
-        if len(self._by_ref) != len(self.spans):
-            dup = sorted({s.ref for s in self.spans if self._by_ref[s.ref] is not s})
-            raise ValueError(f"duplicate timeline refs: {dup}")
+        self._index()
+
+    def _index(self) -> dict[str, Span]:
+        if self._indexed is not self.spans:
+            by_ref = {s.ref: s for s in self.spans}
+            if len(by_ref) != len(self.spans):
+                dup = sorted({s.ref for s in self.spans if by_ref[s.ref] is not s})
+                raise ValueError(f"duplicate timeline refs: {dup}")
+            self._by_ref, self._indexed = by_ref, self.spans
+        return self._by_ref
 
     def resolve(self, ref: str) -> Span | None:
-        return self._by_ref.get(ref)
+        return self._index().get(ref)
 
     def of(self, kind: EvidenceKind, lang: str | None = None) -> list[Span]:
         return [s for s in self.spans if s.kind is kind and (lang is None or s.lang == lang)]

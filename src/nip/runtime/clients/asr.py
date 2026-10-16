@@ -8,6 +8,7 @@ Times are integer milliseconds from the start of the audio; frame placement belo
 import os
 import sys
 import wave
+from functools import cache
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -52,6 +53,7 @@ def read_wav(path: str | Path) -> np.ndarray[Any, np.dtype[np.float32]]:
     return pcm.astype(np.float32) / 32768.0
 
 
+@cache
 def add_cuda_dll_dirs() -> None:
     """Windows: CTranslate2 4.x loads CUDA 12 cuBLAS / cuDNN 9 by name. The `nvidia-*-cu12` pip
     wheels (a `chore(deps)` extra if the host lacks them) ship them under site-packages/nvidia."""
@@ -89,15 +91,14 @@ class FasterWhisperASR:
         exclamations and mis-timed whole segments on Sintel (EXP-003 notes). Whisper then
         hallucinates over music with low word confidence, so segments whose mean word probability
         is under `min_prob` are dropped."""
-        segs, _ = self.model.transcribe(
-            read_wav(audio),
-            language=lang,
-            word_timestamps=True,
-            vad_filter=self.vad,
-            condition_on_previous_text=False,
-            temperature=0.0,
-            **self.opts,
-        )
+        kw: dict[str, Any] = {
+            "language": lang,
+            "word_timestamps": True,
+            "vad_filter": self.vad,
+            "condition_on_previous_text": False,
+            "temperature": 0.0,
+        } | self.opts  # `opts` override: e.g. faster-whisper's temperature fallback tuple
+        segs, _ = self.model.transcribe(read_wav(audio), **kw)
         out = [
             Segment(
                 s.text.strip(),
@@ -141,7 +142,9 @@ class Actor:
     `{"segments": [...]}`. The path is on storage shared with the replica."""
 
     def __init__(self, variant: str) -> None:
-        self.asr = FasterWhisperASR(variant)
+        from nip.timeline.asr import asr_kwargs, timeline_config  # the pipeline's own settings
+
+        self.asr = FasterWhisperASR(variant, **asr_kwargs(timeline_config()["asr"]))
 
     async def __call__(self, request: Any) -> dict[str, Any]:
         body = await request.json()

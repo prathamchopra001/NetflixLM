@@ -40,16 +40,28 @@ FILMS = {
         "data/corpus/tears-of-steel/en_TOS-en.srt",
     ),
 }
-# Decoding configurations (kwargs of FasterWhisperASR). SHIPPED is what 2.5 defaults to; the others
-# are what was tried first, and why it was replaced (see the EXP-003 notes).
+# Decoding configurations (kwargs of FasterWhisperASR; `min_prob` is explicit everywhere because the
+# client's default is the shipped one). SHIPPED is what 2.5 defaults to; the others are what was
+# tried and why it was replaced (EXP-003 notes). Round 1 (temperature 0.0, no fallback) came first;
+# the `fb*` arms use faster-whisper's own decoding defaults: temperature fallback
+# (0, .2, ..., 1.0) retried on compression_ratio > 2.4 or avg_logprob < -1.0, no_speech 0.6.
+FALLBACK = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 CONFIGS: dict[str, dict[str, Any]] = {
-    "vad": {"vad": True},
-    "vad03": {"vad": True, "vad_parameters": {"threshold": 0.3}},
-    "novad": {"vad": False},
-    "novad-hst": {"vad": False, "hallucination_silence_threshold": 2.0},
+    "vad": {"vad": True, "min_prob": 0.0},
+    "vad03": {"vad": True, "min_prob": 0.0, "vad_parameters": {"threshold": 0.3}},
+    "novad": {"vad": False, "min_prob": 0.0},
+    "novad-hst": {"vad": False, "min_prob": 0.0, "hallucination_silence_threshold": 2.0},
     "novad-p50": {"vad": False, "min_prob": 0.5},
+    "fb": {"vad": False, "min_prob": 0.0, "temperature": FALLBACK},
+    "fb-cond": {
+        "vad": False,
+        "min_prob": 0.0,
+        "temperature": FALLBACK,
+        "condition_on_previous_text": True,
+    },
+    "fb-p50": {"vad": False, "min_prob": 0.5, "temperature": FALLBACK},
 }
-SHIPPED = "novad-p50"
+SHIPPED = "novad-p50"  # decided in the round-2 notes; config/pipeline.yaml records the same
 app = typer.Typer(no_args_is_help=True)
 
 
@@ -194,31 +206,28 @@ def _log(res: dict[str, Any], exp: str, variant: str) -> None:
 
     mlflow.set_tracking_uri(TRACKING_URI)
     mlflow.set_experiment("exp003-asr")
+    kinds = ("sub", "del", "ins")
     n_ref = sum(res[f]["ref_words"] for f in FILMS)
-    errs = sum(res[f][k] for f in FILMS for k in ("sub", "del", "ins"))
-    sub_del = sum(res[f][k] for f in FILMS for k in ("sub", "del"))
+    errs = sum(res[f][k] for f in FILMS for k in kinds)
     audio_s, wall = sum(res[f]["audio_s"] for f in FILMS), sum(res[f]["wall_s"] for f in FILMS)
     m = {
         "wer": errs / n_ref,
-        "sub_del_rate": sub_del / n_ref,  # WER without insertions (the SRT omits sung/shouted text)
-        "ins_words": float(sum(res[f]["ins"] for f in FILMS)),
+        "sub_del_rate": (errs - sum(res[f]["ins"] for f in FILMS))
+        / n_ref,  # WER without insertions
         "rtf": wall / audio_s,
         "peak_vram_mib": res["peak_vram_mib"],
         "load_s": res["load_s"],
     }
+    m |= {k: float(sum(res[f][k] for f in FILMS)) for k in kinds}
     for f in FILMS:
         m |= {f"wer_{f}": res[f]["wer"], f"rtf_{f}": res[f]["rtf"]}
+        m |= {f"{k}_{f}": float(res[f][k]) for k in kinds}
         m[f"sub_del_rate_{f}"] = (res[f]["sub"] + res[f]["del"]) / res[f]["ref_words"]
     with mlflow.start_run(run_name=f"{exp}-{variant}-{res['run']}"):
         mlflow.set_tags(
             {"exp": exp, "variant": variant, "seed": str(res["run"]), "labeller": "official-en-srt"}
         )
-        mlflow.log_params(
-            {
-                "config": res.get("config", "novad" if not res.get("vad", True) else "default"),
-                "model": res["variant"],
-            }
-        )
+        mlflow.log_params({"config": res["config"], "model": res["variant"]})
         mlflow.log_metrics(m)
 
 
@@ -233,6 +242,18 @@ def _clear(exp: str, variant: str) -> None:
         filter_string=f"tags.exp = '{exp}' and tags.variant = '{variant}'",
     ):
         client.delete_run(r.info.run_id)
+
+
+@app.command()
+def relog(runs: int = 3) -> None:
+    """Re-log every saved run JSON (adds the per-film sub/del/ins counts to older MLflow runs)."""
+    for config in CONFIGS:
+        for variant in VARIANTS:
+            files = [OUT / variant / f"run{n}{_sfx(config)}.json" for n in range(1, runs + 1)]
+            if all(f.exists() for f in files):
+                _clear("EXP-003", _label(variant, config))
+                for f in files:
+                    _log(json.loads(f.read_text()), "EXP-003", _label(variant, config))
 
 
 @app.command()

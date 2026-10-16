@@ -12,6 +12,8 @@ Alignment is deterministic, so there is one run per variant (seed 1). MLflow: "e
 """
 
 import json
+from fractions import Fraction
+from functools import cache
 from pathlib import Path
 from statistics import median
 from typing import Any
@@ -19,6 +21,7 @@ from typing import Any
 import typer
 
 from eval.exp.exp003_asr import SHIPPED
+from nip.ingest.media import probe
 from nip.ingest.pdf import parse_pdf
 from nip.ingest.script import Script, parse_fountain
 from nip.timeline.align import VARIANTS
@@ -27,6 +30,10 @@ from nip.timeline.asr import TranscriptSegment, TranscriptWord
 ROOT = Path(__file__).resolve().parents[2]
 TRACKING_URI = f"sqlite:///{(ROOT / 'data' / 'mlflow' / 'mlflow.db').as_posix()}"
 TOL = 12
+VIDEOS = [
+    "data/corpus/sintel/Sintel.2010.1080p.mkv",
+    "data/corpus/tears-of-steel/tears_of_steel_720p.mov",
+]
 SETS = {  # label set -> (film whose audio it is aligned to, script loader)
     "sintel": "sintel",
     "tears-of-steel": "tears-of-steel",
@@ -59,10 +66,18 @@ def load_transcript(asr: str, config: str, film: str) -> list[TranscriptSegment]
     ]
 
 
+@cache
+def _fps() -> Fraction:
+    """The films' frame rate from the probe (Sintel and Tears of Steel share one)."""
+    rates = {probe(ROOT / v).fps for v in VIDEOS}
+    assert len(rates) == 1, rates
+    return rates.pop()
+
+
 def score(variant: str, asr: str, config: str, cap_s: float | None = None) -> dict[str, float]:
     """Metrics for one alignment variant on one transcript set, all three label sets pooled.
-    `cap_s`: first-word cap in seconds (frames = cap_s x fps; both films are 24/1)."""
-    kw: dict[str, Any] = {} if cap_s is None else {"first_word_cap": round(cap_s * 24)}
+    `cap_s`: first-word cap in seconds (frames = cap_s x the probed fps)."""
+    kw: dict[str, Any] = {} if cap_s is None else {"first_word_cap": round(cap_s * _fps())}
     hit = total = placed = 0
     offs: list[int] = []
     out: dict[str, float] = {}

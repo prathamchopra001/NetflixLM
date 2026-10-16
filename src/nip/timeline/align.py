@@ -8,6 +8,7 @@ into scene ranges snapped to shot cuts; a scene with a lot of dialogue but no an
 """
 
 import json
+import logging
 import re
 from bisect import bisect_right
 from collections.abc import Callable, Sequence
@@ -15,7 +16,7 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from fractions import Fraction
 from pathlib import Path
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
 from rapidfuzz import fuzz
@@ -24,12 +25,17 @@ from nip.contracts import refs
 from nip.contracts.timeline import Timeline
 from nip.ingest import parse
 from nip.ingest.media import probe
-from nip.ingest.script import Script
+from nip.ingest.script import Element, Scene, Script
 from nip.timecode import frame_to_smpte
 from nip.timeline.asr import TranscriptSegment, TranscriptWord
 from nip.timeline.estimate import build_timeline
 from nip.timeline.picture import timeline_config
 
+if TYPE_CHECKING:
+    from nip.pipeline import EpisodeRun
+
+log = logging.getLogger(__name__)
+STAGE = "timeline.align"
 app = typer.Typer(no_args_is_help=True)
 
 LineKey = tuple[int, int]  # (scene index, element index) in script order
@@ -132,6 +138,8 @@ def align_lines(
     cursor = 0
     for k, toks in dialogue(script):
         line = " ".join(toks)
+        # Load-bearing lookahead: widening it to 1500 chars drops this variant from 0.51 to 0.29
+        # (EXP-004 review), because a far false match strands every later line.
         region = text[cursor : cursor + 400 + 6 * len(line)]
         if len(region) < len(line):
             continue
@@ -243,7 +251,7 @@ def align_episode(
     return align(script, segments, shots, duration_frames, cfg["variant"], **kw)
 
 
-def segment_lines(result: Alignment, segments: Sequence[TranscriptSegment]) -> list[LineKey | None]:
+def segment_lines(result: Alignment, segments: Sequence[Any]) -> list[LineKey | None]:
     """The line each transcript segment overlaps most (`transcript_segment.aligned_line_id`)."""
     out: list[LineKey | None] = []
     for s in segments:
@@ -273,13 +281,14 @@ def with_picture_timing(tl: Timeline, script: Script, result: Alignment) -> Time
         if p is None:
             spans.append(s)
         elif p.frames is None:
+            label = "unplaced" if p.in_cut else "not in cut"  # in_cut agrees with scene.in_cut
             spans.append(
                 s.model_copy(
                     update={
                         "frames": None,
                         "tc_in": None,
                         "tc_out": None,
-                        "scene": f"{s.ref} (not in cut)",
+                        "scene": f"{s.ref} ({label})",
                     }
                 )
             )
@@ -297,13 +306,34 @@ def with_picture_timing(tl: Timeline, script: Script, result: Alignment) -> Time
     return tl.model_copy(update={"spans": tuple(spans), "source": "picture"})
 
 
-def persist_alignment(
-    conn: Any, episode_id: int, result: Alignment, segments: Sequence[TranscriptSegment]
-) -> None:
-    """Write transcript segments, `script_line.frames`, `scene.frames` / `in_cut` and
-    `episode.timeline_source = 'picture'` for an ingested episode. Scenes and lines are matched to
-    `result` by position (scene id order, line `seq` order within a scene)."""
-    from sqlalchemy import delete, insert, select, update
+def load_script(conn: Any, episode_id: int) -> Script:
+    """The episode's script as ingested: scenes in id order, lines in `seq` order (speakers are
+    entity ids in the store and alignment does not need them)."""
+    from sqlalchemy import select
+
+    from nip.store.schema import scene, script_line
+
+    scenes = conn.execute(
+        select(scene.c.id, scene.c.script_scene_no, scene.c.heading)
+        .where(scene.c.episode_id == episode_id)
+        .order_by(scene.c.id)
+    ).all()
+    out = []
+    for r in scenes:
+        lines = conn.execute(
+            select(script_line.c.kind, script_line.c.text)
+            .where(script_line.c.scene_id == r.id)
+            .order_by(script_line.c.seq)
+        ).all()
+        out.append(Scene(r.script_scene_no, r.heading, [Element(k, t) for k, t in lines]))
+    return Script(None, out)
+
+
+def persist_alignment(conn: Any, episode_id: int, result: Alignment) -> None:
+    """Write `script_line.frames`, `scene.frames` / `in_cut`, `transcript_segment.aligned_line_id`
+    and `episode.timeline_source = 'picture'` for an ingested episode whose transcript is stored.
+    Scenes and lines are matched to `result` by position (scene id order, line `seq` order)."""
+    from sqlalchemy import select, update
     from sqlalchemy.dialects.postgresql import Range
 
     from nip.store.schema import episode, scene, script_line, transcript_segment
@@ -346,16 +376,63 @@ def persist_alignment(
                 .where(script_line.c.id == lid)
                 .values(frames=rng(m.frames if m else None))
             )
-    conn.execute(delete(transcript_segment).where(transcript_segment.c.episode_id == episode_id))
-    for s, key in zip(segments, segment_lines(result, segments), strict=True):
+    segs = conn.execute(
+        select(transcript_segment.c.id, transcript_segment.c.frames)
+        .where(transcript_segment.c.episode_id == episode_id)
+        .order_by(transcript_segment.c.id)
+    ).all()
+    keys = segment_lines(result, [_Frames((r.frames.lower, r.frames.upper)) for r in segs])
+    for r, key in zip(segs, keys, strict=True):
         conn.execute(
-            insert(transcript_segment).values(
-                **s.to_row(episode_id), aligned_line_id=line_ids.get(key) if key else None
-            )
+            update(transcript_segment)
+            .where(transcript_segment.c.id == r.id)
+            .values(aligned_line_id=line_ids.get(key) if key else None)
         )
     conn.execute(
         update(episode).where(episode.c.id == episode_id).values(timeline_source="picture")
     )
+
+
+@dataclass(frozen=True)
+class _Frames:
+    frames: tuple[int, int]
+
+
+def stage(ep: "EpisodeRun") -> None:
+    """Pipeline stage `timeline.align`: place the episode's script lines and scenes on the picture
+    axis from its stored transcript, the shots and the script, and set
+    `episode.timeline_source = 'picture'`. No stored transcript or no picture -> nothing to do.
+    Needs no model (the unit records no `model_variant`).
+
+    Wiring (W-int): `pipeline.add_stage("timeline.align", align.stage)`, after `timeline.asr`."""
+    from sqlalchemy import func, select
+
+    from nip.store import schema
+    from nip.timeline.asr import load_transcript
+
+    row = ep.conn.execute(select(schema.episode).where(schema.episode.c.id == ep.episode_id)).one()
+    segments = load_transcript(ep.conn, ep.episode_id)
+    if not segments or not row.fps_num:
+        return
+    with ep.unit(STAGE, ep.episode):
+        sh = schema.shot
+        shots = [
+            (r.frames.lower, r.frames.upper)
+            for r in ep.conn.execute(
+                select(sh.c.frames)
+                .where(sh.c.episode_id == ep.episode_id)
+                .order_by(func.lower(sh.c.frames), sh.c.id)
+            )
+        ]
+        result = align_episode(
+            load_script(ep.conn, ep.episode_id),
+            segments,
+            shots,
+            Fraction(row.fps_num, row.fps_den),
+            row.duration_frames,
+        )
+        persist_alignment(ep.conn, ep.episode_id, result)
+        log.info("%s %s: %d lines placed", STAGE, ep.episode, len(result.lines))
 
 
 @app.command("align")

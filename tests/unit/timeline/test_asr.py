@@ -75,15 +75,14 @@ def test_asr_cli_writes_transcript_json_and_merges_into_the_timeline_group(
     from nip.timeline import asr, picture
 
     stub = StubASR(segments=(Segment("hi", 500, 1500, (Word("hi", 500, 1500, 1.0),)),))
-    monkeypatch.setattr(asr, "make_asr", lambda *a, **k: stub)
+    monkeypatch.setattr(asr, "backend", lambda variant: stub)
     root = typer.Typer()
-    picture.app.add_typer(
-        asr.app
-    )  # the wiring line for cli.py (picture.app is mounted at `timeline`)
+    n = len(picture.app.registered_groups)
+    picture.app.add_typer(asr.app)  # the wiring line for cli.py (picture.app is at `timeline`)
     root.add_typer(picture.app, name="timeline")
     out = tmp_path / "t.json"
     r = CliRunner().invoke(root, ["timeline", "asr", str(clip), "--out", str(out)])
-    picture.app.registered_groups.clear()  # leave the shared app as it was
+    del picture.app.registered_groups[n:]  # leave the shared app as it was
     assert r.exit_code == 0, r.output
     (seg,) = json.loads(out.read_text())
     assert seg["frames"] == [12, 36] and seg["words"][0]["w"] == "hi"

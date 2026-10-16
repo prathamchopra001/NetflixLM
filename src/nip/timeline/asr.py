@@ -11,8 +11,9 @@ import subprocess
 import tempfile
 from dataclasses import asdict, dataclass
 from fractions import Fraction
+from functools import cache
 from pathlib import Path
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
 
@@ -21,6 +22,10 @@ from nip.runtime.clients.asr import ASR, Segment, make_asr
 from nip.timecode import ms_to_frame
 from nip.timeline.picture import timeline_config
 
+if TYPE_CHECKING:
+    from nip.pipeline import EpisodeRun
+
+STAGE = "timeline.asr"
 app = typer.Typer(no_args_is_help=True)
 
 
@@ -98,6 +103,85 @@ def transcribe_episode(
     return to_frames(segs, info.fps, lang)
 
 
+def asr_kwargs(cfg: dict[str, Any]) -> dict[str, Any]:
+    """FasterWhisperASR keyword arguments from the `timeline.asr` settings."""
+    return {"vad": cfg["vad"], "min_prob": cfg["min_prob"]} | dict(cfg.get("decode", {}))
+
+
+@cache
+def backend(variant: str) -> ASR:
+    """The ASR backend of a catalog variant with the `timeline.asr` settings (stub: no model)."""
+    from nip.runtime.catalog import load_catalog  # the catalog decides stub vs model
+
+    return make_asr(variant, load_catalog(), **asr_kwargs(timeline_config()["asr"]))
+
+
+def persist_transcript(conn: Any, episode_id: int, segments: list[TranscriptSegment]) -> None:
+    """Replace the episode's `transcript_segment` rows (aligned_line_id is set by alignment)."""
+    from sqlalchemy import delete, insert
+
+    from nip.store.schema import transcript_segment as t
+
+    conn.execute(delete(t).where(t.c.episode_id == episode_id))
+    if segments:
+        conn.execute(insert(t), [s.to_row(episode_id) for s in segments])
+
+
+def load_transcript(conn: Any, episode_id: int) -> list[TranscriptSegment]:
+    from sqlalchemy import select
+
+    from nip.store.schema import transcript_segment as t
+
+    return [
+        TranscriptSegment(
+            (r.frames.lower, r.frames.upper),
+            r.lang,
+            r.text,
+            tuple(TranscriptWord(**w) for w in r.words),
+        )
+        for r in conn.execute(
+            select(t.c.frames, t.c.lang, t.c.text, t.c.words)
+            .where(t.c.episode_id == episode_id)
+            .order_by(t.c.id)
+        )
+    ]
+
+
+def _fetch_video(ep: "EpisodeRun", dest: Path) -> Path:
+    """The episode's picture file from the media bucket, downloaded to `dest`."""
+    from sqlalchemy import select
+
+    from nip.store import objects, schema
+
+    sf = schema.source_file
+    key = ep.conn.execute(
+        select(sf.c.object_key).where(sf.c.episode_id == ep.episode_id, sf.c.kind == "picture")
+    ).scalar_one()
+    out = dest / Path(key).name
+    ep.s3.download_file(objects.media_bucket(), key, str(out))
+    return out
+
+
+def stage(ep: "EpisodeRun") -> None:
+    """Pipeline stage `timeline.asr`: transcribe the episode's audio with the Plan's `asr`
+    variant and store the frame-placed segments. No `asr` decision in the Plan (a script-only
+    run) or no picture ingested -> nothing to do. Re-running replaces the episode's transcript.
+
+    Wiring (W-int): `pipeline.add_stage("timeline.asr", asr.stage)`, then
+    `add_stage("timeline.align", align.stage)`, in this order."""
+    from nip.contracts import Slot
+
+    decision = ep.plan.decisions.get(Slot.ASR)
+    if decision is None:
+        return
+    cfg = timeline_config()["asr"]
+    with ep.unit(STAGE, ep.episode, model_variant=decision.variant):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = _fetch_video(ep, Path(tmp))
+            segs = transcribe_episode(video, backend(decision.variant), cfg["lang"])
+        persist_transcript(ep.conn, ep.episode_id, segs)
+
+
 @app.command("asr")
 def asr_command(
     video: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
@@ -109,9 +193,7 @@ def asr_command(
     cfg = timeline_config()["asr"]
     variant, lang = variant or cfg["variant"], lang or cfg["lang"]
     try:
-        segs = transcribe_episode(
-            video, make_asr(variant, vad=cfg["vad"], min_prob=cfg["min_prob"]), lang
-        )
+        segs = transcribe_episode(video, backend(variant), lang)
     except MediaRejected as e:
         typer.echo(f"INPUT_REJECTED: {e}", err=True)
         raise typer.Exit(1) from e

@@ -160,3 +160,15 @@ def test_short_unmatched_scene_stays_in_cut_and_shares_the_gap():
     lines = align_tokens(s, [seg("hello there", 100), seg("goodbye now", 700)])
     p = place_scenes(s, lines, [(0, 400), (400, 800)], 800)
     assert p[1].in_cut  # an ASR miss, not a cut scene; no gap, so no frames
+
+
+def test_a_frameless_scene_is_labelled_from_in_cut_not_always_not_in_cut():
+    from nip.timeline.estimate import build_timeline
+
+    s = script(["hello there"], ["Scales!"], ["this long speech never happens anywhere in the cut"])
+    res = align(s, [seg("hello there", 48)], [(0, 24), (24, 100)], 100)
+    assert [p.in_cut for p in res.scenes] == [True, True, False]
+    assert res.scenes[1].frames is None  # short and unmatched: an ASR miss with no gap to share
+    sc = with_picture_timing(build_timeline("EP1", s), s, res).of(EvidenceKind.SCENE)
+    assert "unplaced" in (sc[1].scene or "") and "not in cut" not in (sc[1].scene or "")
+    assert "not in cut" in (sc[2].scene or "")

@@ -109,3 +109,26 @@ def test_run_logs_plan_tags(files: tuple[Path, Path, Path]) -> None:
     assert run.data.tags["baseline"] == "true" and run.data.tags["objective"] == "quality"
     assert run.data.params["variant.text_llm"] == "qwen"
     assert len(run.data.tags["plan_fingerprint"]) == 16
+
+
+def test_compare_prints_every_metric_and_guards_groups(tmp_path: Path) -> None:
+    uri = f"sqlite:///{tmp_path / 'c.db'}"
+    client = mlflow.MlflowClient(uri)
+    exp_id = client.create_experiment("exp003")
+
+    def log(variant: str, seed: int, metrics: dict[str, float]) -> None:
+        tags = {"exp": "EXP-003", "variant": variant, "seed": str(seed)}
+        run_id = client.create_run(exp_id, tags=tags).info.run_id
+        for k, v in metrics.items():
+            client.log_metric(run_id, k, v)
+
+    for variant, seed, wer in [("v3", 1, 0.10), ("v3", 2, 0.20), ("turbo", 1, 0.30)]:
+        log(variant, seed, {"wer": wer, "rtf": 0.5})
+    r = runner.invoke(app, ["compare", "--exp", "EXP-003", "--tracking-uri", uri])
+    assert r.exit_code == 0, r.output
+    assert "| wer | 0.15 ± 0.07 | 0.30 |" in r.output and "| rtf | 0.50 ± 0.00 | 0.50 |" in r.output
+    assert runner.invoke(app, ["compare", "--exp", "x' OR '1", "--tracking-uri", uri]).exit_code
+    assert runner.invoke(app, ["compare", "--exp", "EXP-003", "--subset", "shwn"]).exit_code
+    log("v3", 1, {"wer": 0.9})  # a stale re-run of seed 1 would be averaged in silently
+    r = runner.invoke(app, ["compare", "--exp", "EXP-003", "--tracking-uri", uri])
+    assert r.exit_code == 1 and "variant v3" in r.output

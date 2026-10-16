@@ -5,11 +5,13 @@ Wire into the root CLI with:  app.add_typer(eval_app, name="eval")  (from eval.r
 
 import hashlib
 import json
+import re
 import statistics
 import subprocess
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+from secrets import token_hex
 from typing import Annotated, Any
 
 import typer
@@ -111,7 +113,8 @@ def run(
     )
 
     commit = _commit()
-    run_id = f"{set_}-s{seed}-{datetime.now(UTC):%Y%m%dT%H%M%S}"
+    # variant + random suffix: seeds and variants started in the same second never collide
+    run_id = f"{set_}-s{seed}-{datetime.now(UTC):%Y%m%dT%H%M%S}-{variant or 'base'}-{token_hex(2)}"
     tags = {
         "commit": commit,
         "seed": str(seed),
@@ -200,14 +203,19 @@ def compare_table(groups: dict[str, list[Any]], subset: str = "shown") -> str:
             " / ".join(_fmt(vals(groups[n], f"{subset}/{m}/{scope}")) for m in PRF) for n in names
         )
         rows.append([f"{label} P / R / F1", *cells])
-    for label, key in [
+    fixed = [
         ("Noise: shown FP per content-hour", "noise/fp_per_hour"),
         ("Verification: FPs dropped", "verification/fp_dropped_rate"),
         ("Verification: TPs dropped", "verification/tp_dropped_rate"),
         ("GPU-s per content-hour", "cost/gpu_s_per_hour"),
         ("Wall s per content-hour", "cost/wall_s_per_hour"),
         ("Coverage", "coverage"),
-    ]:
+    ]
+    shown = {k for _, k in fixed} | {
+        f"{subset}/{m}/{scope}" for m in PRF for scope in ["all", *(f"check/{c}" for c in checks)]
+    }
+    # R10: every other logged metric (experiment numbers such as WER or RTF) gets its own row
+    for label, key in fixed + [(k, k) for k in sorted(metrics - shown)]:
         rows.append([label, *(_fmt(vals(groups[n], key)) for n in names)])
     rows.append(["MLflow runs", *(", ".join(r.info.run_id for r in groups[n]) for n in names)])
     return (
@@ -230,6 +238,10 @@ def compare(
     """Comparison table from MLflow runs; runs sharing a variant tag are seeds of one column."""
     if bool(exp) == bool(runs):
         raise typer.BadParameter("give exactly one of --exp or --runs")
+    if subset not in ("shown", "all"):
+        raise typer.BadParameter("--subset is shown or all")
+    if exp and not re.fullmatch(r"[\w.-]+", exp):  # it goes into an MLflow filter string
+        raise typer.BadParameter(f"--exp {exp!r}: letters, digits, '.', '-', '_' only")
     from mlflow import MlflowClient
 
     client = MlflowClient(tracking_uri)
@@ -246,4 +258,15 @@ def compare(
     groups: dict[str, list[Any]] = defaultdict(list)
     for r in sorted(found, key=lambda r: r.info.start_time):
         groups[r.data.tags.get("variant") or r.info.run_id].append(r)
+    for name, rs in groups.items():  # a column averages seeds of one setup, nothing else
+        seeds = Counter(r.data.tags.get("seed") for r in rs)
+        plans = {r.data.tags.get("plan_fingerprint") for r in rs}
+        if max(seeds.values()) > 1 or len(plans) > 1:
+            dup = ", ".join(r.info.run_id for r in rs)
+            typer.echo(
+                f"variant {name}: runs {dup} repeat a seed or differ in plan; delete the stale "
+                "runs or pick them with --runs",
+                err=True,
+            )
+            raise typer.Exit(1)
     typer.echo(compare_table(groups, subset))

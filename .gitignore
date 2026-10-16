@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 .vagrant/
-models/
+/models/
 *.egg-info/
 node_modules/
 dist/
@@ -12,5 +12,8 @@ build/
 .venv/
 .pytest_cache/
 .mypy_cache/
-data/
+.ruff_cache/
+.coverage
+/data/
 *.log
+.superpowers/

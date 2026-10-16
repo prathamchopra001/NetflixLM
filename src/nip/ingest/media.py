@@ -120,11 +120,29 @@ def parse_probe(path: str, data: dict[str, Any]) -> MediaInfo:
     )
 
 
+PROBE_TIMEOUT_S = 60  # ffprobe reads headers only; a file that takes longer is refused
+
+
 def probe(path: str | Path) -> MediaInfo:
-    out = subprocess.run(
-        [_ffprobe_exe(), "-v", "error", "-show_format", "-show_streams", "-of", "json", str(path)],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout
-    return parse_probe(str(path), json.loads(out))
+    """MediaInfo of `path`. MediaRejected for any file ffprobe or `parse_probe` cannot read;
+    RuntimeError when ffprobe itself is missing (a broken install, not a bad input)."""
+    exe = _ffprobe_exe()
+    try:
+        out = subprocess.run(
+            [exe, "-v", "error", "-show_format", "-show_streams", "-of", "json", str(path)],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=PROBE_TIMEOUT_S,
+        ).stdout
+        return parse_probe(str(path), json.loads(out))
+    except FileNotFoundError as e:
+        raise RuntimeError(f"ffprobe not found ({exe}): install FFmpeg (D-027)") from e
+    except subprocess.CalledProcessError as e:
+        raise MediaRejected(f"{path}: ffprobe cannot read it: {(e.stderr or '').strip()}") from e
+    except subprocess.TimeoutExpired as e:
+        raise MediaRejected(f"{path}: ffprobe timed out after {PROBE_TIMEOUT_S} s") from e
+    except MediaRejected:
+        raise
+    except (ValueError, KeyError, TypeError) as e:  # bad JSON, missing field, odd timecode tag
+        raise MediaRejected(f"{path}: unreadable probe data: {e!r}") from e

@@ -13,8 +13,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Collection
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import ClassVar
+from typing import Any, ClassVar
 
+from nip.contracts import refs
 from nip.contracts.flag import (
     CHECK_OWNER,
     CheckId,
@@ -43,8 +44,12 @@ class Input(StrEnum):
 
 @dataclass(frozen=True)
 class WorkUnit:
+    """`spans` (checked) + `context` (read only) are everything `run` may read from the timeline,
+    so together with the check's `version` and `params()` they are the unit's cache-key inputs."""
+
     key: str  # work_unit.unit_key, e.g. "S01E03/es-419/200-219"
-    spans: tuple[Span, ...]  # the timeline objects this unit reads
+    spans: tuple[Span, ...]  # the timeline objects this unit checks
+    context: tuple[Span, ...] = ()  # objects it also reads but does not check (the cue before)
 
 
 @dataclass
@@ -63,6 +68,10 @@ class Finding:
 class Check(ABC):
     check: ClassVar[CheckId]
     requires: ClassVar[frozenset[Input]]  # ● inputs; the check runs only when all exist
+    version: ClassVar[str]  # bump when the check's logic changes (stage-cache key)
+    # Verification step 2 re-checks rule-originated flags; a rule check without `recheck` has
+    # every flag dropped there (fail closed). LLM / vision checks set this False.
+    rule_originated: ClassVar[bool] = True
 
     @classmethod
     def active(cls, available: Collection[Input]) -> bool:
@@ -74,15 +83,26 @@ class Check(ABC):
     @abstractmethod
     def run(self, unit: WorkUnit, tl: Timeline) -> list[Finding]: ...
 
+    def params(self) -> dict[str, Any]:
+        """Configuration the findings depend on (rule packs, thresholds): stage-cache key input."""
+        return {}
+
+    def recheck(self, flag: Flag, tl: Timeline) -> bool | None:
+        """Rule re-check: does `flag` still reproduce on `tl`? None: this check has none."""
+        return None
+
 
 def cue_windows(tl: Timeline, lang: str, size: int = 20) -> list[WorkUnit]:
-    """Windows of `size` consecutive cues of one track, keyed `{ep}/{lang}/{first}-{last}`."""
+    """Windows of `size` consecutive cues of one track, keyed `{ep}/{lang}/{first}-{last}`.
+
+    The cue before each window is its read-only context (gap and overlap rules compare with it).
+    """
     cues = tl.of(EvidenceKind.SUBTITLE_CUE, lang)
     out = []
     for i in range(0, len(cues), size):
         w = tuple(cues[i : i + size])
-        first, last = (c.ref.rsplit("/", 1)[1] for c in (w[0], w[-1]))
-        out.append(WorkUnit(f"{tl.episode}/{lang}/{first}-{last}", w))
+        first, last = (refs.parse(c.ref).id for c in (w[0], w[-1]))
+        out.append(WorkUnit(f"{tl.episode}/{lang}/{first}-{last}", w, tuple(cues[i - 1 : i])))
     return out
 
 

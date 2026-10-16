@@ -15,6 +15,7 @@ import yaml
 
 from nip.agents.base import Check, Finding, Input, WorkUnit, cue_windows
 from nip.config import config_dir
+from nip.contracts import refs
 from nip.contracts.flag import CheckId, Evidence, EvidenceKind, EvidenceRole, Flag
 from nip.contracts.timeline import Span, Timeline
 
@@ -77,6 +78,7 @@ def violations(
 class Readability(Check):
     check = CheckId.LOC_READABILITY
     requires = frozenset({Input.SOURCE_SUBS, Input.TARGET_SUBS})
+    version = "1"
 
     def __init__(self, langs: Iterable[str], audience: str = "adult", root: Path | None = None):
         self.audience = audience
@@ -88,13 +90,22 @@ class Readability(Check):
     def units(self, tl: Timeline) -> list[WorkUnit]:
         return [u for lang in self.rules for u in cue_windows(tl, lang)]
 
-    def run(self, unit: WorkUnit, tl: Timeline) -> list[Finding]:
-        return [f for cue in unit.spans if (f := self.finding(cue, tl)) is not None]
+    def params(self) -> dict[str, Any]:
+        return {"audience": self.audience, "rules": self.rules}
 
-    def finding(self, cue: Span, tl: Timeline) -> Finding | None:
+    def run(self, unit: WorkUnit, tl: Timeline) -> list[Finding]:
+        out = []
+        prev = unit.context[-1] if unit.context else None  # the cue before the window
+        for cue in unit.spans:
+            if (f := self.finding(cue, prev, tl)) is not None:
+                out.append(f)
+            prev = cue
+        return out
+
+    def finding(self, cue: Span, prev: Span | None, tl: Timeline) -> Finding | None:
+        """Violations of `cue`; `prev` is the cue before it in its track (None for the first)."""
         assert cue.lang is not None
-        ep_lang, idx = cue.ref.rsplit("/", 1)
-        prev = tl.resolve(f"{ep_lang}/{int(idx) - 1}")  # the cue before it in the file
+        idx = refs.parse(cue.ref).id
         fps = Fraction(*tl.fps)
         found = violations(cue, prev, self.rules[cue.lang], fps, self.audience)
         if not found:
@@ -122,5 +133,7 @@ class Readability(Check):
         cue = tl.resolve(claim.ref)
         if cue is None or cue.kind is not EvidenceKind.SUBTITLE_CUE or cue.lang not in self.rules:
             return False
-        f = self.finding(cue, tl)
+        track = tl.of(EvidenceKind.SUBTITLE_CUE, cue.lang)
+        i = next(i for i, c in enumerate(track) if c is cue)
+        f = self.finding(cue, track[i - 1] if i else None, tl)
         return f is not None and f.title == flag.title

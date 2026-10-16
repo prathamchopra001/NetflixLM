@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from nip.ingest.bible import Bible, parse_bible
-from nip.ingest.common import Issue, Parsed, decode_text
+from nip.ingest.common import Issue, Parsed, decode_text, fail
 from nip.ingest.pdf import parse_pdf
 from nip.ingest.script import Element, Scene, Script, parse_fdx, parse_fountain
 from nip.ingest.subtitles import Cue, SubtitleTrack, parse_srt, parse_ttml, parse_vtt
@@ -28,9 +28,18 @@ CSV_PARSERS: dict[str, Callable[[bytes], Parsed[Any]]] = {
 
 
 def parse(fmt: str, data: bytes, kind: str | None = None) -> Parsed[Any]:
-    """Parse + validate one source file by its `format` (and `kind`, for csv)."""
-    fn = CSV_PARSERS[kind or ""] if fmt == "csv" else PARSERS[fmt]
-    return fn(data)
+    """Parse + validate one source file by its `format` (and `kind`, for csv).
+
+    ValueError for an unknown format/kind (a caller bug); anything a parser raises on hostile or
+    corrupt input becomes a validation error, so the door never raises on file content.
+    """
+    fn = CSV_PARSERS.get(kind or "") if fmt == "csv" else PARSERS.get(fmt)
+    if fn is None:
+        raise ValueError(f"no parser for format {fmt!r}" + (f", kind {kind!r}" if kind else ""))
+    try:
+        return fn(data)
+    except Exception as e:  # the parsers' promise: content problems are Issues, not exceptions
+        return fail(f"cannot parse {fmt}: {type(e).__name__}: {e}")
 
 
 __all__ = [

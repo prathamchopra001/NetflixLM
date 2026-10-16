@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 from nip.ingest import parse, parse_fdx, parse_fountain, parse_pdf
 
 FIXTURES = Path(__file__).parents[2] / "fixtures" / "ingest"
@@ -161,3 +163,18 @@ def test_pdf_scene_numbers_in_gutters_do_not_shift_the_margin():
         ),
         ("12A", "EXT. YARD - NIGHT", [("action", None, "Rain.")]),
     ]
+
+
+def test_parse_door_never_raises_on_content(monkeypatch: pytest.MonkeyPatch) -> None:
+    import nip.ingest as ingest
+
+    def boom(data: bytes) -> object:
+        raise KeyError("ttconv internals")
+
+    monkeypatch.setitem(ingest.PARSERS, "ttml", boom)
+    p = parse("ttml", b"<tt/>")
+    assert not p.ok and "KeyError" in p.errors[0].reason
+    with pytest.raises(ValueError, match="no parser for format 'docx'"):
+        parse("docx", b"")
+    with pytest.raises(ValueError, match="kind 'bible'"):
+        parse("csv", b"", kind="bible")

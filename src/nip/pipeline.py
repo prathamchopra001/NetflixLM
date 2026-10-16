@@ -23,7 +23,7 @@ from nip.agents.localization.readability import Readability
 from nip.contracts.flag import Agent, ProducedBy
 from nip.contracts.plan import Mode
 from nip.contracts.report import ReportPlan, build_report
-from nip.ingest import parse
+from nip.ingest import Script, SubtitleTrack, parse
 from nip.ingest.media import MediaRejected, probe
 from nip.timeline.estimate import build_timeline
 from nip.timeline.picture import analyze_picture
@@ -47,8 +47,8 @@ class InputRejected(ValueError):
     """A source file refused at the door (api-contracts.md INPUT_REJECTED)."""
 
 
-def ingest(path: Path) -> Any:
-    """Parse + validate one source file, chosen by extension; warnings are logged."""
+def ingest[T](path: Path, want: type[T]) -> T:
+    """Parse + validate one source file, chosen by extension, as a `want`; warnings are logged."""
     fmt = FORMATS.get(path.suffix.lower())
     if fmt is None:
         raise InputRejected(f"{path.name}: unsupported format {path.suffix!r}")
@@ -58,6 +58,8 @@ def ingest(path: Path) -> Any:
     if not p.ok:
         e = p.errors[0]
         raise InputRejected(f"{path.name}: {e.reason}" + (f" (line {e.line})" if e.line else ""))
+    if not isinstance(p.data, want):  # e.g. --script given a subtitle file
+        raise InputRejected(f"{path.name}: a {fmt} file is not a {want.__name__}")
     return p.data
 
 
@@ -86,11 +88,11 @@ def run_pipeline(
         stages.append({"stage": name, "wall_s": round(time.perf_counter() - t, 4)})
 
     with stage("ingest"):
-        scr = ingest(script)
+        scr = ingest(script, Script)
         dup = sorted(n for n, k in Counter(s.number for s in scr.scenes).items() if k > 1)
         if dup:
             raise InputRejected(f"{script.name}: duplicate scene numbers {dup}; renumber them")
-        tracks = {lang: ingest(p) for lang, p in subs.items()}
+        tracks = {lang: ingest(p, SubtitleTrack) for lang, p in subs.items()}
         try:
             media = probe(video) if video else None
         except MediaRejected as e:
@@ -131,7 +133,7 @@ def run_pipeline(
         flags = [] if skipped else run_check(check, tl, run_id, pb)
 
     with stage("verification"):
-        kept, dropped = verify(flags, tl, {check.check: check.recheck})
+        kept, dropped = verify(flags, tl, [check])
 
     with stage("report"):
         report = build_report(
@@ -173,7 +175,9 @@ def run(
     source_lang: Annotated[str, typer.Option(help="Language of the source track")] = "en",
     video: Annotated[Path | None, typer.Option(exists=True, dir_okay=False)] = None,
     picture: Annotated[
-        Path | None, typer.Option(exists=True, help="picture.json from `nip timeline picture`")
+        Path | None, typer.Option(
+            exists=True, dir_okay=False, help="picture.json from `nip timeline picture`"
+        )
     ] = None,
 ) -> None:
     """Run the walking skeleton (loc.readability) on one episode's files."""

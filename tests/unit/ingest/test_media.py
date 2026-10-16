@@ -99,3 +99,66 @@ def test_probe_rejects_real_vfr_file(tmp_path: Path) -> None:
     )  # fmt: skip
     with pytest.raises(MediaRejected, match="variable frame rate"):
         probe(clip)
+
+
+@pytest.mark.skipif(not shutil.which("ffprobe"), reason="no ffprobe")
+def test_probe_rejects_corrupt_file(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.mp4"
+    bad.write_bytes(b"\x00not a video" * 100)
+    with pytest.raises(MediaRejected, match="ffprobe cannot read it"):
+        probe(bad)
+
+
+def _ffprobe_prints(monkeypatch: pytest.MonkeyPatch, stdout: str) -> None:
+    def run(cmd: list[str], **kw: object) -> subprocess.CompletedProcess[str]:
+        assert kw["timeout"]  # a pathological file cannot hang ingest
+        return subprocess.CompletedProcess(cmd, 0, stdout, "")
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+
+@pytest.mark.parametrize(
+    ("stdout", "match"),
+    [
+        ("not json", "unreadable probe data"),
+        ('{"streams": [{"codec_type": "video", "r_frame_rate": "24", "nb_frames": "9"}]}', "wid"),
+        ('{"streams": [{"codec_type": "video", "r_frame_rate": "x/1"}]}', "unreadable"),
+        ('{"streams": [{"codec_type": "audio"}]}', "no video stream"),
+    ],
+)
+def test_probe_maps_bad_output_to_rejection(
+    monkeypatch: pytest.MonkeyPatch, stdout: str, match: str
+) -> None:
+    _ffprobe_prints(monkeypatch, stdout)
+    with pytest.raises(MediaRejected, match=match):
+        probe("a.mp4")
+
+
+def test_probe_odd_timecode_tag_is_a_rejection(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    v = {**VIDEO, "r_frame_rate": "25/1", "avg_frame_rate": "25/1",
+         "tags": {"timecode": "01:00:00;00"}}  # fmt: skip
+    _ffprobe_prints(monkeypatch, json.dumps({"streams": [v]}))
+    with pytest.raises(MediaRejected, match="unreadable probe data"):
+        probe("a.mp4")
+
+
+def test_probe_timeout_is_a_rejection(monkeypatch: pytest.MonkeyPatch) -> None:
+    def run(cmd: list[str], **kw: object) -> None:
+        raise subprocess.TimeoutExpired(cmd, 60)
+
+    monkeypatch.setattr(subprocess, "run", run)
+    with pytest.raises(MediaRejected, match="timed out"):
+        probe("a.mp4")
+
+
+def test_missing_ffprobe_is_a_setup_error_not_a_rejection(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import nip.ingest.media as media
+
+    monkeypatch.setattr(media, "_ffprobe_exe", lambda: str(tmp_path / "no-ffprobe"))
+    with pytest.raises(RuntimeError, match="ffprobe not found") as e:
+        probe(tmp_path / "a.mp4")
+    assert not isinstance(e.value, MediaRejected)

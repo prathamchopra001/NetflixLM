@@ -90,3 +90,21 @@ def test_cli_run_writes_report(tmp_path: Path) -> None:
     res = CliRunner().invoke(app, [*args, "--subs", f"en={f['en']}", "--subs", f"es={f['es']}"])
     assert res.exit_code == 0, res.output
     assert json.loads(res.output)["flags_kept"] == 2
+
+
+def test_files_must_fit_their_role(tmp_path: Path) -> None:
+    f = _files(tmp_path)
+    with pytest.raises(InputRejected, match="en.srt: a srt file is not a Script"):
+        run_pipeline(episode="E1", script=f["en"], subs={}, source_lang="en", out_dir=tmp_path)
+    with pytest.raises(InputRejected, match="s.fountain: a fountain file is not a SubtitleTrack"):
+        run_pipeline(
+            episode="E1", script=f["script"], subs={"es": f["script"]}, source_lang="en",
+            out_dir=tmp_path,
+        )  # fmt: skip
+
+
+def test_cli_picture_must_be_a_file(tmp_path: Path) -> None:
+    f = _files(tmp_path)
+    args = ["run", "--episode", "E1", "--script", str(f["script"]), "--out-dir", str(tmp_path)]
+    res = CliRunner().invoke(app, [*args, "--subs", f"en={f['en']}", "--picture", str(tmp_path)])
+    assert res.exit_code == 2 and "is a directory" in res.output

@@ -47,10 +47,14 @@ def _rows(
     p.warnings += [f"Unknown column '{c}'" for c in header if c not in required + optional]
     reader.fieldnames = header
     out = []
-    for row in reader:
-        if None in row:
-            p.errors.append(Issue("Row has more fields than the header", reader.line_num))
-        out.append((reader.line_num, {k: (v or "").strip() for k, v in row.items() if k}))
+    try:
+        for row in reader:
+            if None in row:
+                p.errors.append(Issue("Row has more fields than the header", reader.line_num))
+            out.append((reader.line_num, {k: (v or "").strip() for k, v in row.items() if k}))
+    except csv.Error as e:  # raised mid-iteration (e.g. a field over the size limit)
+        p.errors.append(Issue(str(e), reader.line_num + 1))  # the record being read
+        return []
     return [(n, r) for n, r in out if any(r.values())]
 
 

@@ -5,15 +5,25 @@ routing/dedup steps come with the first LLM-originated check.
 """
 
 import logging
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Iterable
+from typing import Protocol
 
 from nip.contracts.flag import CheckId, Flag
 from nip.contracts.timeline import Timeline
 
 log = logging.getLogger(__name__)
 
-# A rule-originated check's re-check: True when the finding still reproduces on `tl`.
-Recheck = Callable[[Flag, Timeline], bool]
+
+class Verifiable(Protocol):
+    """What verification needs from a check (`nip.agents.base.Check` has it; no agents import)."""
+
+    @property
+    def check(self) -> CheckId: ...
+
+    @property
+    def rule_originated(self) -> bool: ...
+
+    def recheck(self, flag: Flag, tl: Timeline) -> bool | None: ...
 
 
 def evidence_problem(flag: Flag, tl: Timeline) -> str | None:
@@ -33,20 +43,34 @@ def evidence_problem(flag: Flag, tl: Timeline) -> str | None:
     return None
 
 
+def recheck_problem(flag: Flag, tl: Timeline, check: Verifiable | None) -> str | None:
+    """Step 2, failing closed: why a rule-originated flag does not reproduce on `tl`, or None."""
+    if check is None:
+        return f"no {flag.check} check was given to verification"
+    ok = check.recheck(flag, tl)
+    if ok is None:
+        return f"rule-originated check {flag.check} has no rule re-check"
+    return None if ok else "rule re-check no longer reproduces the finding"
+
+
 def verify(
-    flags: Iterable[Flag], tl: Timeline, rechecks: Mapping[CheckId, Recheck]
+    flags: Iterable[Flag], tl: Timeline, checks: Iterable[Verifiable]
 ) -> tuple[list[Flag], list[tuple[Flag, str]]]:
-    """(kept flags, [(dropped flag, reason)]); both carry their `verification` results."""
+    """(kept flags, [(dropped flag, reason)]); both carry their `verification` results.
+
+    `checks` are the checks that produced `flags`: a flag whose check is missing, or whose
+    rule-originated check has no `recheck`, is dropped.
+    """
+    by_id = {c.check: c for c in checks}
     kept: list[Flag] = []
     dropped: list[tuple[Flag, str]] = []
     for f in flags:
         reason = evidence_problem(f, tl)
-        recheck = rechecks.get(f.check)
         v = {"evidence": "fail" if reason else "pass", "rule_recheck": "n/a"}
-        if reason is None and recheck is not None:
-            v["rule_recheck"] = "pass" if recheck(f, tl) else "fail"
-            if v["rule_recheck"] == "fail":
-                reason = "rule re-check no longer reproduces the finding"
+        check = by_id.get(f.check)
+        if reason is None and (check is None or check.rule_originated):
+            reason = recheck_problem(f, tl, check)
+            v["rule_recheck"] = "fail" if reason else "pass"
         f = f.model_copy(update={"verification": f.verification.model_copy(update=v)})
         if reason is None:
             kept.append(f)

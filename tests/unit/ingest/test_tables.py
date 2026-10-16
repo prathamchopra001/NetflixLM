@@ -59,3 +59,9 @@ def test_status_case_and_duplicates_warn_and_blank_rows_skipped():
 def test_dispatch_by_kind():
     assert parse("csv", (FIXTURES / "glossary.csv").read_bytes(), "glossary").data[0].term == "Wren"
     assert parse("csv", (FIXTURES / "clearance_log.csv").read_bytes(), "clearance_log").ok
+
+
+def test_csv_error_mid_file_is_a_validation_error() -> None:
+    p = parse_glossary("term,lang,approved_rendering\nok,es,bien\n" + "x" * 200_000 + ",es,y\n")
+    assert not p.ok and "field larger than field limit" in p.errors[0].reason
+    assert p.errors[0].line == 3

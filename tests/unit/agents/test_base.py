@@ -13,6 +13,7 @@ from nip.agents.base import (
     run_check,
     tier_for,
 )
+from nip.agents.localization.readability import Readability, rule_pack
 from nip.contracts.flag import (
     Agent,
     Category,
@@ -23,7 +24,7 @@ from nip.contracts.flag import (
     ProducedBy,
     Tier,
 )
-from nip.contracts.timeline import Timeline
+from nip.contracts.timeline import Span, Timeline
 from nip.ingest import parse_srt
 from nip.ingest.media import MediaInfo
 from nip.ingest.script import Element, Scene, Script
@@ -153,3 +154,41 @@ def test_frames_follow_the_timeline_rate() -> None:
         Finding(2, 0.5, "t", "e", [_cue_ev("E1/en/1")]), CheckId.LOC_READABILITY, tl, "r", PB
     )
     assert flag and flag.evidence[0].frames == (25, 50) and flag.tier is Tier.SUPPRESSED
+
+
+def test_cue_windows_carry_the_cue_before_as_context(tl: Timeline) -> None:
+    units = cue_windows(tl, "es-419")
+    assert [[c.ref for c in u.context] for u in units] == [
+        [],
+        ["S01E03/es-419/20"],
+        ["S01E03/es-419/40"],
+    ]
+
+
+# Every Check class, with a timeline it flags on. New checks add themselves here.
+CHECKS: list[tuple[Check, str]] = [(Readability(["es"]), "es")]
+
+
+@pytest.mark.parametrize(("check", "lang"), CHECKS, ids=lambda c: str(getattr(c, "check", c)))
+def test_a_unit_lists_everything_its_check_reads(check: Check, lang: str) -> None:
+    """Lint for stage-cache keys: run on a timeline holding only the unit's spans + context, a
+    check finds exactly what it finds on the whole timeline."""
+    cues = [  # 1-frame gaps everywhere: every cue's verdict depends on the cue before it
+        Span(kind=EvidenceKind.SUBTITLE_CUE, ref=f"E1/{lang}/{i}", frames=(50 * i, 50 * i + 49),
+             lang=lang, text="Hola.")
+        for i in range(1, 46)
+    ]  # fmt: skip
+    tl = Timeline(episode="E1", fps=(24, 1), duration_frames=10_000, spans=cues)
+    units = check.units(tl)
+    assert len(units) > 1
+    for unit in units:
+        alone = tl.model_copy(update={"spans": unit.context + unit.spans})
+        assert check.run(unit, alone) == check.run(unit, tl) != []
+
+
+def test_readability_cache_inputs() -> None:
+    check = Readability(["es"], audience="children")
+    assert check.version and check.params() == {
+        "audience": "children",
+        "rules": {"es": rule_pack("es")["readability"]},
+    }

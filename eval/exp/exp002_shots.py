@@ -1,10 +1,16 @@
 """EXP-002: TransNetV2 vs PySceneDetect (ContentDetector, AdaptiveDetector) on real film cuts.
 
-Re-run:  uv run python -m eval.exp.exp002_shots run          (defaults -> MLflow -> tables)
-         uv run python -m eval.exp.exp002_shots sweep        (threshold sweeps; tuned on the labels)
-         uv run python -m eval.exp.exp002_shots candidates   (low-threshold union for label seeding)
+Re-run, in this order (all MLflow runs go to data/mlflow/mlflow.db, experiment "exp002-shots"):
+  run --repeat 3   defaults of the three variants on both films, timed 3x (tag exp=EXP-002-<film>)
+  sweep            threshold grids on Sintel + the best setting per family ("<family>-tuned")
+  split            2-fold held-out check ("<family>-heldout"; reads the sweep results from data/)
+  resize-test      TorchCodec vs ffmpeg 48x27 resize filters (tag exp=EXP-002-sintel-resize)
+  table --exp EXP-002-sintel   comparison table (eval.report.compare_table) for everything above
+  candidates       low-threshold detector union used to seed the labels (label_sheets.py draws it)
 Each (film, variant) is measured in a fresh subprocess so peak RAM is that run's own.
 Cuts are 0-based frame indexes of the first frame of the new shot; results land in data/exp002/.
+Metric names follow eval.metrics.evaluate() so eval.report.compare_table reads them, but here
+`shown/*` is the headline with masked windows (dissolves, credits...) dropped, `unmasked/*` is not.
 """
 
 import json
@@ -224,6 +230,69 @@ def _spawn(film: str, variant: str, params: dict[str, Any], tag: str, out: Path)
     return json.loads((d / film / f"{variant}.json").read_text(encoding="utf-8"))  # type: ignore[no-any-return]
 
 
+def _setting(params: dict[str, Any]) -> str:
+    return ",".join(f"{k}={v}" for k, v in params.items()) or "default"
+
+
+def _clear(exp: str, variant: str) -> None:
+    """Delete earlier MLflow runs with these tags so re-running a command does not duplicate."""
+    import mlflow
+    from mlflow import MlflowClient
+
+    mlflow.set_tracking_uri(TRACKING_URI)
+    mlflow.set_experiment("exp002-shots")
+    client = MlflowClient(TRACKING_URI)
+    eid = client.get_experiment_by_name("exp002-shots").experiment_id  # type: ignore[union-attr]
+    for r in client.search_runs(
+        [eid], filter_string=f"tags.exp = '{exp}' and tags.variant = '{variant}'"
+    ):
+        client.delete_run(r.info.run_id)
+
+
+def _log(
+    exp: str, variant: str, params: dict[str, Any], metrics: dict[str, float], clear: bool = True
+) -> None:
+    """One MLflow run tagged exp/variant (replacing earlier ones with the same tags if `clear`)."""
+    import mlflow
+
+    if clear:
+        _clear(exp, variant)
+    mlflow.set_tracking_uri(TRACKING_URI)
+    mlflow.set_experiment("exp002-shots")
+    labeller = json.loads(LABELS.read_text(encoding="utf-8"))["labeller"]
+    with mlflow.start_run(run_name=f"{exp}-{variant}"):
+        mlflow.set_tags({"exp": exp, "variant": variant, "labeller": labeller})
+        mlflow.log_params({k: str(v) for k, v in params.items()})
+        mlflow.log_metrics(metrics)
+
+
+def _sweep_points(out: Path, film: str) -> dict[str, list[tuple[dict[str, Any], list[int], float]]]:
+    """Per family: every sweep setting as (params, cuts, s per video-minute or nan).
+
+    TransNetV2 settings come from the saved per-frame probabilities (no re-run needed); the
+    PySceneDetect ones from the sweep-* result files that `sweep` writes.
+    """
+    import numpy as np
+
+    from nip.timeline.shots import cuts_from_predictions
+
+    fams: dict[str, list[tuple[dict[str, Any], list[int], float]]] = {
+        "transnetv2": [],
+        "content": [],
+        "adaptive": [],
+    }
+    probs = np.load(out / film / "transnetv2_probs.npy")
+    for thr in (0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9):
+        fams["transnetv2"].append(
+            ({"threshold": thr}, cuts_from_predictions(probs, thr), float("nan"))
+        )
+    runs = sorted((out / "runs").glob(f"sweep-*/{film}/*.json"), key=lambda f: int(f.parts[-3][6:]))
+    for f in runs:
+        r = json.loads(f.read_text())
+        fams[r["variant"]].append((r["params"], r["cuts"], r["s_per_video_min"]))
+    return fams
+
+
 # ---- commands ------------------------------------------------------------------------------
 @app.command()
 def run(
@@ -287,27 +356,26 @@ def table(exp: str = "EXP-002-sintel") -> None:
     ]
     print("| Extra | " + " | ".join(names) + " |\n|---|" + "---|" * len(names))
     for label, key, fmt in rows:
-        cells = [
-            format(sum(r.data.metrics.get(key, 0.0) for r in groups[n]) / len(groups[n]), fmt)
-            for n in names
-        ]
+        cells = []
+        for n in names:
+            vals = [r.data.metrics[key] for r in groups[n] if key in r.data.metrics]
+            cells.append(format(sum(vals) / len(vals), fmt) if vals else "—")
         print(f"| {label} | " + " | ".join(cells) + " |")
 
 
 @app.command()
-def sweep(out: Path = OUT, film: str = "sintel") -> None:
-    """Threshold sweeps scored against the labels (tuned on the test labels: exploratory only)."""
-    truth, mask = load_truth(), load_mask()
-    rows: list[tuple[str, dict[str, Any], list[int], float | None]] = []
-    probs_path = out / film / "transnetv2_probs.npy"
-    if probs_path.exists():
-        import numpy as np
+def sweep(
+    out: Path = OUT,
+    film: str = "sintel",
+    reuse: Annotated[
+        bool, typer.Option(help="Use existing sweep-* results, do not re-run")
+    ] = False,
+) -> None:
+    """Threshold sweeps scored against the labels, logged to MLflow (exp=EXP-002-sintel-sweep),
+    plus the best setting per family as variant "<family>-tuned" (exp=EXP-002-sintel).
 
-        from nip.timeline.shots import cuts_from_predictions
-
-        probs = np.load(probs_path)
-        for thr in (0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9):
-            rows.append(("transnetv2", {"threshold": thr}, cuts_from_predictions(probs, thr), None))
+    Tuned on the very labels it is scored on: exploratory and optimistic (see `split`).
+    """
     grid: list[tuple[str, dict[str, Any]]] = [
         ("content", {"threshold": x}) for x in (10, 15, 20, 27, 35, 45)
     ]
@@ -315,18 +383,29 @@ def sweep(out: Path = OUT, film: str = "sintel") -> None:
     grid += [("adaptive", {"adaptive_threshold": x}) for x in (1.5, 2.0, 3.0, 4.0, 5.0)]
     grid += [("adaptive", {"adaptive_threshold": 3.0, "min_scene_len": 2, "min_content_val": 8})]
     for i, (variant, params) in enumerate(grid):
-        r = _spawn(film, variant, params, f"sweep-{i}", out)
-        rows.append((variant, params, r["cuts"], r["s_per_video_min"]))
-    print("| variant | params | cuts | TP | FP | FN | P | R | F1 | s/min |")
+        done = out / "runs" / f"sweep-{i}" / film / f"{variant}.json"
+        if not (reuse and done.exists()):
+            _spawn(film, variant, params, f"sweep-{i}", out)
+    truth, mask = load_truth(), load_mask()
+    print("| family | setting | cuts | TP | FP | FN | P | R | F1 | s/min |")
     print("|---|---|---|---|---|---|---|---|---|---|")
-    for v, p, cuts, spm in rows:
-        m = cut_metrics(cuts, truth, mask=mask)
-        print(
-            f"| {v} | {p} | {len(cuts)} | {m['shown/tp/all']:.0f} | {m['shown/fp/all']:.0f} "
-            f"| {m['shown/fn/all']:.0f} | {m['shown/precision/all']:.3f} "
-            f"| {m['shown/recall/all']:.3f} | {m['shown/f1/all']:.3f} "
-            f"| {'' if spm is None else f'{spm:.1f}'} |"
-        )
+    for fam, points in _sweep_points(out, film).items():
+        best: tuple[float, dict[str, Any], dict[str, float]] | None = None
+        for params, cuts, spm in points:
+            m = cut_metrics(cuts, truth, mask=mask) | {"n_cuts": float(len(cuts))}
+            if spm == spm:  # not NaN
+                m["s_per_video_min"] = spm
+            _log("EXP-002-sintel-sweep", f"{fam}-{_setting(params)}", params, m)
+            if best is None or m["shown/f1/all"] > best[0]:
+                best = (m["shown/f1/all"], params, m)
+            print(
+                f"| {fam} | {_setting(params)} | {len(cuts)} | {m['shown/tp/all']:.0f} "
+                f"| {m['shown/fp/all']:.0f} | {m['shown/fn/all']:.0f} "
+                f"| {m['shown/precision/all']:.3f} | {m['shown/recall/all']:.3f} "
+                f"| {m['shown/f1/all']:.3f} | {'' if spm != spm else f'{spm:.1f}'} |"
+            )
+        assert best is not None
+        _log("EXP-002-sintel", f"{fam}-tuned", best[1], best[2])
 
 
 @app.command()
@@ -393,6 +472,9 @@ def resize_test(film: str = "sintel", out: Path = OUT) -> None:
             c = cuts_from_predictions(p, thr)
             m = cut_metrics(c, truth, mask=mask)
             n = min(len(p), len(ref))
+            m["max_abs_prob_diff_vs_current"] = float(np.abs(p[:n] - ref[:n]).max())
+            m["n_cuts"] = float(len(c))
+            _log("EXP-002-sintel-resize", f"{name}@{thr}", {"resize": name, "threshold": thr}, m)
             print(
                 f"| {name} | {thr} | {len(c)} | {m['shown/tp/all']:.0f} | {m['shown/fp/all']:.0f} "
                 f"| {m['shown/fn/all']:.0f} | {m['shown/precision/all']:.3f} "
@@ -404,35 +486,39 @@ def resize_test(film: str = "sintel", out: Path = OUT) -> None:
 @app.command()
 def split(out: Path = OUT, film: str = "sintel") -> None:
     """2-fold check against tuning on the test labels: pick each family's best setting on one
-    half of the film, score it on the other half (needs `sweep` to have run)."""
-    import numpy as np
+    half of the film, score it on the other half; logs "<family>-heldout" (one run per fold).
 
-    from nip.timeline.shots import cuts_from_predictions
-
+    Needs `run` (for the frame count) and `sweep` to have written their results under data/.
+    """
     truth, mask = load_truth(), load_mask()
     n = json.loads((out / "runs" / "default-r0" / film / "content.json").read_text())["n_frames"]
     halves = {"first": (0, n // 2), "second": (n // 2, n)}
-    fams: dict[str, list[tuple[str, list[int]]]] = {"transnetv2": [], "content": [], "adaptive": []}
-    probs = np.load(out / film / "transnetv2_probs.npy")
-    for thr in (0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9):
-        fams["transnetv2"].append((f"thr={thr}", cuts_from_predictions(probs, thr)))
-    for f in sorted((out / "runs").glob(f"sweep-*/{film}/*.json")):
-        r = json.loads(f.read_text())
-        fams[r["variant"]].append((str(r["params"]), r["cuts"]))
 
     def half(cuts: list[int], h: str) -> list[int]:
         a, b = halves[h]
         return [c for c in cuts if a <= c < b]
 
-    def f1(cuts: list[int], h: str) -> float:
-        return cut_metrics(half(cuts, h), half(truth, h), mask=mask)["shown/f1/all"]
+    def metrics(cuts: list[int], h: str) -> dict[str, float]:
+        return cut_metrics(half(cuts, h), half(truth, h), mask=mask)
 
     print("| family | tune on | chosen setting | F1 on tune half | F1 on held-out half |")
     print("|---|---|---|---|---|")
-    for fam, cfgs in fams.items():
+    for fam, points in _sweep_points(out, film).items():
+        _clear("EXP-002-sintel", f"{fam}-heldout")
         for tune, test in (("first", "second"), ("second", "first")):
-            name, cuts = max(cfgs, key=lambda c: f1(c[1], tune))
-            print(f"| {fam} | {tune} | {name} | {f1(cuts, tune):.3f} | {f1(cuts, test):.3f} |")
+            params, cuts, _ = max(points, key=lambda c: metrics(c[1], tune)["shown/f1/all"])
+            held = metrics(cuts, test)
+            _log(
+                "EXP-002-sintel",
+                f"{fam}-heldout",
+                {**params, "tuned_on_half": tune, "scored_on_half": test},
+                held,
+                clear=False,
+            )
+            print(
+                f"| {fam} | {tune} | {_setting(params)} "
+                f"| {metrics(cuts, tune)['shown/f1/all']:.3f} | {held['shown/f1/all']:.3f} |"
+            )
 
 
 if __name__ == "__main__":

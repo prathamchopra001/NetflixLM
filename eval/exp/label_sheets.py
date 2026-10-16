@@ -154,6 +154,72 @@ def sheets2(film: str = "sintel", out: Path = OUT) -> None:
 
 
 @app.command()
+def verification(film: str = "sintel", out: Path = OUT) -> None:
+    """Write the per-cut verification record next to the labels (committed; the sheets are not).
+
+    Reads data/exp002/labelling/<film>/{events.json,decisions.txt,rows2.json} and the labels file.
+    """
+    from eval.exp.exp002_shots import LABELS
+
+    lab = out / "labelling" / film
+    events = json.loads((lab / "events.json").read_text())
+    rows2 = json.loads((lab / "rows2.json").read_text())
+    decisions = (lab / "decisions.txt").read_text()
+    labels = json.loads(LABELS.read_text())
+    zoomed = {26, 41, 209, 211, 212, 574}  # events I opened as 8-24 frame strips before deciding
+    by_frame: dict[int, dict[str, Any]] = {}
+    for i, ev in enumerate(events):
+        for f, srcs in ev["sources"].items():
+            by_frame[int(f)] = {"event": i, "sources": sorted({x.split("@")[0] for x in srcs})}
+    cuts = []
+    for f in labels["cuts"]:
+        d = by_frame[f]
+        cuts.append(
+            {
+                "frame": f,
+                "event": d["event"],
+                "first_pass_sheet": d["event"] // ROWS,
+                "zoom_strip": d["event"] in zoomed or f == 15867,
+                "candidate_sources": d["sources"],
+            }
+        )
+    doc = {
+        "title": labels["title"],
+        "labeller": labels["labeller"],
+        "method": " ".join(
+            [
+                "Candidates = union of TransNetV2@0.05, ContentDetector(8, min_scene_len 1),",
+                "AdaptiveDetector(1.2, min_scene_len 1, min_content_val 4) and the top-2",
+                "frame-difference peaks per 240-frame window (1089 + 43 frames), merged within",
+                f"3 frames into {len(events)} events. Each event was viewed as 6 consecutive",
+                f"frames (f-3..f+2) on {-(-len(events) // ROWS)} contact sheets; event members",
+                "outside that window were shown on second-pass sheets",
+                f"({len(rows2)} rows, {-(-len(rows2) // ROWS)} sheets); doubtful events were",
+                "opened as strips. cut = the picture changes completely between f-1 and f;",
+                "dissolves, fades, hidden cuts and credits are in the masks sidecar.",
+                "One agent, no second opinion.",
+            ]
+        ),
+        "decisions_file": "sintel_cuts.provisional.decisions.txt",
+        "masks_file": "sintel_cuts.provisional.masks.json",
+        "n_events": len(events),
+        "n_cuts": len(cuts),
+        "cuts": cuts,
+    }
+    target = LABELS.parent / f"{film}_cuts.provisional.verification.json"
+    target.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+    kept = [ln for ln in decisions.splitlines() if ln.strip()]
+    (LABELS.parent / f"{film}_cuts.provisional.decisions.txt").write_text(
+        "# Per-event decisions made while viewing the contact sheets (event ids index the merged\n"
+        "# candidate events; '<id> 0 cut' = cut at the event frame, 'G a b ...' = masked window).\n"
+        + "\n".join(kept)
+        + "\n",
+        encoding="utf-8",
+    )
+    print(f"{len(cuts)} cuts -> {target}")
+
+
+@app.command()
 def strip(
     start: int, end: int, step: int = 1, film: str = "sintel", cols: int = 6, w: int = 416
 ) -> None:

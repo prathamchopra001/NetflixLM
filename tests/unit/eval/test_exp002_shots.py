@@ -26,3 +26,21 @@ def test_empty_and_helpers(tmp_path):
     p = tmp_path / "l.json"
     p.write_text(json.dumps({"cuts": [9, 3]}))
     assert load_truth(p) == [3, 9]
+
+
+def test_match_is_a_maximum_matching():
+    import random
+
+    import numpy as np
+    from scipy.sparse import csr_matrix
+    from scipy.sparse.csgraph import maximum_bipartite_matching
+
+    rng = random.Random(0)
+    for _ in range(200):
+        pred = sorted(rng.sample(range(40), rng.randint(0, 15)))
+        truth = sorted(rng.sample(range(40), rng.randint(0, 15)))
+        adj = np.array([[abs(p - t) <= 2 for t in truth] for p in pred], dtype=int).reshape(
+            len(pred), len(truth)
+        )
+        best = int((maximum_bipartite_matching(csr_matrix(adj)) >= 0).sum()) if adj.size else 0
+        assert match_cuts(pred, truth, 2)[0] == best

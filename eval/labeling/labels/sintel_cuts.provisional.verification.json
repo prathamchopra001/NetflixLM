@@ -1,0 +1,1937 @@
+{
+ "title": "sintel",
+ "labeller": "agent-provisional",
+ "method": "Candidates = union of TransNetV2@0.05, ContentDetector(8, min_scene_len 1), AdaptiveDetector(1.2, min_scene_len 1, min_content_val 4) and the top-2 frame-difference peaks per 240-frame window (1089 + 43 frames), merged within 3 frames into 646 events. Each event was viewed as 6 consecutive frames (f-3..f+2) on 54 contact sheets; event members outside that window were shown on second-pass sheets (195 rows, 17 sheets); doubtful events were opened as strips. cut = the picture changes completely between f-1 and f; dissolves, fades, hidden cuts and credits are in the masks sidecar. One agent, no second opinion.",
+ "decisions_file": "sintel_cuts.provisional.decisions.txt",
+ "masks_file": "sintel_cuts.provisional.masks.json",
+ "n_events": 646,
+ "n_cuts": 183,
+ "cuts": [
+  {
+   "frame": 752,
+   "event": 13,
+   "first_pass_sheet": 1,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1018,
+   "event": 17,
+   "first_pass_sheet": 1,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1036,
+   "event": 19,
+   "first_pass_sheet": 1,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1056,
+   "event": 20,
+   "first_pass_sheet": 1,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1078,
+   "event": 21,
+   "first_pass_sheet": 1,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1100,
+   "event": 22,
+   "first_pass_sheet": 1,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1136,
+   "event": 26,
+   "first_pass_sheet": 2,
+   "zoom_strip": true,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1169,
+   "event": 28,
+   "first_pass_sheet": 2,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1295,
+   "event": 41,
+   "first_pass_sheet": 3,
+   "zoom_strip": true,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1319,
+   "event": 42,
+   "first_pass_sheet": 3,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1339,
+   "event": 44,
+   "first_pass_sheet": 3,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1370,
+   "event": 47,
+   "first_pass_sheet": 3,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1425,
+   "event": 53,
+   "first_pass_sheet": 4,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1455,
+   "event": 55,
+   "first_pass_sheet": 4,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1494,
+   "event": 59,
+   "first_pass_sheet": 4,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1552,
+   "event": 64,
+   "first_pass_sheet": 5,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1572,
+   "event": 66,
+   "first_pass_sheet": 5,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive"
+   ]
+  },
+  {
+   "frame": 1637,
+   "event": 71,
+   "first_pass_sheet": 5,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1663,
+   "event": 72,
+   "first_pass_sheet": 6,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1777,
+   "event": 80,
+   "first_pass_sheet": 6,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 1955,
+   "event": 85,
+   "first_pass_sheet": 7,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 2060,
+   "event": 86,
+   "first_pass_sheet": 7,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 2125,
+   "event": 91,
+   "first_pass_sheet": 7,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 2429,
+   "event": 98,
+   "first_pass_sheet": 8,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 2624,
+   "event": 110,
+   "first_pass_sheet": 9,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 2780,
+   "event": 113,
+   "first_pass_sheet": 9,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 2835,
+   "event": 114,
+   "first_pass_sheet": 9,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 2881,
+   "event": 115,
+   "first_pass_sheet": 9,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 2955,
+   "event": 116,
+   "first_pass_sheet": 9,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 3032,
+   "event": 118,
+   "first_pass_sheet": 9,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 3144,
+   "event": 124,
+   "first_pass_sheet": 10,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 3217,
+   "event": 128,
+   "first_pass_sheet": 10,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 3315,
+   "event": 129,
+   "first_pass_sheet": 10,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 3384,
+   "event": 134,
+   "first_pass_sheet": 11,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 3740,
+   "event": 142,
+   "first_pass_sheet": 11,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 3890,
+   "event": 150,
+   "first_pass_sheet": 12,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4234,
+   "event": 158,
+   "first_pass_sheet": 13,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4261,
+   "event": 160,
+   "first_pass_sheet": 13,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4322,
+   "event": 162,
+   "first_pass_sheet": 13,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4368,
+   "event": 165,
+   "first_pass_sheet": 13,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4425,
+   "event": 166,
+   "first_pass_sheet": 13,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4481,
+   "event": 169,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4555,
+   "event": 171,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4605,
+   "event": 172,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4671,
+   "event": 173,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4714,
+   "event": 174,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4743,
+   "event": 175,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4751,
+   "event": 176,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "content"
+   ]
+  },
+  {
+   "frame": 4875,
+   "event": 177,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4920,
+   "event": 178,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 4944,
+   "event": 179,
+   "first_pass_sheet": 14,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 5082,
+   "event": 184,
+   "first_pass_sheet": 15,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 5158,
+   "event": 188,
+   "first_pass_sheet": 15,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 5267,
+   "event": 192,
+   "first_pass_sheet": 16,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 5379,
+   "event": 198,
+   "first_pass_sheet": 16,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 5956,
+   "event": 206,
+   "first_pass_sheet": 17,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6021,
+   "event": 209,
+   "first_pass_sheet": 17,
+   "zoom_strip": true,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6071,
+   "event": 211,
+   "first_pass_sheet": 17,
+   "zoom_strip": true,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6112,
+   "event": 212,
+   "first_pass_sheet": 17,
+   "zoom_strip": true,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6139,
+   "event": 213,
+   "first_pass_sheet": 17,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6221,
+   "event": 214,
+   "first_pass_sheet": 17,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6318,
+   "event": 218,
+   "first_pass_sheet": 18,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6374,
+   "event": 222,
+   "first_pass_sheet": 18,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6519,
+   "event": 230,
+   "first_pass_sheet": 19,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6558,
+   "event": 231,
+   "first_pass_sheet": 19,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6615,
+   "event": 235,
+   "first_pass_sheet": 19,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6691,
+   "event": 236,
+   "first_pass_sheet": 19,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6803,
+   "event": 238,
+   "first_pass_sheet": 19,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6900,
+   "event": 239,
+   "first_pass_sheet": 19,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 6944,
+   "event": 241,
+   "first_pass_sheet": 20,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7134,
+   "event": 245,
+   "first_pass_sheet": 20,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7266,
+   "event": 250,
+   "first_pass_sheet": 20,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7351,
+   "event": 253,
+   "first_pass_sheet": 21,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7414,
+   "event": 256,
+   "first_pass_sheet": 21,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7467,
+   "event": 259,
+   "first_pass_sheet": 21,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7503,
+   "event": 261,
+   "first_pass_sheet": 21,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7559,
+   "event": 264,
+   "first_pass_sheet": 22,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7573,
+   "event": 265,
+   "first_pass_sheet": 22,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7621,
+   "event": 271,
+   "first_pass_sheet": 22,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive"
+   ]
+  },
+  {
+   "frame": 7656,
+   "event": 274,
+   "first_pass_sheet": 22,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7733,
+   "event": 282,
+   "first_pass_sheet": 23,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7769,
+   "event": 288,
+   "first_pass_sheet": 24,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7876,
+   "event": 293,
+   "first_pass_sheet": 24,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7929,
+   "event": 296,
+   "first_pass_sheet": 24,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7971,
+   "event": 299,
+   "first_pass_sheet": 24,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 7985,
+   "event": 301,
+   "first_pass_sheet": 25,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 8047,
+   "event": 304,
+   "first_pass_sheet": 25,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 8099,
+   "event": 306,
+   "first_pass_sheet": 25,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 8144,
+   "event": 310,
+   "first_pass_sheet": 25,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 8215,
+   "event": 311,
+   "first_pass_sheet": 25,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 8394,
+   "event": 314,
+   "first_pass_sheet": 26,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 8435,
+   "event": 315,
+   "first_pass_sheet": 26,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 8480,
+   "event": 321,
+   "first_pass_sheet": 26,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 9133,
+   "event": 339,
+   "first_pass_sheet": 28,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 9190,
+   "event": 341,
+   "first_pass_sheet": 28,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 9525,
+   "event": 348,
+   "first_pass_sheet": 29,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 9962,
+   "event": 355,
+   "first_pass_sheet": 29,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10220,
+   "event": 360,
+   "first_pass_sheet": 30,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10358,
+   "event": 362,
+   "first_pass_sheet": 30,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10424,
+   "event": 364,
+   "first_pass_sheet": 30,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10617,
+   "event": 369,
+   "first_pass_sheet": 30,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10664,
+   "event": 370,
+   "first_pass_sheet": 30,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10740,
+   "event": 377,
+   "first_pass_sheet": 31,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10811,
+   "event": 378,
+   "first_pass_sheet": 31,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10907,
+   "event": 381,
+   "first_pass_sheet": 31,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10950,
+   "event": 382,
+   "first_pass_sheet": 31,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 10993,
+   "event": 383,
+   "first_pass_sheet": 31,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 11050,
+   "event": 386,
+   "first_pass_sheet": 32,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 11093,
+   "event": 387,
+   "first_pass_sheet": 32,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 11199,
+   "event": 390,
+   "first_pass_sheet": 32,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 11400,
+   "event": 398,
+   "first_pass_sheet": 33,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 11486,
+   "event": 399,
+   "first_pass_sheet": 33,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 11609,
+   "event": 402,
+   "first_pass_sheet": 33,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 11700,
+   "event": 404,
+   "first_pass_sheet": 33,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 11783,
+   "event": 405,
+   "first_pass_sheet": 33,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12059,
+   "event": 408,
+   "first_pass_sheet": 34,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12139,
+   "event": 410,
+   "first_pass_sheet": 34,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12210,
+   "event": 412,
+   "first_pass_sheet": 34,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12304,
+   "event": 413,
+   "first_pass_sheet": 34,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12395,
+   "event": 423,
+   "first_pass_sheet": 35,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12562,
+   "event": 426,
+   "first_pass_sheet": 35,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12605,
+   "event": 428,
+   "first_pass_sheet": 35,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12638,
+   "event": 431,
+   "first_pass_sheet": 35,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12807,
+   "event": 433,
+   "first_pass_sheet": 36,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12872,
+   "event": 435,
+   "first_pass_sheet": 36,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12944,
+   "event": 436,
+   "first_pass_sheet": 36,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 12986,
+   "event": 437,
+   "first_pass_sheet": 36,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13035,
+   "event": 441,
+   "first_pass_sheet": 36,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13104,
+   "event": 444,
+   "first_pass_sheet": 37,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13130,
+   "event": 445,
+   "first_pass_sheet": 37,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13179,
+   "event": 449,
+   "first_pass_sheet": 37,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13216,
+   "event": 450,
+   "first_pass_sheet": 37,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13232,
+   "event": 451,
+   "first_pass_sheet": 37,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13319,
+   "event": 452,
+   "first_pass_sheet": 37,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13372,
+   "event": 454,
+   "first_pass_sheet": 37,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13406,
+   "event": 455,
+   "first_pass_sheet": 37,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13432,
+   "event": 457,
+   "first_pass_sheet": 38,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13469,
+   "event": 459,
+   "first_pass_sheet": 38,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13617,
+   "event": 461,
+   "first_pass_sheet": 38,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13650,
+   "event": 462,
+   "first_pass_sheet": 38,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13675,
+   "event": 463,
+   "first_pass_sheet": 38,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13751,
+   "event": 467,
+   "first_pass_sheet": 38,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13830,
+   "event": 468,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 13893,
+   "event": 469,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive"
+   ]
+  },
+  {
+   "frame": 13960,
+   "event": 470,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive"
+   ]
+  },
+  {
+   "frame": 14002,
+   "event": 472,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14057,
+   "event": 474,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14092,
+   "event": 475,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14109,
+   "event": 476,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14140,
+   "event": 478,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14177,
+   "event": 479,
+   "first_pass_sheet": 39,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14248,
+   "event": 482,
+   "first_pass_sheet": 40,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14288,
+   "event": 483,
+   "first_pass_sheet": 40,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14354,
+   "event": 484,
+   "first_pass_sheet": 40,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14375,
+   "event": 486,
+   "first_pass_sheet": 40,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14390,
+   "event": 487,
+   "first_pass_sheet": 40,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14415,
+   "event": 488,
+   "first_pass_sheet": 40,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14437,
+   "event": 491,
+   "first_pass_sheet": 40,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14455,
+   "event": 493,
+   "first_pass_sheet": 41,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14493,
+   "event": 494,
+   "first_pass_sheet": 41,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14552,
+   "event": 495,
+   "first_pass_sheet": 41,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14620,
+   "event": 496,
+   "first_pass_sheet": 41,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14650,
+   "event": 497,
+   "first_pass_sheet": 41,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14685,
+   "event": 502,
+   "first_pass_sheet": 41,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14731,
+   "event": 510,
+   "first_pass_sheet": 42,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14802,
+   "event": 512,
+   "first_pass_sheet": 42,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14876,
+   "event": 521,
+   "first_pass_sheet": 43,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 14922,
+   "event": 522,
+   "first_pass_sheet": 43,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 15384,
+   "event": 533,
+   "first_pass_sheet": 44,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 15539,
+   "event": 534,
+   "first_pass_sheet": 44,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 15719,
+   "event": 547,
+   "first_pass_sheet": 45,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 15825,
+   "event": 549,
+   "first_pass_sheet": 45,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 15867,
+   "event": 553,
+   "first_pass_sheet": 46,
+   "zoom_strip": true,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 15901,
+   "event": 557,
+   "first_pass_sheet": 46,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 15989,
+   "event": 566,
+   "first_pass_sheet": 47,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 16024,
+   "event": 570,
+   "first_pass_sheet": 47,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 16109,
+   "event": 571,
+   "first_pass_sheet": 47,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 16169,
+   "event": 574,
+   "first_pass_sheet": 47,
+   "zoom_strip": true,
+   "candidate_sources": [
+    "adaptive",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 16426,
+   "event": 591,
+   "first_pass_sheet": 49,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 16511,
+   "event": 592,
+   "first_pass_sheet": 49,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 16807,
+   "event": 594,
+   "first_pass_sheet": 49,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 17041,
+   "event": 599,
+   "first_pass_sheet": 49,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  },
+  {
+   "frame": 17858,
+   "event": 607,
+   "first_pass_sheet": 50,
+   "zoom_strip": false,
+   "candidate_sources": [
+    "adaptive",
+    "content",
+    "transnet"
+   ]
+  }
+ ]
+}

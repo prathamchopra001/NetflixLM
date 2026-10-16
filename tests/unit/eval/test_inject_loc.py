@@ -103,7 +103,7 @@ def test_term_replaces_the_approved_rendering_and_labels_the_cue(title: Path) ->
         word = re.compile(f"(?<![A-Za-z]){term}(?![A-Za-z])")
         assert word.search(o.text) and not word.search(n.text)
         assert lb.target.frames == (ms_to_frame(n.start_ms, FPS), ms_to_frame(n.end_ms, FPS))
-        assert (lb.check, lb.lang, lb.episode, lb.title) == ("loc.term", "es", "film", "film")
+        assert (lb.check, lb.lang, lb.episode, lb.title) == ("loc.term", "es", "S01E01", "film")
 
 
 def test_term_uses_every_term_before_repeating(title: Path) -> None:
@@ -186,7 +186,7 @@ def test_shot_change_leaves_readability_clean(title: Path) -> None:
     assert track
     media = MediaInfo("x.mkv", FPS, 100_000, 1920, 1080, "h264", "yuv420p", 0, False, 1)
     script = Script(None, [Scene("1", "INT. ROOM - DAY", [Element("action", "x")])])
-    tl = build_timeline("film", script, media, {"es": track})
+    tl = build_timeline("S01E01", script, media, {"es": track})
     assert (
         run_check(Readability(["es"]), tl, "r", ProducedBy(model_variant=None, plan_id="p")) == []
     )
@@ -221,7 +221,7 @@ def test_drift_rescales_every_cue_and_labels_the_whole_track(title: Path, seed: 
     assert ratio in (Fraction(25, 24), Fraction(1000, 1001))
     for o, n in zip(old.cues, new.cues, strict=True):
         assert n.start_ms == round(o.start_ms * ratio) and n.end_ms == round(o.end_ms * ratio)
-    assert lb.target.refs == [f"film/es/{i}" for i in range(1, 31)]
+    assert lb.target.refs == [f"S01E01/es/{i}" for i in range(1, 31)]
     assert lb.target.frames is None and lb.check == "loc.drift"
 
 
@@ -242,7 +242,7 @@ def flag(check: str, ref: str, frames: tuple[int, int]) -> Flag:
     return Flag.model_validate(
         {
             "run_id": "r",
-            "episode": "film",
+            "episode": "S01E01",
             "agent": "localization_auditor",
             "check": check,
             "category": "localization",
@@ -283,7 +283,7 @@ def test_hand_made_flags_match_the_planted_labels(title: Path, tmp_path: Path) -
         for lb in labels
         if lb.target.frames
     ]
-    flags.append(flag("loc.drift", "film/es/1", (240, 300)))  # claims the track's first cue
+    flags.append(flag("loc.drift", "S01E01/es/1", (240, 300)))  # claims the track's first cue
     pairs = match(flags, labels)
     assert len(pairs) == len(labels)  # every planted error found, one to one
     assert {labels[j].check for _, j in pairs} == {"loc.term", "loc.shot_change", "loc.drift"}

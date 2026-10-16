@@ -20,7 +20,7 @@ import typer
 
 from eval.corpus.downloader import DATA_DIR, load_manifest
 from eval.injectors import Label, get, write_labels
-from eval.injectors.common import PICTURE_SUFFIXES, SIDECAR, picture_fps
+from eval.injectors.common import FILM_EPISODE, PICTURE_SUFFIXES, SIDECAR, picture_fps
 from eval.synthetic import build, write_show
 
 SYNTHETIC = "synthetic-show"
@@ -83,9 +83,9 @@ def _stack(src: Path, dst: Path, steps: list[Step]) -> list[Label]:
 def _track_steps(
     names: tuple[str, ...], title: str, lang: str, seed: int, fps: Fraction, cuts: list[int] | None
 ) -> tuple[list[Step], list[str]]:
-    """One step per injector name. `episode`/`lang` are passed explicitly because a stacked step
-    reads a temporary file whose folder is not the title."""
-    who = {"episode": title, "lang": lang}
+    """One step per injector name. `episode`/`title`/`lang` are passed explicitly because a
+    stacked step reads a temporary file whose folder is not the title."""
+    who = {"episode": FILM_EPISODE, "title": title, "lang": lang}
     steps: list[Step] = []
     skipped: list[str] = []
     for name in names:

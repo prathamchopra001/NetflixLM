@@ -50,7 +50,7 @@ def test_file_numbering_and_endings_survive(tmp_path: Path) -> None:
     out = dst.read_bytes().decode()
     assert out.startswith("7\r\n") and "\r\n\r\n9\r\n" in out and out.endswith("World\r\n")
     # labels use the timeline's cue numbering (position), not the file's own numbers
-    assert labels[0].target.refs == ["film/es/1", "film/es/2"]
+    assert labels[0].target.refs == ["S01E01/es/1", "S01E01/es/2"]
 
 
 def test_seeds_vary(tmp_path: Path) -> None:
@@ -83,8 +83,8 @@ def test_offset_labels_are_matchable(tmp_path: Path) -> None:
     out = tmp_path / "labels.jsonl"
     write_labels(labels, out)
     assert load_labels(out) == labels  # the reader validates what the writer wrote
-    assert labels[0].target.refs == ["film/es/1", "film/es/2"]
-    assert (labels[0].episode, labels[0].lang, labels[0].title) == ("film", "es", "film")
+    assert labels[0].target.refs == ["S01E01/es/1", "S01E01/es/2"]
+    assert (labels[0].episode, labels[0].lang, labels[0].title) == ("S01E01", "es", "film")
 
 
 def test_committed_labels_validate() -> None:

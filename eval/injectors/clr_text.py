@@ -26,7 +26,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from eval.injectors.base import Injector, Label, Target, register
-from eval.injectors.common import SIDECAR
+from eval.injectors.common import FILM_EPISODE, SIDECAR
 from nip.ingest import parse_bible, parse_clearance_log
 from nip.ingest.media import MediaInfo, probe
 
@@ -131,8 +131,8 @@ class ClrText(Injector):
     ) -> list[Label]:
         """`src` is a picture file, `dst` the re-encoded copy; `sidecar` defaults to
         eval/corpus/sidecar/<title dir>."""
-        episode = episode or src.parent.name
-        title = title or episode
+        episode = episode or FILM_EPISODE
+        title = title or src.parent.name
         sidecar = sidecar or SIDECAR / src.parent.name
         log = parse_clearance_log((sidecar / "clearance_log.csv").read_bytes())
         bible = parse_bible((sidecar / "bible.yaml").read_bytes())
@@ -215,7 +215,7 @@ class ClrText(Injector):
             a, b = it["frames"]
             labels.append(
                 Label(
-                    label_id=f"{episode}-clr-s{seed}-{n}",
+                    label_id=f"{title}-clr-s{seed}-{n}",
                     title=title,
                     episode=episode,
                     check=CHECKS[it["kind"]],

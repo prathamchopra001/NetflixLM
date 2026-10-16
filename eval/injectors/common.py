@@ -24,12 +24,15 @@ def picture_fps(src: Path) -> Fraction:
     raise FileNotFoundError(f"no picture next to {src}: pass fps=")
 
 
+FILM_EPISODE = "S01E01"  # a film is ingested as show=<title slug>, episode S01E01 (2.0 store)
+
+
 def context(
     src: Path, episode: str | None, lang: str | None, title: str | None
 ) -> tuple[str, str, str]:
-    """(episode, lang, title): episode defaults to the title dir, lang to the `<lang>_` prefix."""
-    episode = episode or src.parent.name
-    return episode, lang or src.name.split("_", 1)[0], title or episode
+    """(episode, lang, title): episode defaults to S01E01 (the store only accepts SxxEyy), title
+    to the title dir, lang to the `<lang>_` prefix."""
+    return episode or FILM_EPISODE, lang or src.name.split("_", 1)[0], title or src.parent.name
 
 
 def _fmt(ms: int) -> str:

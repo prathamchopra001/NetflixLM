@@ -13,6 +13,7 @@ from pathlib import Path
 import pysubs2
 
 from eval.injectors.base import Injector, Label, Target, register
+from eval.injectors.common import FILM_EPISODE
 from nip.agents.localization.readability import rule_pack
 from nip.contracts import refs
 
@@ -44,9 +45,10 @@ class LocReadability(Injector):
         k: int = 6,
         avoid: Collection[int] = (),
     ) -> list[Label]:
-        """`episode` defaults to the corpus title dir, `lang` to the `<lang>_` file prefix; `avoid`
-        holds 1-based cue numbers earlier injectors already edited."""
-        episode = episode or src.parent.name
+        """`episode` defaults to S01E01, `title` to the corpus title dir, `lang` to the `<lang>_`
+        file prefix; `avoid` holds 1-based cue numbers earlier injectors already edited."""
+        episode = episode or FILM_EPISODE
+        title = title or src.parent.name
         lang = lang or src.name.split("_", 1)[0]
         r = rule_pack(lang)["readability"]
         cps = float(r["reading_speed_cps"]["adult"])
@@ -115,8 +117,8 @@ class LocReadability(Injector):
                 e.shift(ms=ev[i - 1].end + 20 - e.start)
             labels.append(
                 Label(
-                    label_id=f"{episode}-{lang}-readability-s{seed}-{i + 1}",
-                    title=title or episode,
+                    label_id=f"{title}-{lang}-readability-s{seed}-{i + 1}",
+                    title=title,
                     episode=episode,
                     check=self.check,
                     lang=lang,

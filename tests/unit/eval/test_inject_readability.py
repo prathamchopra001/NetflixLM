@@ -29,7 +29,7 @@ def _flagged(path: Path, fps: Fraction) -> set[str]:
     assert track
     media = MediaInfo("x.mkv", fps, 100_000, 1920, 1080, "h264", "yuv420p", 0, False, 1)
     script = Script(None, [Scene("1", "INT. ROOM - DAY", [Element("action", "x")])])
-    tl = build_timeline("film", script, media, {"es": track})
+    tl = build_timeline("S01E01", script, media, {"es": track})
     flags = run_check(Readability(["es"]), tl, "r", ProducedBy(model_variant=None, plan_id="p"))
     return {f.evidence[0].ref for f in flags}
 
@@ -55,7 +55,7 @@ def test_every_planted_cue_and_nothing_else_is_flagged(
         "gap",
     }
     assert all(
-        (lb.episode, lb.lang, lb.check) == ("film", "es", "loc.readability") for lb in labels
+        (lb.episode, lb.lang, lb.check) == ("S01E01", "es", "loc.readability") for lb in labels
     )
     assert _flagged(dst, fps) == {r for lb in labels for r in lb.target.refs}
 

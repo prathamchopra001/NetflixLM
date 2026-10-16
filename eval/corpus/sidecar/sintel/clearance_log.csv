@@ -1,6 +1,6 @@
 item,kind,status,scope,notes
-(290) 482-7716,phone,pending,,injected: NANP N9X expansion area code
-(415) 555-2671,phone,cleared,,injected: 555 outside 0100-0199
+(212) 555-0234,phone,pending,,injected: 555 outside 0100-0199; valid per libphonenumber
+(415) 555-2671,phone,cleared,,injected: 555 outside 0100-0199; valid per libphonenumber
 https://velthorn.io,url,denied,,injected: made-up domain
 www.quillmere-books.com,url,cleared,,injected: made-up domain
 ines.valdor@quillmere-books.com,email,pending,,injected: made-up domain

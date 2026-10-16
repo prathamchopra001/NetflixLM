@@ -1,5 +1,6 @@
 """The synthetic show: deterministic, parses through nip.ingest, truth matches the scripts."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -122,3 +123,56 @@ def test_truth_json_carries_refs_and_loads_back(show_dir: Path) -> None:
     assert sc["ref"] == refs.scene("S01E02", sc["no"])
     assert sc["lines"][1]["ref"] == line_ref("S01E02", sc["no"], 2)
     assert read_show(show_dir).model_dump() == read_show(show_dir / "truth.json").model_dump()
+
+
+def test_every_entity_surface_in_a_line_has_a_mention_record(
+    show_dir: Path, tmp_path: Path
+) -> None:
+    """EXP-020 scores resolution against these records, so none may be missing: characters (name,
+    nickname, description), locations, props, orgs and brands, in the clean and injected show."""
+    from eval.injectors import get
+
+    out = tmp_path / "inj"
+    get("plot.knowledge_order.v1").inject(show_dir, out, 1, k=3)
+    kinds = set()
+    for d in (show_dir, out):
+        show = read_show(d)
+        surfaces: dict[str, set[str]] = {}  # surface -> entity ids that own it
+        for e in show.entities:
+            if e.kind == "character":
+                names = {e.name, e.name.split()[0], *(a for a, _ in e.aliases)}
+            elif e.kind in ("location", "prop", "org", "brand"):
+                names = {e.name}
+            else:
+                continue
+            for n in names:
+                surfaces.setdefault(n, set()).add(e.id)
+        for scenes in show.episodes.values():
+            for sc in scenes:
+                for ln in sc.lines:
+                    have = {(m.surface, m.entity) for m in ln.mentions}
+                    for surface, owners in surfaces.items():
+                        n_text = len(
+                            re.findall(f"(?<![A-Za-z]){re.escape(surface)}(?![A-Za-z])", ln.text)
+                        )
+                        if not n_text:
+                            continue
+                        # a surface inside a longer recorded one ("Ada" in "Ada Kovac") is fine
+                        inside = any(
+                            surface in m.surface and surface != m.surface for m in ln.mentions
+                        )
+                        assert inside or any((surface, o) in have for o in owners), (
+                            ln.text,
+                            surface,
+                        )
+                    kinds |= {show.entity(m.entity).kind for m in ln.mentions}
+    assert kinds == {"character", "location", "prop", "org", "brand"}
+    informant = [
+        m
+        for scenes in read_show(show_dir).episodes.values()
+        for sc in scenes
+        for ln in sc.lines
+        for m in ln.mentions
+        if m.surface == "the informant"
+    ]
+    assert informant and all(m.entity == "ada" and m.kind == "description" for m in informant)

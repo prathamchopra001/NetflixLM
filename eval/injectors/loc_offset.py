@@ -33,8 +33,8 @@ class LocOffset(Injector):
         title: str | None = None,
         fps: Fraction | None = None,
     ) -> list[Label]:
-        """`episode` defaults to the corpus title dir, `lang` to the `<lang>_` file prefix, `fps`
-        to the probe of the picture next to `src`."""
+        """`episode` defaults to S01E01, `title` to the corpus title dir, `lang` to the `<lang>_`
+        file prefix, `fps` to the probe of the picture next to `src`."""
         episode, lang, title = context(src, episode, lang, title)
         fps = fps or picture_fps(src)
         srt = Srt(src.read_bytes())
@@ -48,7 +48,7 @@ class LocOffset(Injector):
         srt.write(dst)
         return [
             Label(
-                label_id=f"{episode}-{lang}-offset-s{seed}",
+                label_id=f"{title}-{lang}-offset-s{seed}",
                 title=title,
                 episode=episode,
                 check=self.check,

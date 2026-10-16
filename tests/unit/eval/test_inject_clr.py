@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from eval.injectors import get, write_labels
-from eval.injectors.clr_text import low_motion_runs
+from eval.injectors.clr_text import NEG_AREAS, low_motion_runs
 from eval.metrics import load_labels, match
 from nip.contracts import Flag
 from nip.ingest import parse_bible, parse_clearance_log
@@ -86,15 +86,30 @@ def test_sidecars_of_the_corpus_titles_parse() -> None:
         assert parse_bible((t / "bible.yaml").read_bytes()).ok
 
 
-def test_positive_phone_numbers_use_reserved_or_non_fictional_ranges() -> None:
-    """Positives must be flaggable: an N9X expansion code, or 555 outside 0100-0199."""
+def test_phone_positives_are_valid_numbers_outside_the_fiction_range() -> None:
+    """The detector (Presidio, leniency VALID) only sees numbers libphonenumber accepts; positives
+    must be such numbers outside 555-0100..0199, negatives such numbers inside it."""
+    import phonenumbers
+
+    def valid(text: str) -> bool:
+        return phonenumbers.is_valid_number(phonenumbers.parse(text, "US"))
+
+    def fictional(text: str) -> bool:
+        digits = "".join(c for c in text if c.isdigit())
+        return digits[3:8] == "55501"
+
     root = Path(__file__).parents[3] / "eval" / "corpus" / "sidecar"
+    n = 0
     for t in root.iterdir():
         for e in parse_clearance_log((t / "clearance_log.csv").read_bytes()).data or []:
             if e.kind == "phone":
-                area, rest = e.item.strip("()").split(") ")
-                exch, line = rest.split("-")
-                assert area[1] == "9" or (exch == "555" and not "0100" <= line <= "0199"), e.item
+                n += 1
+                assert valid(e.item) and not fictional(e.item), e.item
+    assert n == 4
+    for area in NEG_AREAS:  # every negative the injector can draw
+        for line in (0, 99):
+            neg = f"({area}) 555-01{line:02d}"
+            assert valid(neg) and fictional(neg), neg
 
 
 def test_still_stretches_are_found_and_never_cross_a_cut(clip: Path) -> None:

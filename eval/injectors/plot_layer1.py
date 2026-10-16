@@ -19,9 +19,9 @@ from eval.injectors.base import Injector, Label, Target, register
 from eval.synthetic.model import (
     Fact,
     Line,
-    Mention,
     Scene,
     Show,
+    find_mentions,
     line_ref,
     merge_actions,
     read_show,
@@ -131,13 +131,13 @@ class KnowledgeOrder(_Plot):
         for (ep, sc), x, s, (lep, lsc) in _pick(cands, rng, k, _at):
             secret = show.entity(s)
             desc = secret.attrs["description"]
-            subject = show.entity(secret.attrs["subject"])
+            text = f"Do not worry. {desc}. I have known for a long time."
             line = Line(
                 kind="dialogue",
-                text=f"Do not worry. {desc}. I have known for a long time.",
+                text=text,
                 speaker=x,
                 facts=[Fact(predicate="references", subject=x, object=s, quote=desc)],
-                mentions=[Mention(surface=subject.name, entity=subject.id, kind="name")],
+                mentions=find_mentions(show.entities, text),
             )
             why = (
                 f"{_first(show, x)} refers to a secret ({desc}) in {refs.scene(ep, sc.no)} before "
@@ -256,7 +256,7 @@ class PropProvenance(_Plot):
                 kind="action",
                 text=text,
                 facts=[Fact(predicate="holds", subject=x, object=prop, quote=text, value=use)],
-                mentions=[Mention(surface=_first(show, x), entity=x, kind="name")],
+                mentions=find_mentions(show.entities, text),
             )
             why = f"{_first(show, x)} uses the {name} in {refs.scene(ep, sc.no)} {when}"
             out.append((ep, sc, line, why, []))

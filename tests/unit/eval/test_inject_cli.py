@@ -159,3 +159,34 @@ def test_real_sintel_labels_describe_the_written_tracks(tmp_path: Path) -> None:
                 assert 1 <= min(abs(e - x) for e in lb.target.frames for x in cuts) <= 11
         if lb.check in ("loc.drift", "loc.offset"):
             assert len(lb.target.refs) == len(tracks[lb.lang].cues)  # type: ignore[union-attr]
+
+
+def test_film_labels_use_the_store_episode_and_match_a_flag_from_that_naming(
+    corpus: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """The store ingests a film as show=<slug>, episode SxxEyy; flags carry that episode, so the
+    labels must too (metrics.overlap needs equal episodes)."""
+    from fractions import Fraction
+
+    from eval.metrics import match
+    from nip.agents.base import run_check
+    from nip.agents.localization.readability import Readability
+    from nip.contracts.flag import ProducedBy
+    from nip.ingest.media import MediaInfo
+    from nip.ingest.script import Element, Scene, Script
+    from nip.store.ingest import EPISODE_RE
+    from nip.timeline.estimate import build_timeline
+
+    run(corpus, tmp_path, "--only", "loc")
+    root = tmp_path / "mvp" / "seed3"
+    labels = load_labels(root / "labels" / "sintel.jsonl")
+    assert labels and all(EPISODE_RE.fullmatch(lb.episode) for lb in labels)
+    assert {lb.title for lb in labels} == {"sintel"}
+    assert len({lb.label_id for lb in labels}) == len(labels)
+    track = parse_srt((root / "sintel" / "es_sintel_es.srt").read_bytes()).data
+    media = MediaInfo("x.mkv", Fraction(24), 100_000, 1920, 1080, "h264", "yuv420p", 0, False, 1)
+    script = Script(None, [Scene("1", "INT. ROOM - DAY", [Element("action", "x")])])
+    tl = build_timeline(labels[0].episode, script, media, {"es": track})  # type: ignore[arg-type]
+    flags = run_check(Readability(["es"]), tl, "r", ProducedBy(model_variant=None, plan_id="p"))
+    planted = [lb for lb in labels if lb.check == "loc.readability"]
+    assert planted and len(match(flags, planted)) == len(planted)

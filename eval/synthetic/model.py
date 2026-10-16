@@ -6,6 +6,7 @@ truth of an injected show is exact by construction.
 """
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Literal
 
@@ -71,6 +72,27 @@ class Show(BaseModel):
 
     def cast(self, scene: Scene) -> set[str]:
         return {f.subject for ln in scene.lines for f in ln.facts if f.predicate == "present_at"}
+
+
+def find_mentions(entities: list[Entity], text: str) -> list[Mention]:
+    """Every entity surface in `text`, in reading order: character full/first names (name),
+    nicknames, descriptions ("the informant"), and the names of locations, props, orgs and brands.
+    Whole words only, longest surface first so "Ada Kovac" is one mention of Ada, not two."""
+    cands: list[tuple[str, str, str]] = []  # (surface, entity id, kind)
+    for e in entities:
+        if e.kind == "character":
+            cands += [(e.name, e.id, "name"), (e.name.split()[0], e.id, "name")]
+            cands += [(a, e.id, k) for a, k in e.aliases]
+        elif e.kind in ("location", "prop", "org", "brand"):
+            cands.append((e.name, e.id, "name"))
+    taken: list[tuple[int, int]] = []
+    found: list[tuple[int, Mention]] = []
+    for surface, eid, kind in sorted(set(cands), key=lambda c: -len(c[0])):
+        for m in re.finditer(f"(?<![A-Za-z]){re.escape(surface)}(?![A-Za-z])", text):
+            if all(m.end() <= a or m.start() >= b for a, b in taken):
+                taken.append((m.start(), m.end()))
+                found.append((m.start(), Mention(surface=surface, entity=eid, kind=kind)))
+    return [m for _, m in sorted(found, key=lambda f: f[0])]
 
 
 def merge_actions(lines: list[Line]) -> list[Line]:

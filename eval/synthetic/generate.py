@@ -9,7 +9,8 @@ plant violations.
 
 Template markup: `@x` (first name), `@x.full`, `@x.nick`, `@x.desc`, `@x.any` (random alias) name
 the entity bound to `x`; `[[...]]` marks the quote that backs the line's facts (default: the whole
-line). Mentions are recorded as they are rendered.
+line). Mentions are found in the final text of each line (every entity surface: characters by name,
+nickname and description, locations, props, orgs, brands).
 """
 
 import random
@@ -17,7 +18,7 @@ import re
 from collections.abc import Sequence
 from typing import Any
 
-from eval.synthetic.model import Entity, Fact, Line, Mention, Scene, Show, merge_actions
+from eval.synthetic.model import Entity, Fact, Line, Scene, Show, find_mentions, merge_actions
 
 EPISODES = [f"S01E{e:02d}" for e in range(1, 7)]
 SCENES_PER_EP = 25
@@ -160,9 +161,7 @@ class Builder:
 
     # -- text -----------------------------------------------------------------------------
 
-    def _fill(self, tpl: str, who: dict[str, str], first: bool) -> tuple[str, list[Mention]]:
-        ms: list[Mention] = []
-
+    def _fill(self, tpl: str, who: dict[str, str], first: bool) -> str:
         def sub(m: re.Match[str]) -> str:
             e = self.ents[who[m[1]]]
             how = m[2] or "first"
@@ -171,16 +170,15 @@ class Builder:
             if how == "desc" and first and m.start() == 0:
                 how = "nick"
             first_name = e.name.split()[0]
-            surface, kind = {
+            surface, _ = {
                 "first": (first_name, "name"),
                 "full": (e.name, "name"),
                 "nick": (e.aliases[0][0], "nickname"),
                 "desc": (e.aliases[1][0], "description"),
             }[how]
-            ms.append(Mention(surface=surface, entity=e.id, kind=kind))
             return surface
 
-        return re.sub(r"@([a-z])(?:\.(full|nick|desc|any))?", sub, tpl), ms
+        return re.sub(r"@([a-z])(?:\.(full|nick|desc|any))?", sub, tpl)
 
     def _line(
         self,
@@ -193,11 +191,9 @@ class Builder:
         """`facts`: (predicate, subject, object, value); each is quoted with the [[...]] span."""
         pre, _, rest = tpl.partition("[[")
         quote_tpl, _, post = rest.partition("]]")
-        parts, mentions = [], []
+        parts = []
         for i, seg in enumerate((pre, quote_tpl, post)):
-            text, ms = self._fill(seg, who, first=i == 0 or (i == 1 and not pre))
-            parts.append(text)
-            mentions += ms
+            parts.append(self._fill(seg, who, first=i == 0 or (i == 1 and not pre)))
         text = "".join(parts)
         quote = parts[1] if "[[" in tpl else text
         return Line(
@@ -207,7 +203,7 @@ class Builder:
             facts=[
                 Fact(predicate=p, subject=s, quote=quote, object=o, value=v) for p, s, o, v in facts
             ],
-            mentions=mentions,
+            mentions=find_mentions(list(self.ents.values()), text),
         )
 
     def est(self, cast: list[str], loc: str, prefix: str = "") -> Line:
@@ -246,11 +242,6 @@ class Builder:
         who = {"a": a, "b": b, "c": cast[-1]}
         opener = self.rng.choice(OPENERS)
         lines = [self.est(cast, loc), self.say(a, opener, who, loc=self.ents[loc].name)]
-        mention = "Kappa Cola" in opener
-        if mention:
-            lines[-1].mentions.append(
-                Mention(surface="Kappa Cola", entity="brand_kappa_cola", kind="name")
-            )
         lines.append(self.say(b, self.rng.choice(REPLIES), who))
         if n_lines > 3:
             lines.append(self.say(a, self.rng.choice(CLOSERS), who))

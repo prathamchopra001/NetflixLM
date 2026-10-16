@@ -100,7 +100,7 @@ class LocTerm(Injector):
             a = ms_to_frame(cue.start_ms, fps)
             labels.append(
                 Label(
-                    label_id=f"{episode}-{lang}-term-s{seed}-{i + 1}",
+                    label_id=f"{title}-{lang}-term-s{seed}-{i + 1}",
                     title=title,
                     episode=episode,
                     check=self.check,

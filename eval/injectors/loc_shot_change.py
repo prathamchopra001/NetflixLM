@@ -104,7 +104,7 @@ class LocShotChange(Injector):
                 picks.append(i)
                 labels.append(
                     Label(
-                        label_id=f"{episode}-{lang}-shot-change-s{seed}-{i + 1}",
+                        label_id=f"{title}-{lang}-shot-change-s{seed}-{i + 1}",
                         title=title,
                         episode=episode,
                         check=self.check,

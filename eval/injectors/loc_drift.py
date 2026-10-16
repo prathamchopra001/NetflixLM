@@ -54,7 +54,7 @@ class LocDrift(Injector):
         srt.write(dst)
         return [
             Label(
-                label_id=f"{episode}-{lang}-drift-s{seed}",
+                label_id=f"{title}-{lang}-drift-s{seed}",
                 title=title,
                 episode=episode,
                 check=self.check,

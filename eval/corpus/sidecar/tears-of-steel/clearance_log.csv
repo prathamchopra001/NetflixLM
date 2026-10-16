@@ -1,6 +1,6 @@
 item,kind,status,scope,notes
-(390) 731-2208,phone,cleared,,injected: NANP N9X expansion area code
-(212) 555-0963,phone,pending,,injected: 555 outside 0100-0199
+(310) 555-0287,phone,cleared,,injected: 555 outside 0100-0199; valid per libphonenumber
+(212) 555-0963,phone,pending,,injected: 555 outside 0100-0199; valid per libphonenumber
 https://noravale.net,url,pending,,injected: made-up domain
 www.harkness-supply.com,url,denied,,injected: made-up domain
 rui.marlow@harkness-supply.com,email,cleared,,injected: made-up domain

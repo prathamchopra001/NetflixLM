@@ -10,12 +10,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY pyproject.toml README.md alembic.ini ./
+# Every dependency at its uv.lock version (the set CI tests), into the system Python vLLM lives in.
+# Not `uv sync`: that builds a separate venv and re-downloads torch + vLLM. uv keeps installed
+# packages whose version already matches the lock (torch 2.13.0+cu130 satisfies ==2.13.0, vllm).
+ENV UV_SYSTEM_PYTHON=1 UV_BREAK_SYSTEM_PACKAGES=1
+COPY pyproject.toml uv.lock README.md alembic.ini ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv export --frozen --no-dev --extra serve --no-hashes --no-emit-project -o /tmp/req.txt \
+    && uv pip install -r /tmp/req.txt && rm /tmp/req.txt
 COPY src ./src
 COPY eval ./eval
 COPY config ./config
 ENV NIP_CONFIG_DIR=/app/config
-# System Python (the one vLLM lives in); uv keeps already-installed matching versions (torch, vllm).
-ENV UV_SYSTEM_PYTHON=1 UV_BREAK_SYSTEM_PACKAGES=1
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install "ray[serve]==2.58.0" .
+RUN uv pip install --no-deps .

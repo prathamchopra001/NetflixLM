@@ -63,6 +63,7 @@ dev = [
     # test oracles (D-030)
     "opentimelineio",
     "timecode",
+    "import-linter>=2.15",
 ]
 
 [build-system]
@@ -104,3 +105,55 @@ markers = [
     "gpu: needs an NVIDIA GPU (skipped in the cpu profile)",
     "integration: needs Docker services such as Postgres (skipped in the cpu profile)",
 ]
+
+# docs/project-structure.md › Module Responsibilities ("Must not depend on"), checked in CI by
+# `lint-imports`. Modules that do not exist yet (knowledge, other agents) join when they land.
+[tool.importlinter]
+root_packages = ["nip"]
+
+[[tool.importlinter.contracts]]
+name = "contracts depend on nothing else in nip"
+type = "forbidden"
+source_modules = ["nip.contracts"]
+forbidden_modules = [
+    "nip.timecode", "nip.ingest", "nip.timeline", "nip.agents", "nip.verification",
+    "nip.runtime", "nip.store", "nip.api", "nip.config", "nip.pipeline", "nip.cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "timecode depends on nothing else"
+type = "forbidden"
+source_modules = ["nip.timecode"]
+forbidden_modules = [
+    "nip.contracts", "nip.ingest", "nip.timeline", "nip.agents", "nip.verification",
+    "nip.runtime", "nip.store", "nip.api", "nip.config", "nip.pipeline", "nip.cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "ingest, timeline and verification do not depend on agents"
+type = "forbidden"
+source_modules = ["nip.ingest", "nip.timeline", "nip.verification"]
+forbidden_modules = ["nip.agents"]
+
+[[tool.importlinter.contracts]]
+name = "agents do not depend on verification"
+type = "forbidden"
+source_modules = ["nip.agents"]
+forbidden_modules = ["nip.verification"]
+
+[[tool.importlinter.contracts]]
+name = "agents never import each other"
+type = "independence"
+modules = ["nip.agents.localization"]
+
+[[tool.importlinter.contracts]]
+name = "runtime sees only work units, not agents' internals"
+type = "forbidden"
+source_modules = ["nip.runtime"]
+forbidden_modules = ["nip.agents.localization"]
+
+[[tool.importlinter.contracts]]
+name = "api queues runs in Postgres, never calls runtime"
+type = "forbidden"
+source_modules = ["nip.api"]
+forbidden_modules = ["nip.runtime"]

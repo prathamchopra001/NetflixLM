@@ -10,7 +10,8 @@ import pytest
 
 from nip.pipeline import run_pipeline
 
-pytestmark = pytest.mark.gpu
+# No marker: TransNetV2 runs on the CPU for this 6 s clip, so the cpu profile (CI) runs the whole
+# walking skeleton (ffmpeg is required; under NIP_CI=1 a missing ffmpeg fails, not skips).
 
 SCRIPT = "INT. ROOM - DAY #1#\n\nMaya enters.\n"
 EN = "1\n00:00:00,500 --> 00:00:02,500\nHello.\n\n2\n00:00:03,000 --> 00:00:05,000\nBye.\n"

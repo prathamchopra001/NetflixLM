@@ -8,6 +8,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      NIP_CI: "1"  # tests/conftest.py: a skipped test fails (no silent "green, never ran")
     services:
       # Only for the schema-drift test (migration vs nip.store.schema).
       postgres:
@@ -22,12 +24,18 @@ jobs:
           --health-retries 30
     steps:
       - uses: actions/checkout@v5
+      # TorchCodec decodes through the system FFmpeg libraries; the media, shot and walking-skeleton
+      # tests need ffmpeg/ffprobe on PATH.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: df -h / && ffmpeg -version | head -1
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - run: uv sync --locked
       - run: uv run ruff check .
       - run: uv run mypy
+      - run: uv run lint-imports
+      - run: df -h /  # the CUDA torch wheel set is several GB (1.1 M6)
       - run: uv run pytest -m "not gpu and not integration"
         env:
           NIP_PROFILE: cpu

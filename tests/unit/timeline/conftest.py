@@ -22,7 +22,7 @@ def truth() -> dict[str, list[int] | int]:
 
 @pytest.fixture(scope="session")
 def media_ok(tmp_path_factory: pytest.TempPathFactory) -> None:
-    """Skip tests that need ffmpeg on PATH and TorchCodec with shared FFmpeg libs."""
+    """Skip tests that need ffmpeg on PATH and TorchCodec with shared FFmpeg libs (fails in CI)."""
     tmp_path = tmp_path_factory.mktemp("probe")
     if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
         pytest.skip("ffmpeg/ffprobe not on PATH")
@@ -37,7 +37,7 @@ def media_ok(tmp_path_factory: pytest.TempPathFactory) -> None:
             "-pix_fmt", "yuv420p", "-c:v", "libx264", str(tmp_path / "probe.mp4"),
         )  # fmt: skip
         VideoDecoder(str(tmp_path / "probe.mp4"))
-    except Exception as e:
+    except (ImportError, OSError, RuntimeError) as e:  # RuntimeError: TorchCodec cannot load FFmpeg
         pytest.skip(f"TorchCodec/FFmpeg unavailable: {e}")
 
 

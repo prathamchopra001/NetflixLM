@@ -26,7 +26,7 @@ variants:
     weights_gb: 4.0
     # Measured, EXP-001 (RTX 4060 Laptop, vLLM 0.30, 8k, enforce-eager, 2 images x 589,824 px):
     overhead_gb: 0.53        # steady non-KV 4.53 GiB = NVML peak - vLLM KV, max over gmu 0.80-0.86
-    kv_mb_per_1k_tokens: 44.6  # 1.56 GiB / 35,746 tok (gmu 0.75), 0.94 GiB / 21,597 tok (exact KV)
+    kv_mb_per_1k_tokens: 45.8  # MiB per 1,024 tok: 1.56 GiB / 35,746 tok = 45.76 (gmu 0.75), 0.94 GiB / 21,597 = 45.64 (exact KV)
     startup_peak_gb: 6.25    # NVML peak before KV allocation: 6,397-6,400 MiB at KV 0.94 and 1.56 GiB
     context: {default: 32768, min: 8192}
     tp_options: [1]

@@ -26,22 +26,37 @@ def _drop(fps: Fraction, drop: bool) -> int:
     return _DROP[fps]
 
 
+def _check_fps(fps: Fraction) -> None:
+    if not isinstance(fps, Fraction):  # 23.976 / 24 would silently lose exactness
+        raise TypeError(f"fps must be a Fraction (e.g. Fraction(24000, 1001)), got {fps!r}")
+    if fps <= 0:
+        raise ValueError(f"fps must be positive, got {fps}")
+
+
 def ms_to_frame(ms: int | Fraction, fps: Fraction) -> int:
     """data-model.md: frame = round(ms * fps_num / (1000 * fps_den))."""
+    _check_fps(fps)
+    if ms < 0:
+        raise ValueError(f"negative ms {ms}")
     return _round(Fraction(ms) * fps / 1000)
 
 
 def frame_to_ms(frame: int, fps: Fraction) -> int:
     """Start of `frame` in whole ms (round half up)."""
+    _check_fps(fps)
+    if frame < 0:
+        raise ValueError(f"negative frame {frame}")
     return _round(frame * 1000 / fps)
 
 
 def frame_middle_seconds(frame: int, fps: Fraction) -> Fraction:
     """Seek target for the evidence player (D-029): (n + 0.5) / fps."""
+    _check_fps(fps)
     return (frame + Fraction(1, 2)) / fps
 
 
 def frame_to_smpte(frame: int, fps: Fraction, drop: bool = False) -> str:
+    _check_fps(fps)
     if frame < 0:
         raise ValueError("negative frame")
     nominal, d = round(fps), _drop(fps, drop)
@@ -56,6 +71,7 @@ def frame_to_smpte(frame: int, fps: Fraction, drop: bool = False) -> str:
 
 def smpte_to_frame(tc: str, fps: Fraction) -> int:
     """Parse `HH:MM:SS:FF` (NDF) or `HH:MM:SS;FF` (DF; the `;` selects drop-frame)."""
+    _check_fps(fps)
     m = _TC.fullmatch(tc)
     if not m:
         raise ValueError(f"bad timecode {tc!r}")

@@ -104,3 +104,28 @@ def test_frame_middle_inside_frame(frame: int, fps: Fraction) -> None:
     assert frame / fps < t < (frame + 1) / fps
     # ms_to_frame rounds to the nearest frame *start*; a frame middle is an exact tie -> n + 1
     assert ms_to_frame(t * 1000, fps) == frame + 1
+
+
+def test_negative_ms_and_frames_are_rejected() -> None:
+    with pytest.raises(ValueError, match="negative ms"):
+        ms_to_frame(-1, F25)
+    with pytest.raises(ValueError, match="negative frame"):
+        frame_to_ms(-1, F25)
+
+
+@pytest.mark.parametrize("bad", [24, 23.976, "24"])
+def test_non_fraction_fps_is_rejected(bad: object) -> None:
+    for call in (
+        lambda: ms_to_frame(1000, bad),  # type: ignore[arg-type]
+        lambda: frame_to_ms(1, bad),  # type: ignore[arg-type]
+        lambda: frame_middle_seconds(1, bad),  # type: ignore[arg-type]
+        lambda: frame_to_smpte(1, bad),  # type: ignore[arg-type]
+        lambda: smpte_to_frame("00:00:00:01", bad),  # type: ignore[arg-type]
+    ):
+        with pytest.raises(TypeError, match="must be a Fraction"):
+            call()
+
+
+def test_non_positive_fps_is_rejected() -> None:
+    with pytest.raises(ValueError, match="positive"):
+        ms_to_frame(1000, Fraction(0))

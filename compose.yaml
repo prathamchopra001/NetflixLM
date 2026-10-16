@@ -82,6 +82,8 @@ services:
     # `nip runtime head` (the runtime deliverable) replaces this raw `ray start` later.
     command: ["ray", "start", "--head", "--block", "--port=6379", "--dashboard-host=0.0.0.0"]
     shm_size: 8gb
+    # PID 1 reaps orphaned vLLM EngineCore children (otherwise zombies accumulate).
+    init: true
     # The first start after an image pull took 49 s and Ray's client server timed out (exit 1).
     restart: on-failure:3
     environment:

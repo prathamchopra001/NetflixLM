@@ -234,11 +234,57 @@ def test_laptop_below_the_startup_peak_gets_no_llm() -> None:
     assert {Slot.TEXT_LLM, Slot.VLM} <= set(p.skipped_slots)
 
 
+@pytest.mark.parametrize(
+    ("machine", "objective", "slot", "kv_mib"),
+    [
+        ("1x8GB", "quality", Slot.TEXT_LLM, 2170),  # usable 6.65 - weights 4.0 - overhead 0.53
+        ("1x8GB", "quality", Slot.JUDGE_LLM, 972),  # usable 6.65 - 4.7 - 1.0 (staged: alone)
+        ("1x48GB", "quality", Slot.TEXT_LLM, 10240),  # capped: 2 seq at default 32k ctx
+        ("1x48GB", "quality", Slot.JUDGE_LLM, 17808),  # usable 43.19 - 23.3 - 2.5 GiB
+        ("1x48GB", "throughput", Slot.TEXT_LLM, 8182),  # resident: actors reserved first
+    ],
+)
+def test_expected_kv_budgets(machine: str, objective: str, slot: Slot, kv_mib: int) -> None:
+    p = plan(INVENTORIES[machine], CATALOG, EPISODE, Objective(objective))
+    assert p.decisions[slot].kv_cache_bytes == kv_mib * 2**20
+
+
+def test_exact_kv_leaves_the_actors_their_catalog_sizes_on_a_shared_gpu() -> None:
+    inv = INVENTORIES["1x48GB"]
+    p = plan(inv, CATALOG, EPISODE, Objective.THROUGHPUT)
+    assert p.mode is Mode.RESIDENT
+    by_id = {v.id: v for v in CATALOG.variants}
+    actors = sum(
+        (by_id[d.variant].vram_gb or 0.0) * (d.replicas or 1)
+        for d in p.decisions.values()
+        if by_id[d.variant].engine == "actor" and d.replicas
+    )
+    text = p.decisions[Slot.TEXT_LLM]
+    llm = by_id[text.variant]
+    assert text.kv_cache_bytes and llm.weights_gb
+    total = llm.weights_gb + llm.overhead_gb + text.kv_cache_bytes / 2**30 + actors
+    usable = min(0.90 * 47.99, 47.4 - 0.5)
+    assert actors > 5  # the actors really share this GPU
+    assert usable - 0.01 < total <= usable  # nothing left over, and nothing taken from the actors
+
+
+def test_catalog_kv_calibration_uses_1024_token_blocks() -> None:
+    """EXP-001: vLLM held 35,746 tokens in 1.56 GiB; the planner's KV for them must match."""
+    v = next(v for v in CATALOG.variants if v.id == "qwen3.5-4b-awq")
+    assert v.kv_mb_per_1k_tokens
+    assert v.kv_mb_per_1k_tokens * 35746 / 1024 == pytest.approx(1.56 * 1024, rel=0.01)
+
+
 def test_kv_budget_is_capped_at_default_context_times_concurrency() -> None:
     gpu24 = _inv(1, "NVIDIA GeForce RTX 4090", 24.0, 23.5, "8.9", 16)
     text = plan(gpu24, CATALOG, EPISODE, Objective.THROUGHPUT).decisions[Slot.TEXT_LLM]
     assert (text.variant, text.context) == ("qwen3.5-4b-awq", 32768)
-    assert text.kv_cache_bytes == int(44.6 * 32 * 2) * 2**20  # 2.79 GiB, not the 18 GiB left
+    assert text.kv_cache_bytes == int(45.8 * 32 * 2) * 2**20  # 2.86 GiB, not the 18 GiB left
+
+
+def test_a_zero_kv_budget_is_rejected_not_ignored() -> None:
+    with pytest.raises(ValueError, match="greater than 0"):
+        SlotDecision(variant="x", kv_cache_bytes=0)
 
 
 def test_engines_sharing_a_gpu_get_only_their_own_kv() -> None:

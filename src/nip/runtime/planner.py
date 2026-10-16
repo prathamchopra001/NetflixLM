@@ -375,6 +375,7 @@ def plan(
                     assert v.weights_gb is not None and v.context
                     kv = min(room - v.weights_gb - v.overhead_gb, _kv_gb(v, v.context.default))
                     main.kv_cache_bytes = math.floor(round(kv * 1024, 6)) * 2**20
+                    assert main.kv_cache_bytes > 0, f"{vid}: no room for a KV cache"
                 assert c.variant.context and c.context
                 default = c.variant.context.default
                 if c.context < default:

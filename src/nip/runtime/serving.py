@@ -69,7 +69,7 @@ def vllm_args(v: Variant, d: SlotDecision, vlm: SlotDecision | None, *, eager: b
         "--max-model-len", str(d.context),
         "--gpu-memory-utilization", str(d.gpu_memory_utilization),
     ]  # fmt: skip
-    if d.kv_cache_bytes:
+    if d.kv_cache_bytes is not None:
         args += ["--kv-cache-memory-bytes", str(d.kv_cache_bytes)]
     if eager:
         args.append("--enforce-eager")

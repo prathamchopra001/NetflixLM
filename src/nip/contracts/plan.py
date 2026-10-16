@@ -44,7 +44,9 @@ class SlotDecision(Contract):
     gpu_fraction: float | None = None
     context: int | None = None
     gpu_memory_utilization: float | None = None
-    kv_cache_bytes: int | None = None  # exact vLLM KV budget (--kv-cache-memory-bytes)
+    kv_cache_bytes: int | None = Field(  # exact vLLM KV budget (--kv-cache-memory-bytes)
+        default=None, gt=0
+    )
     max_pixels: int | None = None
     images_per_prompt: int | None = None
     independent_family: bool | None = None  # judge_llm only

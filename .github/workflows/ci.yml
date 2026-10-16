@@ -8,6 +8,18 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    services:
+      # Only for the schema-drift test (migration vs nip.store.schema).
+      postgres:
+        image: pgvector/pgvector:0.8.2-pg18
+        env:
+          POSTGRES_USER: nip
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: nip
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 2s --health-timeout 5s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
@@ -19,3 +31,6 @@ jobs:
       - run: uv run pytest -m "not gpu and not integration"
         env:
           NIP_PROFILE: cpu
+      - run: uv run pytest -m integration tests/integration/test_migrations_pg.py
+        env:
+          NIP_TEST_DATABASE_URL: postgresql://nip:ci@localhost:5432/nip

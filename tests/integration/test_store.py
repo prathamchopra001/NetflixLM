@@ -15,7 +15,15 @@ from typer.testing import CliRunner
 
 from nip import pipeline
 from nip.cli import app
-from nip.contracts import Autoscaling, HardwareInventory, Mode, Objective, Plan, StageGroup
+from nip.contracts import (
+    Autoscaling,
+    Flag,
+    HardwareInventory,
+    Mode,
+    Objective,
+    Plan,
+    StageGroup,
+)
 from nip.contracts.flag import EvidenceKind
 from nip.ingest import parse
 from nip.ingest.media import probe
@@ -312,7 +320,7 @@ def test_run_persists_flags_with_stable_fingerprints(pg: Engine, s3: Any, tmp_pa
             select(r.c.status, r.c.previous_run_id, r.c.plan_id, r.c.code_version).order_by(r.c.id)
         ).all()
         assert [(s, p, pl) for s, p, pl, _ in runs] == [("completed", None, 1), ("completed", 1, 2)]
-        assert len(runs[0].code_version) == 40
+        assert len(runs[0].code_version.removesuffix("-dirty")) == 40  # git SHA (+ dirty tree)
         assert conn.execute(
             select(wu.c.stage, wu.c.unit_key, wu.c.status).where(wu.c.run_id == 1)
         ).all() == [("loc.readability", "S01E01/es/1-3", "done")]
@@ -406,3 +414,91 @@ def test_cli_ingest_and_run(
     assert json.loads(res.output)["episodes"]["S01E01"]["flags_kept"] == 2
     res = runner.invoke(app, ["run", "--show", "demo", "--episodes", "S01E02"])
     assert res.exit_code == 1 and "INPUT_REJECTED: no episode S01E02" in res.output
+
+
+def test_content_stage_records_units_once_and_a_failed_unit_is_a_gap(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ingest(pg, s3, episode_files(tmp_path))
+    plan, inv = stub_plan()
+    seen: list[str | None] = []
+
+    def extract(ep: pipeline.EpisodeRun) -> None:  # a 2.1-style content stage, one unit per scene
+        seen.append(ep.plan.plan_id)
+        for no in ("1", "2"):
+            with ep.unit("knowledge.extract", f"{ep.episode}/sc/{no}", model_variant="stub"):
+                if no == "2":
+                    raise TimeoutError("model timed out")
+
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    pipeline.add_stage("knowledge.extract", extract)
+    out = tmp_path / "out"
+    s = pipeline.run_store(
+        pg, s3, show="demo", episodes=["S01E01"], plan=plan, inventory=inv, out_dir=out
+    )
+    assert seen == ["plan_1"] and s["status"] == "completed_with_gaps"
+    assert s["episodes"]["S01E01"]["flags_kept"] == 2  # the gap does not stop the checks
+    wu = schema.work_unit
+    with pg.connect() as conn:
+        rows = conn.execute(
+            select(wu.c.stage, wu.c.unit_key, wu.c.status, wu.c.model_variant, wu.c.error).order_by(
+                wu.c.id
+            )
+        ).all()
+    assert [tuple(r) for r in rows] == [  # each unit once
+        ("knowledge.extract", "S01E01/sc/1", "done", "stub", None),
+        ("knowledge.extract", "S01E01/sc/2", "failed", "stub", "TimeoutError: model timed out"),
+        ("loc.readability", "S01E01/es/1-3", "done", None, None),
+    ]
+    report = json.loads(s3.objects["nip-artifacts", "runs/run_1/S01E01/report.json"])
+    assert report["status"] == "completed_with_gaps"
+    assert report["coverage"] == {"localization_auditor": 1.0}  # content units: no agent
+
+
+def test_failed_run_publishes_no_artifacts(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ingest(pg, s3, episode_files(tmp_path))
+    before = dict(s3.objects)
+    plan, inv = stub_plan()
+
+    def crash(ep: pipeline.EpisodeRun) -> None:
+        raise ConnectionError("lost the database")
+
+    monkeypatch.setattr(pipeline, "STAGES", [*pipeline.STAGES, ("crash", crash)])  # after report
+    out = tmp_path / "out"
+    with pytest.raises(ConnectionError):
+        pipeline.run_store(
+            pg, s3, show="demo", episodes=["S01E01"], plan=plan, inventory=inv, out_dir=out
+        )
+    assert s3.objects == before and not out.exists()
+    with pg.connect() as conn:
+        assert conn.execute(select(func.count()).select_from(schema.flag)).scalar_one() == 0
+        assert conn.execute(select(schema.run.c.status)).scalar_one() == "failed"
+
+
+def test_flag_citing_only_facts_is_dropped(
+    pg: Engine, s3: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ingest(pg, s3, episode_files(tmp_path))
+    plan, inv = stub_plan()
+
+    def fact_only(ep: pipeline.EpisodeRun) -> None:
+        ep.flags.append(
+            Flag.model_validate({
+                "run_id": ep.run_id, "episode": ep.episode, "agent": "script_critic",
+                "check": "plot.knowledge_order", "category": "plot_hole", "severity": 4,
+                "confidence": 0.9, "tier": "must_review", "title": "refers before learning",
+                "explanation": "e", "produced_by": {"model_variant": None, "plan_id": "p"},
+                "evidence": [{"kind": "fact", "ref": "fact/7", "role": "claim"}],
+            })
+        )  # fmt: skip
+
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    pipeline.add_stage("plot", fact_only, before="verification")
+    s = pipeline.run_store(pg, s3, show="demo", episodes=["S01E01"], plan=plan, inventory=inv)
+    ep = s["episodes"]["S01E01"]
+    assert ep["flags_kept"] == 2 and ep["dropped"] == [
+        {"title": "refers before learning",
+         "reason": "no stable evidence ref (scene/line/shot/kf/cue/clr), R13"}
+    ]  # fmt: skip

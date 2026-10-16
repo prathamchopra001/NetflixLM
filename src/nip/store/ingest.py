@@ -53,6 +53,7 @@ FORMATS = SCRIPT_FORMATS | SUBTITLE_FORMATS  # file-mode `nip run-files` reads t
 VIDEO = {".mp4", ".mov", ".mkv", ".mxf", ".m4v"}
 TABLES = ("glossary", "clearance_log")  # csv kinds, given as KIND=PATH
 EPISODE_RE = re.compile(r"S(\d+)E(\d+)")
+SLUG_RE = re.compile(r"[a-z0-9][a-z0-9_-]*")  # goes into S3 keys and URLs
 FICTIONAL_KINDS = {"brands": "brand", "orgs": "org", "places": "location"}
 
 
@@ -182,6 +183,8 @@ def ingest_files(
     `files` are (tag, path): tag = subtitle language, or `glossary` / `clearance_log` for csv.
     Raises InputRejected before anything is written. Returns what was stored and skipped.
     """
+    if not SLUG_RE.fullmatch(show):
+        raise InputRejected(f"show slug {show!r}: lowercase letters, digits, '-', '_' only")
     srcs = [classify(tag, p, source_lang) for tag, p in files]
     if picture is not None and not any(s.kind == "picture" for s in srcs):
         raise InputRejected("a picture.json needs the video it was made from")
@@ -217,6 +220,8 @@ def ingest_files(
     for s in srcs:
         s.sha = objects.sha256_file(s.path)
     new = [s for s in srcs if s.sha not in known]
+    if picture is not None and not any(s.kind == "picture" for s in new):
+        log.warning("%s ignored: its video is already ingested", picture.name)
     for s in new:
         _validate(s)
 

@@ -245,7 +245,10 @@ def _bind(a: App, serve: Any) -> Any:
         cls: type = VllmServer
         init: tuple[Any, ...] = (a.variant, list(a.vllm_args), a.route_prefix)
     else:
-        cls, init = actor_class(a.slots[0]), (a.variant,)
+        actors = {actor_class(s) for s in a.slots}
+        if len(actors) > 1:  # one variant serving slots with different actors: a catalog bug
+            raise ServingError(f"{a.variant}: slots {a.slots} bind different actors {actors}")
+        cls, init = actors.pop(), (a.variant,)
     return (
         serve.deployment(cls)
         .options(

@@ -5,19 +5,34 @@ Store run (`run_store`; R8: synchronous and in-process, the queue and controller
    active checks of every agent package in `AGENTS`. An unknown episode or an unusable rule pack is
    INPUT_REJECTED and nothing is written.
 2. `plan` + `run` rows, committed (the run is visible as `running`).
-3. Per episode, every stage of `STAGES` in order. A stage is `(name, fn)` with
-   `fn(ep: EpisodeRun) -> None`: it reads and fills `ep` and may write rows through `ep.conn` (the
-   run's transaction, committed at the end). Wall time is recorded per stage. Content stages
-   (asr/align, cue_align, story, extract/consolidate, index, ocr) go before "timeline", which
-   loads the Timeline from the store.
-4. Status `completed`, or `completed_with_gaps` when a work unit failed; any exception marks the
-   run `failed` (and re-raises).
+3. Per episode, every stage of `STAGES` in order, all in ONE transaction for the whole run: every
+   episode commits, or (on an exception) none does and the run is marked `failed` (re-raised).
+4. Commit with status `completed`, or `completed_with_gaps` when any work unit failed. Only then are
+   artifacts published (`runs/{run_id}/plan.json`, `runs/{run_id}/{ep}/report.json`, `--out-dir`),
+   so a failed run leaves no report.
+
+Stage contract. A stage is `(name, fn)` with `fn(ep: EpisodeRun) -> None`; add one with
+`add_stage(name, fn, before="timeline")` (content stages: asr/align, cue_align, story,
+extract/consolidate, index, ocr; repeated calls keep their call order). A stage
+- reads and fills `ep` and writes rows through `ep.conn` (the run's transaction);
+- reads the Plan as `ep.plan` (e.g. `ep.plan.decisions[Slot.TEXT_LLM].variant`, `ep.plan.plan_id`);
+- does each unit of work inside `with ep.unit(stage, key, model_variant=...):`. A unit that
+  raises is logged and recorded `failed`, a coverage gap (the run ends `completed_with_gaps`),
+  and the stage goes on. Work units are inserted once, after the episode's last stage (stages
+  never insert work_unit rows);
+- raises only for bugs or lost infrastructure, which fails the whole run.
+Report coverage per agent counts units whose stage is a check id; content-stage units only decide
+`completed_with_gaps`. Wall time is recorded per stage.
 
 Checks: each package in `AGENTS` exports `CHECKS`, a list of `Check` classes; the pipeline imports
 packages, never check modules. A class is used when `cls.active(available)` holds, and it is
 constructed with those keyword arguments its `__init__` names, out of: `langs` (target subtitle
 languages of the episode), `source_lang`, `conn` (the run's SQLAlchemy connection; None in file
 mode), `show` (slug; None in file mode), `episode` (ref).
+Every flag must cite at least one stable evidence ref (scene, script line, shot, keyframe,
+subtitle cue or clearance item): `fact/` and `asr/` refs churn on re-extraction and are left out
+of the fingerprint (R13), so a flag citing only those is dropped at verification ("no stable
+evidence ref"). Cite the line or scene a fact came from.
 
 File mode (`run_pipeline`, `nip run-files`): the Phase 1 walking skeleton, files in, JSON out.
 """
@@ -43,7 +58,7 @@ from sqlalchemy import Connection, Engine, create_engine, or_, select
 
 from nip.agents import localization
 from nip.agents.base import Check, Input, emit, run_check
-from nip.contracts.flag import CHECK_OWNER, Agent, Flag, ProducedBy
+from nip.contracts.flag import CHECK_OWNER, Agent, CheckId, Flag, ProducedBy
 from nip.contracts.inventory import HardwareInventory
 from nip.contracts.plan import Mode, Objective, Plan, Slot
 from nip.contracts.report import Report, ReportPlan, build_report
@@ -114,22 +129,62 @@ class EpisodeRun:
     episode: str
     episode_id: int
     run_id: str  # "run_912"
-    plan: ReportPlan
+    plan: Plan  # with its plan_id ("plan_42"); stages read model variants from `decisions`
     checks: list[Check]
     skipped: list[str]
-    out_dir: Path | None = None
     stages: list[dict[str, Any]] = field(default_factory=list)
     tl: Timeline | None = None
     flags: list[Flag] = field(default_factory=list)
     kept: list[Flag] = field(default_factory=list)
     dropped: list[tuple[Flag, str]] = field(default_factory=list)
-    units: list[dict[str, Any]] = field(default_factory=list)  # work_unit rows
+    units: list[dict[str, Any]] = field(default_factory=list)  # work_unit rows, inserted once
     report: Report | None = None
 
     @property
     def timeline(self) -> Timeline:
         assert self.tl is not None, "the timeline stage runs first"
         return self.tl
+
+    @contextmanager
+    def unit(self, stage: str, key: str, model_variant: str | None = None) -> Iterator[None]:
+        """One work unit: recorded `done`, or `failed` (logged, swallowed: a coverage gap)."""
+        row: dict[str, Any] = {  # every row has the same keys: one executemany inserts them all
+            "stage": stage,
+            "unit_key": key,
+            "model_variant": model_variant,
+            "error": None,
+            "started_at": datetime.now(UTC),
+        }
+        try:
+            yield
+        except Exception as e:  # ponytail: one attempt; retries with backoff come with models
+            log.exception("%s unit %s failed", stage, key)
+            row |= {"status": "failed", "error": f"{type(e).__name__}: {e}"}
+        else:
+            row["status"] = "done"
+        self.units.append(row | {"finished_at": datetime.now(UTC)})
+
+
+def report_plan(plan: Plan) -> ReportPlan:
+    judge = plan.decisions.get(Slot.JUDGE_LLM)
+    return ReportPlan(
+        plan_id=plan.plan_id or PLAN_ID,
+        mode=plan.mode,
+        judge_independent=bool(judge and judge.independent_family),
+    )
+
+
+def require_stable_refs(flags: list[Flag]) -> tuple[list[Flag], list[tuple[Flag, str]]]:
+    """(flags citing a stable ref, [(flag, reason)] for those citing only fact/asr refs)."""
+    ok: list[Flag] = []
+    bad: list[tuple[Flag, str]] = []
+    for f in flags:
+        if runs.stable_refs(f):
+            ok.append(f)
+        else:
+            log.warning("dropped %s flag %r: no stable evidence ref", f.check, f.title)
+            bad.append((f, "no stable evidence ref (scene/line/shot/kf/cue/clr), R13"))
+    return ok, bad
 
 
 def stage_timeline(ep: EpisodeRun) -> None:
@@ -138,65 +193,52 @@ def stage_timeline(ep: EpisodeRun) -> None:
 
 def stage_checks(ep: EpisodeRun) -> None:
     """Every work unit of every active check; a unit that raises is a coverage gap (failed)."""
-    tl, pb = ep.timeline, ProducedBy(model_variant=None, plan_id=ep.plan.plan_id)
+    tl = ep.timeline
+    pb = ProducedBy(model_variant=None, plan_id=ep.plan.plan_id or PLAN_ID)
     for check in ep.checks:
         for unit in check.units(tl):
-            row: dict[str, Any] = {"stage": str(check.check), "unit_key": unit.key,
-                                   "started_at": datetime.now(UTC)}  # fmt: skip
-            try:
-                found = check.run(unit, tl)
-            except Exception as e:  # ponytail: one attempt; retries with backoff come with models
-                log.exception("%s unit %s failed", check.check, unit.key)
-                row |= {"status": "failed", "error": f"{type(e).__name__}: {e}"}
-            else:
-                flags = (emit(f, check.check, tl, ep.run_id, pb) for f in found)
+            with ep.unit(str(check.check), unit.key):
+                flags = [emit(f, check.check, tl, ep.run_id, pb) for f in check.run(unit, tl)]
                 ep.flags += [f for f in flags if f is not None]
-                row["status"] = "done"
-            ep.units.append(row | {"finished_at": datetime.now(UTC)})
-    runs.add_work_units(ep.conn, runs.db_id(ep.run_id), ep.units)
 
 
 def stage_verification(ep: EpisodeRun) -> None:
-    ep.kept, ep.dropped = verify(ep.flags, ep.timeline, ep.checks)
+    stable, ep.dropped = require_stable_refs(ep.flags)
+    ep.kept, dropped = verify(stable, ep.timeline, ep.checks)
+    ep.dropped += dropped
 
 
 def stage_flags(ep: EpisodeRun) -> None:
     ep.kept = runs.save_flags(ep.conn, runs.db_id(ep.run_id), ep.episode_id, ep.kept)
 
 
+CHECK_IDS = {str(c) for c in CheckId}
+
+
 def coverage(
     checks: list[Check], skipped: list[str], units: list[dict[str, Any]]
 ) -> dict[Agent, float]:
-    """Done / total work units per agent; 1.0 for an active agent with no units, 0.0 for one whose
-    checks were all skipped."""
+    """Done / total check work units per agent; 1.0 for an active agent with no units, 0.0 for one
+    whose checks were all skipped. Content-stage units (stage not a check id) are not counted."""
     out: dict[Agent, float] = {}
     for a in {owner(c.check) for c in checks} | {owner(s) for s in skipped}:
-        mine = [u for u in units if owner(u["stage"]) == a]
+        mine = [u for u in units if u["stage"] in CHECK_IDS and owner(u["stage"]) == a]
         active = any(owner(c.check) == a for c in checks)
         out[a] = sum(u["status"] == "done" for u in mine) / len(mine) if mine else float(active)
     return out
 
 
 def stage_report(ep: EpisodeRun) -> None:
+    """The report object; it is published only after the run commits (`publish`)."""
     gaps = any(u["status"] == "failed" for u in ep.units)
     ep.report = build_report(
         episode=ep.episode,
         run_id=ep.run_id,
         status="completed_with_gaps" if gaps else "completed",
-        plan=ep.plan,
+        plan=report_plan(ep.plan),
         coverage=coverage(ep.checks, ep.skipped, ep.units),
         flags=ep.kept,
     )
-    body = ep.report.model_dump_json(indent=2)
-    key = objects.run_key(ep.run_id, ep.episode, "report.json")
-    objects.put_bytes(ep.s3, objects.artifact_bucket(), key, body.encode())
-    if ep.out_dir is not None:
-        d = ep.out_dir / ep.episode
-        d.mkdir(parents=True, exist_ok=True)
-        (d / "timeline.json").write_text(ep.timeline.model_dump_json(), encoding="utf-8")
-        (d / "flags.jsonl").write_text(_jsonl(ep.kept), encoding="utf-8")
-        (d / "dropped.jsonl").write_text(_jsonl([f for f, _ in ep.dropped]), encoding="utf-8")
-        (d / "report.json").write_text(body, encoding="utf-8")
 
 
 Stage = Callable[[EpisodeRun], None]
@@ -207,6 +249,32 @@ STAGES: list[tuple[str, Stage]] = [
     ("flags", stage_flags),
     ("report", stage_report),
 ]
+
+
+def add_stage(name: str, fn: Stage, before: str = "timeline") -> None:
+    """Insert a stage just before `before`; repeated calls keep their call order."""
+    STAGES.insert([n for n, _ in STAGES].index(before), (name, fn))
+
+
+def publish(s3: Any, plan: Plan, eps: list[EpisodeRun], out_dir: Path | None) -> None:
+    """Artifacts of a committed run: plan.json, per-episode report.json, and `out_dir` files."""
+    for ep in eps:
+        assert ep.report is not None
+        body = ep.report.model_dump_json(indent=2)
+        key = objects.run_key(ep.run_id, ep.episode, "report.json")
+        objects.put_bytes(s3, objects.artifact_bucket(), key, body.encode())
+        if out_dir is not None:
+            d = out_dir / ep.episode
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "timeline.json").write_text(ep.timeline.model_dump_json(), encoding="utf-8")
+            (d / "flags.jsonl").write_text(_jsonl(ep.kept), encoding="utf-8")
+            (d / "dropped.jsonl").write_text(_jsonl([f for f, _ in ep.dropped]), encoding="utf-8")
+            (d / "report.json").write_text(body, encoding="utf-8")
+    if eps:
+        key = objects.run_key(eps[0].run_id, "plan.json")
+        objects.put_bytes(
+            s3, objects.artifact_bucket(), key, plan.model_dump_json(indent=2).encode()
+        )
 
 
 def episode_inputs(
@@ -248,51 +316,42 @@ def run_store(
     if not episodes:
         raise InputRejected("no episodes given")
     with engine.connect() as conn:
-        eps: list[EpisodeRun] = []
-        langs: list[str] = []
         try:
             rows = [episode_row(conn, show, e) for e in dict.fromkeys(episodes)]
         except LookupError as e:
             raise InputRejected(str(e)) from e
-        report_plan = ReportPlan(
-            plan_id=PLAN_ID,  # replaced below once the plan row exists
-            mode=plan.mode,
-            judge_independent=bool(
-                (d := plan.decisions.get(Slot.JUDGE_LLM)) and d.independent_family
-            ),
-        )
+        prepared: list[tuple[Any, list[Check], list[str]]] = []
+        langs: list[str] = []
         for row in rows:
             available, source, targets = episode_inputs(conn, row.show_id, row.id)
             ctx = {"langs": targets, "source_lang": source, "conn": conn, "show": show,
                    "episode": row.ref}  # fmt: skip
-            checks, skipped = build_checks(available, ctx, agents)
+            prepared.append((row, *build_checks(available, ctx, agents)))
             langs += [t for t in targets if t not in langs]
-            eps.append(EpisodeRun(conn, s3, show, row.ref, row.id, "", report_plan, checks,
-                                  skipped, out_dir))  # fmt: skip
-        resolved = sorted({str(owner(c.check)) for ep in eps for c in ep.checks})
-        plan_id = runs.create_plan(conn, plan, inventory)
+        resolved = sorted({str(owner(c.check)) for _, checks, _ in prepared for c in checks})
+        plan_db = runs.create_plan(conn, plan, inventory)
+        plan = plan.model_copy(update={"plan_id": runs.ext_id("plan", plan_db)})
         run_db = runs.create_run(
             conn,
             show_id=rows[0].show_id,
             episode_ids=[r.id for r in rows],
             agents=sorted(str(a) for a in agents) if agents is not None else resolved,
             languages=langs,
-            plan_id=plan_id,
+            plan_id=plan_db,
             requested_by=requested_by,
         )
         conn.commit()
         run_id = runs.ext_id("run", run_db)
-        report_plan = report_plan.model_copy(update={"plan_id": runs.ext_id("plan", plan_id)})
-        stored = plan.model_copy(update={"plan_id": report_plan.plan_id}).model_dump_json(indent=2)
-        try:
-            objects.put_bytes(
-                s3, objects.artifact_bucket(), objects.run_key(run_id, "plan.json"), stored.encode()
-            )
+        eps = [
+            EpisodeRun(conn, s3, show, row.ref, row.id, run_id, plan, checks, skipped)
+            for row, checks, skipped in prepared
+        ]
+        try:  # one transaction for the whole run: every episode commits, or none
             for ep in eps:
-                ep.run_id, ep.plan = run_id, report_plan
                 for name, fn in STAGES:
                     with _timed(ep.stages, name):
                         fn(ep)
+                runs.add_work_units(conn, run_db, ep.units)
             gaps = any(u["status"] == "failed" for ep in eps for u in ep.units)
             status = "completed_with_gaps" if gaps else "completed"
             runs.finish_run(conn, run_db, status)
@@ -302,10 +361,11 @@ def run_store(
             runs.finish_run(conn, run_db, "failed")
             conn.commit()
             raise
+    publish(s3, plan, eps, out_dir)  # only a committed run has artifacts
 
     summary = {
         "run_id": run_id,
-        "plan_id": report_plan.plan_id,
+        "plan_id": plan.plan_id,
         "status": status,
         "agents": resolved,
         "episodes": {
@@ -439,7 +499,9 @@ def run_pipeline(
             flags += run_check(check, tl, run_id, pb)
 
     with _timed(stages, "verification"):
-        kept, dropped = verify(flags, tl, checks)
+        stable, unstable = require_stable_refs(flags)
+        kept, dropped = verify(stable, tl, checks)
+        dropped = unstable + dropped
 
     with _timed(stages, "report"):
         report = build_report(

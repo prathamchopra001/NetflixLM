@@ -31,17 +31,33 @@ def db_id(ext: str) -> int:
     return int(ext.rpartition("_")[2])
 
 
+def stable_refs(flag: Flag) -> list[str]:
+    """The flag's evidence refs that survive re-extraction (scene, line, shot, kf, cue, clr)."""
+    return sorted({e.ref for e in flag.evidence if refs.parse(e.ref).kind not in CHURNING})
+
+
 def fingerprint(flag: Flag) -> str:
-    """sha256(check + sorted stable evidence refs + lang): a flag's identity across runs (R13)."""
-    stable = sorted({e.ref for e in flag.evidence if refs.parse(e.ref).kind not in CHURNING})
+    """sha256(check + sorted stable evidence refs + lang): a flag's identity across runs (R13).
+
+    ValueError when the flag cites no stable ref: its fingerprint would be sha256(check + lang),
+    shared by every such flag of the check in every episode (controller ruling, 2.0 review I3).
+    """
+    stable = stable_refs(flag)
+    if not stable:
+        raise ValueError(f"{flag.check} flag {flag.title!r} cites no stable evidence ref")
     return hashlib.sha256("\n".join([flag.check, *stable, flag.lang or ""]).encode()).hexdigest()
 
 
+def _git(*args: str) -> str:
+    return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout
+
+
 def code_version() -> str:
-    """The git SHA of the running code ("unknown" outside a checkout, e.g. in the image)."""
+    """The git SHA of the running code, `-dirty` when tracked files differ from it ("unknown"
+    outside a checkout, e.g. in the image)."""
     try:
-        r = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
-        return r.stdout.strip()
+        dirty = _git("status", "--porcelain", "--untracked-files=no").strip()
+        return _git("rev-parse", "HEAD").strip() + ("-dirty" if dirty else "")
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
 
@@ -74,9 +90,10 @@ def create_run(
 ) -> int:
     """A `running` run; `previous_run_id` is the show's last run over the same episodes."""
     r = schema.run
+    ids = sorted(episode_ids)  # stored sorted, so --episodes order never hides the previous run
     prev = conn.execute(
         select(r.c.id)
-        .where(r.c.show_id == show_id, r.c.episode_ids == list(episode_ids))
+        .where(r.c.show_id == show_id, r.c.episode_ids == ids)
         .order_by(r.c.id.desc())
         .limit(1)
     ).scalar_one_or_none()
@@ -84,7 +101,7 @@ def create_run(
         insert(r)
         .values(
             show_id=show_id,
-            episode_ids=list(episode_ids),
+            episode_ids=ids,
             agents=list(agents),
             languages=list(languages),
             plan_id=plan_id,
@@ -108,7 +125,8 @@ def finish_run(conn: Connection, run_id: int, status: str) -> None:
 
 
 def add_work_units(conn: Connection, run_id: int, rows: Iterable[dict[str, Any]]) -> None:
-    """`rows`: stage, unit_key, status (done | failed), error, started_at, finished_at."""
+    """`rows`: stage, unit_key, status (done | failed), error, model_variant, started_at,
+    finished_at."""
     rows = [{"run_id": run_id, "attempts": 1, **r} for r in rows]
     if rows:
         conn.execute(insert(schema.work_unit), rows)

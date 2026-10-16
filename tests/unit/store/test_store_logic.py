@@ -44,6 +44,22 @@ def test_fingerprint_uses_stable_refs_only() -> None:
     p1 = flag(["S01E01/line/3.2", "fact/10", "S01E01/asr/5"], None, "plot.knowledge_order")
     p2 = flag(["S01E01/line/3.2", "fact/99"], None, "plot.knowledge_order")
     assert fingerprint(p1) == fingerprint(p2) and len(fingerprint(p1)) == 64
+    # a flag citing only churning refs has no identity: refused (2.0 review I3 ruling)
+    with pytest.raises(ValueError, match="no stable evidence ref"):
+        fingerprint(flag(["fact/10", "S01E01/asr/5"], None, "plot.knowledge_order"))
+
+
+def test_add_stage_keeps_call_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    from nip import pipeline
+
+    monkeypatch.setattr(pipeline, "STAGES", list(pipeline.STAGES))
+    for name in ("timeline.asr", "timeline.align", "knowledge.extract"):
+        pipeline.add_stage(name, lambda ep: None)
+    pipeline.add_stage("index", lambda ep: None, before="checks")
+    assert [n for n, _ in pipeline.STAGES] == [
+        "timeline.asr", "timeline.align", "knowledge.extract", "timeline", "index", "checks",
+        "verification", "flags", "report",
+    ]  # fmt: skip
 
 
 def test_object_keys_follow_the_layout() -> None:

@@ -8,8 +8,8 @@ Times are integer milliseconds from the start of the audio; frame placement belo
 import os
 import sys
 import wave
-from functools import cache
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -142,7 +142,8 @@ class Actor:
     `{"segments": [...]}`. The path is on storage shared with the replica."""
 
     def __init__(self, variant: str) -> None:
-        from nip.timeline.asr import asr_kwargs, timeline_config  # the pipeline's own settings
+        from nip.timeline.asr import asr_kwargs
+        from nip.timeline.picture import timeline_config  # the pipeline's own settings
 
         self.asr = FasterWhisperASR(variant, **asr_kwargs(timeline_config()["asr"]))
 

@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from fractions import Fraction
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import Annotated, Any
 
 import typer
 from rapidfuzz import fuzz
@@ -27,12 +27,9 @@ from nip.ingest import parse
 from nip.ingest.media import probe
 from nip.ingest.script import Element, Scene, Script
 from nip.timecode import frame_to_smpte
-from nip.timeline.asr import TranscriptSegment, TranscriptWord
+from nip.timeline.asr import StageEpisode, TranscriptSegment, TranscriptWord
 from nip.timeline.estimate import build_timeline
 from nip.timeline.picture import timeline_config
-
-if TYPE_CHECKING:
-    from nip.pipeline import EpisodeRun
 
 log = logging.getLogger(__name__)
 STAGE = "timeline.align"
@@ -398,7 +395,7 @@ class _Frames:
     frames: tuple[int, int]
 
 
-def stage(ep: "EpisodeRun") -> None:
+def stage(ep: StageEpisode) -> None:
     """Pipeline stage `timeline.align`: place the episode's script lines and scenes on the picture
     axis from its stored transcript, the shots and the script, and set
     `episode.timeline_source = 'picture'`. No stored transcript or no picture -> nothing to do.

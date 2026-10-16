@@ -9,11 +9,12 @@ import json
 import shutil
 import subprocess
 import tempfile
+from contextlib import AbstractContextManager
 from dataclasses import asdict, dataclass
 from fractions import Fraction
 from functools import cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import Annotated, Any, Protocol
 
 import typer
 
@@ -22,8 +23,21 @@ from nip.runtime.clients.asr import ASR, Segment, make_asr
 from nip.timecode import ms_to_frame
 from nip.timeline.picture import timeline_config
 
-if TYPE_CHECKING:
-    from nip.pipeline import EpisodeRun
+
+class StageEpisode(Protocol):
+    """What a pipeline stage reads of `nip.pipeline.EpisodeRun` (timeline sits below the pipeline
+    in the layering contracts, so it names the shape instead of importing the class)."""
+
+    conn: Any
+    s3: Any
+    episode: str
+    episode_id: int
+    plan: Any
+
+    def unit(
+        self, stage: str, key: str, model_variant: str | None = None
+    ) -> AbstractContextManager[None]: ...
+
 
 STAGE = "timeline.asr"
 app = typer.Typer(no_args_is_help=True)
@@ -147,7 +161,7 @@ def load_transcript(conn: Any, episode_id: int) -> list[TranscriptSegment]:
     ]
 
 
-def _fetch_video(ep: "EpisodeRun", dest: Path) -> Path:
+def _fetch_video(ep: StageEpisode, dest: Path) -> Path:
     """The episode's picture file from the media bucket, downloaded to `dest`."""
     from sqlalchemy import select
 
@@ -162,7 +176,7 @@ def _fetch_video(ep: "EpisodeRun", dest: Path) -> Path:
     return out
 
 
-def stage(ep: "EpisodeRun") -> None:
+def stage(ep: StageEpisode) -> None:
     """Pipeline stage `timeline.asr`: transcribe the episode's audio with the Plan's `asr`
     variant and store the frame-placed segments. No `asr` decision in the Plan (a script-only
     run) or no picture ingested -> nothing to do. Re-running replaces the episode's transcript.

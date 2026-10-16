@@ -1,0 +1,15 @@
+.git
+.venv
+.superpowers
+.claude
+.opencode
+.github
+**/__pycache__
+.mypy_cache
+.pytest_cache
+.ruff_cache
+mlruns
+data
+models
+docs
+.env

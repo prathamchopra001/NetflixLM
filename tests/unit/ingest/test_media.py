@@ -1,4 +1,3 @@
-import json
 import shutil
 import subprocess
 from fractions import Fraction
@@ -6,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from nip.ingest.media import parse_probe, probe
+from nip.ingest.media import MediaRejected, parse_probe, probe
 
 VIDEO = {"codec_type": "video", "codec_name": "h264", "width": 1920, "height": 1080,
          "pix_fmt": "yuv420p", "r_frame_rate": "24000/1001", "avg_frame_rate": "24000/1001",
@@ -21,7 +20,7 @@ def test_parse_basic() -> None:
         1920,
         1080,
     )
-    assert (m.audio_streams, m.start_tc_frames, m.drop_frame, m.vfr) == (1, 0, False, False)
+    assert (m.audio_streams, m.start_tc_frames, m.drop_frame) == (1, 0, False)
 
 
 def test_parse_start_timecode_and_drop_frame() -> None:
@@ -35,15 +34,42 @@ def test_parse_start_timecode_and_drop_frame() -> None:
     assert fmt_tc.start_tc_frames == 240
 
 
-def test_parse_frame_count_from_duration_and_vfr() -> None:
+def test_parse_frame_count_from_duration() -> None:
     v = {k: x for k, x in VIDEO.items() if k != "nb_frames"} | {"duration": "100.100000"}
     assert parse_probe("a", {"streams": [v]}).duration_frames == 2400
-    vfr = {**VIDEO, "r_frame_rate": "30/1"}
-    assert parse_probe("a", {"streams": [vfr]}).vfr
+
+
+def test_fps_is_exact_container_rate_even_if_average_rounds_differently() -> None:
+    # CFR 24000/1001 whose average was computed as 2997/125 (23.976, off by 1e-6 relative)
+    v = {**VIDEO, "avg_frame_rate": "2997/125"}
+    assert parse_probe("a", {"streams": [v]}).fps == Fraction(24000, 1001)
+    unknown_avg = {**VIDEO, "avg_frame_rate": "0/0"}  # some containers do not report it
+    assert parse_probe("a", {"streams": [unknown_avg]}).fps == Fraction(24000, 1001)
+
+
+def test_rejects_variable_frame_rate() -> None:
+    vfr = {**VIDEO, "r_frame_rate": "30/1", "avg_frame_rate": "24000/1001"}
+    with pytest.raises(MediaRejected, match="variable frame rate"):
+        parse_probe("a", {"streams": [vfr]})
+    near = {**VIDEO, "r_frame_rate": "24/1"}  # 24 vs 23.976 is a real mismatch, not rounding
+    with pytest.raises(MediaRejected, match="variable frame rate"):
+        parse_probe("a", {"streams": [near]})
+
+
+@pytest.mark.parametrize("rate", ["0/0", "0/1", "", None])
+def test_rejects_unknown_frame_rate(rate: str | None) -> None:
+    v = {**VIDEO, "r_frame_rate": rate, "avg_frame_rate": rate}
+    with pytest.raises(MediaRejected, match="unknown frame rate"):
+        parse_probe("a", {"streams": [v]})
+
+
+def test_cover_art_is_not_the_video_stream() -> None:
+    cover = {**VIDEO, "r_frame_rate": "90000/1", "disposition": {"attached_pic": 1}}
+    assert parse_probe("a", {"streams": [cover, VIDEO]}).fps == Fraction(24000, 1001)
 
 
 def test_parse_rejects_audio_only() -> None:
-    with pytest.raises(ValueError, match="no video stream"):
+    with pytest.raises(MediaRejected, match="no video stream"):
         parse_probe("a", {"streams": [{"codec_type": "audio"}]})
 
 
@@ -60,4 +86,16 @@ def test_probe_real_file(tmp_path: Path) -> None:
     m = probe(clip)
     assert m.fps == Fraction(24000, 1001) and m.duration_frames == 120
     assert (m.width, m.height, m.audio_streams, m.start_tc_frames) == (160, 90, 1, 86400)
-    assert json.dumps(m.fps.numerator) == "24000"
+
+
+@pytest.mark.skipif(not (shutil.which("ffmpeg") and shutil.which("ffprobe")), reason="no ffmpeg")
+def test_probe_rejects_real_vfr_file(tmp_path: Path) -> None:
+    clip = tmp_path / "vfr.mp4"
+    subprocess.run(  # drop 2 of every 3 frames, keep original timestamps: gaps in the timeline
+        ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i",
+         "testsrc2=size=160x90:rate=24000/1001:duration=5", "-vf", "select='not(mod(n,3))'",
+         "-fps_mode", "vfr", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(clip)],
+        check=True,
+    )  # fmt: skip
+    with pytest.raises(MediaRejected, match="variable frame rate"):
+        probe(clip)

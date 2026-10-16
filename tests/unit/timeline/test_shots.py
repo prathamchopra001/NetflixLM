@@ -76,3 +76,21 @@ def test_picture_cli_writes_json(
     out = json.loads((tmp_path / "picture.json").read_text())
     assert out["fps"] == [24000, 1001] and out["duration_frames"] == 424
     assert len(out["shots"]) == 5 and (tmp_path / "keyframes" / "0_0.jpg").exists()
+
+
+def test_picture_cli_rejects_vfr(tmp_path: Path, media_ok: None) -> None:
+    import subprocess
+
+    from typer.testing import CliRunner
+
+    from nip.timeline import picture
+
+    clip = tmp_path / "vfr.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i",
+         "testsrc2=size=160x90:rate=24000/1001:duration=5", "-vf", "select='not(mod(n,3))'",
+         "-fps_mode", "vfr", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(clip)],
+        check=True,
+    )  # fmt: skip
+    res = CliRunner().invoke(picture.app, ["picture", str(clip), "--out-dir", str(tmp_path / "o")])
+    assert res.exit_code == 1 and "INPUT_REJECTED" in res.output

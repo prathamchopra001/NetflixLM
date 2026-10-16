@@ -55,3 +55,16 @@ def cut_clip(media_ok: None, tmp_path_factory: pytest.TempPathFactory) -> Path:
     _ffmpeg(*inputs, "-filter_complex", graph, "-map", "[v]", "-c:v", "libx264", "-crf", "16",
             "-g", "48", "-pix_fmt", "yuv420p", "-r", "24000/1001", str(out))  # fmt: skip
     return out
+
+
+@pytest.fixture(scope="session")
+def ramp_clip(media_ok: None, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """60 frames whose luma encodes the frame number: decoded RGB is 4.19 * N (lossless H.264)."""
+    out = tmp_path_factory.mktemp("ramp") / "ramp.mp4"
+    _ffmpeg(
+        "-f", "lavfi", "-i",
+        "color=gray:size=64x64:rate=24000/1001:duration=2.5,geq=lum='16+3.6*N':cb=128:cr=128",
+        "-frames:v", "60", "-c:v", "libx264", "-qp", "0", "-g", "30", "-pix_fmt", "yuv420p",
+        str(out),
+    )  # fmt: skip
+    return out

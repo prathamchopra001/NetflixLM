@@ -7,7 +7,7 @@ from typing import Annotated, Any
 import typer
 import yaml
 
-from nip.ingest.media import probe
+from nip.ingest.media import MediaRejected, probe
 from nip.timeline.keyframes import extract_keyframes
 from nip.timeline.shots import detect_shots
 
@@ -17,6 +17,7 @@ app = typer.Typer(no_args_is_help=True)
 @app.callback()
 def timeline() -> None:
     """Timeline stages."""
+
 
 _CONFIG = Path(__file__).resolve().parents[3] / "config" / "pipeline.yaml"
 
@@ -50,6 +51,10 @@ def picture(
 ) -> None:
     """Probe a picture file, detect shots and extract keyframes."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    result = analyze_picture(video, out_dir)
+    try:
+        result = analyze_picture(video, out_dir)
+    except MediaRejected as e:
+        typer.echo(f"INPUT_REJECTED: {e}", err=True)
+        raise typer.Exit(1) from e
     (out_dir / "picture.json").write_text(json.dumps(result))
     typer.echo(f"{len(result['shots'])} shots, {len(result['keyframes'])} keyframes -> {out_dir}")

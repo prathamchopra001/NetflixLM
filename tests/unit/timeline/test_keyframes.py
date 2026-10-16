@@ -1,3 +1,4 @@
+import math
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,11 @@ from PIL import Image
 from nip.timeline.keyframes import extract_keyframes, keyframe_frames
 
 FPS = Fraction(24000, 1001)
+
+
+def ramp_rgb(n: int) -> float:
+    """Decoded gray level of ramp_clip frame n: luma floor(16 + 3.6 * n), limited -> full range."""
+    return math.floor(3.6 * n) * 255 / 219  # one frame off changes this by >= 3.6 * 1.164 = 4.2
 
 
 def test_short_shot_gets_only_middle_frame() -> None:
@@ -33,28 +39,30 @@ def test_frames_inside_shot_and_sorted() -> None:
         assert kf == sorted(set(kf)) and all(a <= f < b for f in kf)
 
 
-def test_decoding_is_frame_exact(media_ok: None, tmp_path: Path) -> None:
+def test_decoding_is_frame_exact(ramp_clip: Path) -> None:
+    """Frame N must carry luma 16 + 3.6 * N (known from the generator, not from the decoder)."""
     from nip.ingest.media import load_ffmpeg
 
     load_ffmpeg()
-    import subprocess
-
     from torchcodec.decoders import VideoDecoder
 
-    clip = tmp_path / "ramp.mp4"
-    subprocess.run(  # luma = frame number + 20 (kept inside limited range)
-        ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i",
-         "color=gray:size=64x64:rate=24000/1001:duration=5,geq=lum='mod(N,180)+20':cb=128:cr=128",
-         "-c:v", "libx264", "-qp", "0", "-g", "30", "-pix_fmt", "yuv420p", str(clip)],
-        check=True,
-    )  # fmt: skip
-    dec = VideoDecoder(str(clip), seek_mode="exact", dimension_order="NHWC")
-    order = [100, 3, 77, 119, 0, 45]  # random access, incl. frames far from a key frame
+    dec = VideoDecoder(str(ramp_clip), seek_mode="exact", dimension_order="NHWC")
+    assert len(dec) == 60
+    order = [59, 31, 3, 30, 0, 45, 29]  # unsorted; crosses key frames at 0 and 30
     got = dec.get_frames_at(order).data.float().mean(dim=(1, 2, 3))
-    want = dec.get_frames_at(sorted(order)).data.float().mean(dim=(1, 2, 3))
-    assert torch.equal(got[np.argsort(order)], want)
-    # luma rises with the frame number, so the i-th frame returned is frame i
-    assert torch.all(want[1:] > want[:-1])
+    for n, mean in zip(order, got.tolist(), strict=True):
+        assert abs(mean - ramp_rgb(n)) < 1.5, (n, mean)
+    seq = dec.get_frames_in_range(0, 60).data.float().mean(dim=(1, 2, 3))
+    assert torch.allclose(seq, torch.tensor([ramp_rgb(n) for n in range(60)]), atol=1.5)
+
+
+def test_keyframes_carry_the_frame_they_claim(ramp_clip: Path, tmp_path: Path) -> None:
+    shots = [(0, 10), (10, 31), (31, 40), (40, 60)]
+    recs = extract_keyframes(ramp_clip, shots, FPS, tmp_path, long_shot_s=0.2, interval_s=0.2)
+    assert len(recs) > len(shots)  # extra keyframes from the interval rule
+    for r in recs:
+        img = np.asarray(Image.open(tmp_path / str(r["file"])), dtype=float)
+        assert abs(img.mean() - ramp_rgb(int(r["frame"]))) < 1.5, r  # JPEG +-1
 
 
 def test_extract_keyframes(cut_clip: Path, tmp_path: Path, truth: dict[str, Any]) -> None:

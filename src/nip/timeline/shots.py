@@ -64,6 +64,6 @@ def detect_shots(
 ) -> list[tuple[int, int]]:
     """Shot ranges [in, out) in frames of the decoder's own frame axis."""
     frames = small_frames(video)
-    model = model or load_model()
+    model = load_model() if model is None else model
     single, _ = model.predict_frames(frames.to(model.device), quiet=True)
     return shots_from_cuts(cuts_from_predictions(single.numpy(), threshold), len(frames))

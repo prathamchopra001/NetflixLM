@@ -54,30 +54,48 @@ class MediaInfo:
     start_tc_frames: int  # frame offset of the embedded start timecode (0 if none)
     drop_frame: bool
     audio_streams: int
-    vfr: bool  # r_frame_rate != avg_frame_rate: the frame axis is not trustworthy
 
 
-def _frac(s: str) -> Fraction:
-    n, _, d = s.partition("/")
-    return Fraction(int(n), int(d or 1))
+class MediaRejected(ValueError):
+    """Picture file refused at the door (architecture.md > Validation at the door)."""
+
+
+_VFR_TOLERANCE = Fraction(5, 10000)  # 0.05%: below the 0.1% gap between 24 and 24000/1001
+
+
+def _frac(s: str | None) -> Fraction:
+    """ffprobe rate such as '24000/1001'; unknown ('0/0', missing) -> 0."""
+    n, _, d = (s or "0").partition("/")
+    return Fraction(int(n), int(d or 1)) if int(d or 1) else Fraction(0)
 
 
 def parse_probe(path: str, data: dict[str, Any]) -> MediaInfo:
     """Build a MediaInfo from `ffprobe -show_format -show_streams -of json` output."""
     streams = data.get("streams", [])
-    video = next((s for s in streams if s.get("codec_type") == "video"), None)
+    video = next(
+        (
+            s
+            for s in streams
+            if s.get("codec_type") == "video" and not s.get("disposition", {}).get("attached_pic")
+        ),
+        None,
+    )
     if video is None:
-        raise ValueError(f"{path}: no video stream")
-    fps = _frac(video.get("avg_frame_rate") or video["r_frame_rate"])
+        raise MediaRejected(f"{path}: no video stream")
+    # r_frame_rate is the exact container rate of a constant-rate file; avg_frame_rate is
+    # frames / duration and is only used to detect variable frame rate.
+    fps, avg = _frac(video.get("r_frame_rate")), _frac(video.get("avg_frame_rate"))
     if fps <= 0:
-        raise ValueError(f"{path}: unusable frame rate {video.get('avg_frame_rate')!r}")
+        raise MediaRejected(f"{path}: unknown frame rate {video.get('r_frame_rate')!r}")
+    if avg > 0 and abs(avg - fps) > fps * _VFR_TOLERANCE:
+        raise MediaRejected(f"{path}: variable frame rate (r={fps}, average={avg})")
     nb = video.get("nb_frames")
     if nb and str(nb).isdigit():
         frames = int(nb)
     else:
         secs = video.get("duration") or data.get("format", {}).get("duration")
         if secs is None:
-            raise ValueError(f"{path}: no frame count or duration")
+            raise MediaRejected(f"{path}: no frame count or duration")
         frames = round(Fraction(str(secs)) * fps)
     tc = next(
         (
@@ -99,7 +117,6 @@ def parse_probe(path: str, data: dict[str, Any]) -> MediaInfo:
         start_tc_frames=smpte_to_frame(tc, fps) if tc else 0,
         drop_frame=bool(tc and ";" in tc),
         audio_streams=sum(s.get("codec_type") == "audio" for s in streams),
-        vfr=_frac(video["r_frame_rate"]) != fps,
     )
 
 

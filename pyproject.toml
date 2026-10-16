@@ -87,6 +87,9 @@ packages = ["src/nip", "eval"]
 
 [tool.uv]
 environments = ["sys_platform == 'win32'", "sys_platform == 'linux'"]
+# rapidocr requires the CPU onnxruntime; it shares its package directory with onnxruntime-gpu
+# and, when both are installed, replaces the GPU build (CUDA provider never registers).
+override-dependencies = ["onnxruntime; sys_platform == 'never'"]
 
 [tool.uv.sources]
 # CUDA build on the Windows laptop; Linux takes PyPI's torch (the vLLM image's).

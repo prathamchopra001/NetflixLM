@@ -287,3 +287,16 @@ def test_hand_made_flags_match_the_planted_labels(title: Path, tmp_path: Path) -
     pairs = match(flags, labels)
     assert len(pairs) == len(labels)  # every planted error found, one to one
     assert {labels[j].check for _, j in pairs} == {"loc.term", "loc.shot_change", "loc.drift"}
+
+
+def test_shot_change_never_plants_a_compliant_out_point(title: Path) -> None:
+    """An out point 1-2 frames before a cut is the prescribed position (2.4 I-1), not an error."""
+    src = parse_srt((title / "es_film.srt").read_bytes()).data
+    assert src
+    cuts = sorted({ms_to_frame(c.end_ms, FPS) + 20 for c in src.cues})  # only out points reach
+    planted = []
+    for seed in range(1, 41):
+        _, labels = inject("loc.shot_change.v1", title, seed, cuts=cuts, k=4)
+        planted += [lb.description for lb in labels if "out-point" in lb.description]
+    assert planted
+    assert not [d for d in planted if " 1 frames before" in d or " 2 frames before" in d]

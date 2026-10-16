@@ -20,6 +20,11 @@ from nip.timecode import frame_to_ms, ms_to_frame
 
 MARGIN_MS = 600
 NEAR = 11  # frames: "within 1-11 frames of a shot change"
+# An out point 1..MIN_GAP frames before a cut is the compliant position (the next cue starts on the
+# cut and keeps the readability pack's 2-frame gap, architecture.md:232): such a draw is skipped,
+# so out points land at cut-(MIN_GAP+1)..cut-NEAR or cut+1..cut+NEAR. ponytail: the _base pack's
+# min_gap_frames as a constant; read the target language's pack if one ever changes it.
+MIN_GAP = 2
 REACH = 36  # frames: only a cut this close to the cue edge is used
 
 
@@ -88,7 +93,10 @@ class LocShotChange(Injector):
                 cut, d = _dist(cuts, edge)
                 if d <= NEAR or d > REACH or _dist(cuts, other)[1] <= NEAR:
                     continue  # already near a cut (a native finding), too far, or other end near
-                new = cut + rng.randint(1, NEAR) * rng.choice((-1, 1))
+                d, sign = rng.randint(1, NEAR), rng.choice((-1, 1))
+                if side == "out" and sign < 0 and d <= MIN_GAP:
+                    continue  # compliant, not an error; same draws as before, so other plants stay
+                new = cut + d * sign
                 s, e = (new, b) if side == "in" else (a, new)
                 if e <= s or s < 0:
                     continue

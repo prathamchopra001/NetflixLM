@@ -7,7 +7,8 @@ made from the EXP-002 cuts at the probed duration; `run_store` runs with the two
 flags are scored by `nip eval run` (MLflow, one run per title, seed and variant, tag exp).
 
     NIP_PROFILE=cpu NIP_DATABASE_URL=postgresql://nip:change_me@127.0.0.1:55432/nip \\
-        uv run python -m eval.exp.loc_bench --seeds 1 2 3 [--exp 2.4r1] [--no-mlflow]
+        uv run python -m eval.exp.loc_bench --seeds 1 2 3 [--exp 2.4r1] [--no-mlflow] \\
+        [--checks loc.shot_change]
     uv run nip eval compare --exp 2.4r1 --md --tracking-uri sqlite:///data/mlflow/mlflow.db
 
 Scoring scope:
@@ -153,7 +154,9 @@ def other_tracks(title: str, src: Path) -> list[dict[str, Any]]:
         return []
     spans = [Span(kind=EvidenceKind.SHOT, ref=refs.shot(EPISODE, 0), frames=(0, 10**6))]
     for lang in ("en", *extra):
-        for c in parse_srt(langs[lang].read_bytes()).data.cues:
+        track = parse_srt(langs[lang].read_bytes()).data
+        assert track is not None, langs[lang]
+        for c in track.cues:
             a = ms_to_frame(c.start_ms, fps)
             f = (a, max(ms_to_frame(c.end_ms, fps), a + 1))
             ref = refs.cue(EPISODE, lang, c.idx)
@@ -214,6 +217,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3])
     ap.add_argument("--exp", default="2.4r1", help="MLflow tag exp (and the compare key)")
     ap.add_argument("--no-mlflow", action="store_true")
+    ap.add_argument("--checks", nargs="+", default=list(CHECKS), help="score only these checks")
     args = ap.parse_args(argv)
     url = make_url(database_url())
     admin = create_engine(url, isolation_level="AUTOCOMMIT")
@@ -235,7 +239,7 @@ def main(argv: list[str] | None = None) -> None:
                 labels = [
                     lb
                     for lb in load_labels(INJECT / f"seed{seed}" / "labels" / f"{title}.jsonl")
-                    if lb.check in CHECKS
+                    if lb.check in args.checks
                 ]
                 injected = {c: {lb.lang for lb in labels if lb.check == c} for c in CHECKS}
                 flags = run_show(
@@ -244,7 +248,11 @@ def main(argv: list[str] | None = None) -> None:
                 d = OUT / "score" / title / f"seed{seed}"
                 d.mkdir(parents=True, exist_ok=True)
                 (d / "flags.jsonl").write_text(
-                    "".join(json.dumps(f) + "\n" for f in scope_flags(flags, injected)),
+                    "".join(
+                        json.dumps(f) + "\n"
+                        for f in scope_flags(flags, injected)
+                        if f["check"] in args.checks
+                    ),
                     encoding="utf-8",
                 )
                 (d / "injected.jsonl").write_text(
@@ -253,7 +261,7 @@ def main(argv: list[str] | None = None) -> None:
                 nat = [
                     native_label(f, title)
                     for f in scope_flags(clean, injected)
-                    if f["check"] not in WHOLE_TRACK
+                    if f["check"] not in WHOLE_TRACK and f["check"] in args.checks
                 ]
                 (d / "clean-run.native.jsonl").write_text(
                     "".join(lb.model_dump_json() + "\n" for lb in nat), encoding="utf-8"

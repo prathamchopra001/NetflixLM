@@ -25,7 +25,8 @@ pytestmark = pytest.mark.integration
 
 def test_placeholder_app_answers_and_is_deleted() -> None:
     serve = ray_serve()
-    a = App("it-placeholder", (Slot.ASR,), 1, 0.05)
+    # a slot with no clients/<slot>.py Actor (asr, ocr, ner, text_embedder have one: serving._bind)
+    a = App("it-placeholder", (Slot.DETECTOR,), 1, 0.05)
     deploy([a], serve)
     with urllib.request.urlopen(f"{SERVE_URL}{a.route_prefix}", timeout=10) as r:
         assert json.load(r) == {"variant": "it-placeholder", "stub": True}

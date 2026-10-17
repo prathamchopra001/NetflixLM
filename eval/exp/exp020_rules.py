@@ -193,18 +193,51 @@ def extract(
     typer.echo(json.dumps(meta))
 
 
+def secret_in_scene(conn: Any, sc: Any, raw: list[dict[str, Any]]) -> int:
+    """Variant (not shipped): delete the scene's stored learns/references events whose secret is
+    not stated in the scene (rapidfuzz partial_ratio of its description vs the scene text < 90);
+    the event keeps `dropped = "secret not in scene"`. Returns the number dropped."""
+    from rapidfuzz import fuzz
+    from sqlalchemy import delete
+
+    from nip.knowledge.grounding import normalize
+    from nip.store import schema
+
+    e, fe = schema.entity, schema.fact_event
+    scene = normalize(" ".join(ln.text for ln in sc.lines))
+    gone = 0
+    for ev in raw:
+        if ev.get("dropped") or ev["predicate"] not in ("learns", "references"):
+            continue
+        attrs = conn.execute(select(e.c.attributes).where(e.c.id == ev["object_id"])).scalar_one()
+        desc = (attrs or {}).get("description")
+        if desc and fuzz.partial_ratio(normalize(desc), scene) < 90:
+            ev["dropped"], gone = "secret not in scene", gone + 1
+            conn.execute(delete(fe).where(fe.c.scene_id == sc.id, fe.c.line_id.in_(
+                [ln.id for ln in sc.lines if ln.seq == ev["line"]]),
+                fe.c.predicate == ev["predicate"], fe.c.subject_id == ev["subject_id"],
+                fe.c.object_id == ev["object_id"]))  # fmt: skip
+            ev["subject_id"] = None  # out of the fact metrics, as any dropped event
+    return gone
+
+
 def build(
-    engine: Engine, d: Path, cached: dict[str, dict[str, Any]], enum: bool, mode: str = "shipped"
+    engine: Engine,
+    d: Path,
+    cached: dict[str, dict[str, Any]],
+    enum: bool,
+    mode: str = "shipped",
+    secret_check: bool = False,
 ) -> tuple[Show, list[dict[str, Any]], dict[str, int]]:
     """The show's store from cached replies (shipped save_events / save_speakers / consolidation);
-    (show, annotated raw events, counts)."""
+    (show, annotated raw events, counts). `secret_check`: the `secret_in_scene` variant."""
     from nip.knowledge.consolidate import consolidate_show
     from nip.knowledge.extract import save_events, save_speakers
     from nip.knowledge.grounding import score
 
     show, show_id, registry, scenes = load(engine, d)
     events: list[dict[str, Any]] = []
-    n = {"scenes": 0, "failed": 0, "missing": 0, "capped": 0}
+    n = {"scenes": 0, "failed": 0, "missing": 0, "capped": 0, "secret_not_in_scene": 0}
     with engine.begin() as conn:
         for ep, ss in scenes.items():
             for sc in ss:
@@ -216,6 +249,8 @@ def build(
                 n["capped"] += bool(row.get("capped"))
                 raw = [{"scene": sc.ref, **e} for e in row["events"]]
                 save_events(conn, show_id, sc, raw)
+                if secret_check:
+                    n["secret_not_in_scene"] += secret_in_scene(conn, sc, raw)
                 save_speakers(conn, show_id, sc)
                 text_ = {ln.seq: ln.text for ln in sc.lines}
                 no = sc.ref.rsplit("/", 1)[1]
@@ -238,15 +273,20 @@ def flags(
     seeds: Annotated[str, typer.Option()] = "1,2,3",
     which: Annotated[str, typer.Option()] = "clean,injected",
     mode: str = "shipped",
+    secret_check: Annotated[
+        bool, typer.Option(help="variant: secret must be in the scene")
+    ] = False,
 ) -> None:
     """Per seed and twin: store from the cached replies, consolidation, the four plot rules with
     verification -> `<cache dir>/<arm>/seed{N}-{which}.flags.jsonl` + `.facts.json`."""
-    cached, out = read_cache(cache), cache.parent / arm
+    cached, out = read_cache(cache), cache.parent / (arm + "+secret" * secret_check)
     out.mkdir(parents=True, exist_ok=True)
     for seed in map(int, seeds.split(",")):
         for w in which.split(","):
             with scratch_db() as engine:
-                show, events, n = build(engine, show_dir(seed, w), cached, ARMS[arm], mode)
+                show, events, n = build(
+                    engine, show_dir(seed, w), cached, ARMS[arm], mode, secret_check
+                )
                 got, _ = run_rules(engine, list(show.episodes))
             m = (
                 fact_metrics(events, show)
@@ -255,7 +295,14 @@ def flags(
                     "dropped_" + (k or "none").replace(" ", "_"): sum(
                         e.get("dropped") == k for e in events
                     )
-                    for k in (None, "quote", "zero confidence", "duplicate", "argument type")
+                    for k in (
+                        None,
+                        "quote",
+                        "zero confidence",
+                        "duplicate",
+                        "argument type",
+                        "secret not in scene",
+                    )
                 }
             )
             by: dict[str, int] = {}
@@ -327,6 +374,48 @@ def facts(
         typer.echo(
             f"{exp} {variant} seed {seed}: P {m['fact_precision']:.3f} R {m['fact_recall']:.3f}"
         )
+
+
+@app.command()
+def runaway(
+    caches: Annotated[list[str], typer.Option(help="variant=cache.jsonl, repeated")],
+    episodes: Annotated[str, typer.Option(help="scenes counted: these episodes")] = "",
+) -> None:
+    """Failed-scene rate per schema pass (seed-1 clean, enum) -> MLflow, exp RUNAWAY-2.1B."""
+    import mlflow
+
+    from eval.exp.exp020_resolution import _clear
+
+    mlflow.set_tracking_uri(TRACKING_URI)
+    mlflow.set_experiment("exp2.1b-runaway")
+    for spec in caches:
+        variant, path = spec.split("=", 1)
+        rows = [r for r in read_cache(Path(path)).values()
+                if not episodes or r["scene"].split("/")[0] in episodes.split(",")]  # fmt: skip
+        failed = [r for r in rows if "error" in r]
+        ok = [r for r in rows if "events" in r]
+        m = {
+            "scenes": len(rows),
+            "failed_scenes": len(failed),
+            "failed_rate": len(failed) / max(len(rows), 1),
+            "failed_timeout": sum("timed out" in r["error"] for r in failed),
+            "failed_max_tokens": sum("IncompleteOutput" in r["error"] for r in failed),
+            "failed_line_outside_scene": sum(
+                "not a line of this scene" in r["error"] for r in failed
+            ),
+            "capped_scenes": sum(bool(r.get("capped")) for r in ok),
+            "events_raw": sum(len(r["events"]) for r in ok),
+            "events_zero_confidence": sum(e["confidence"] <= 0 for r in ok for e in r["events"]),
+            "max_events_per_scene": max((len(r["events"]) for r in ok), default=0),
+            "call_s_sum": sum(r["s"] for r in rows),
+            "call_s_failed_sum": sum(r["s"] for r in failed),
+        }
+        _clear("exp2.1b-runaway", "RUNAWAY-2.1B", variant)
+        with mlflow.start_run(run_name=f"RUNAWAY-2.1B-{variant}"):
+            mlflow.set_tags({"exp": "RUNAWAY-2.1B", "variant": variant, "seed": "1"})
+            mlflow.log_params({"cache": path, "episodes": episodes or "all", "concurrency": 4})
+            mlflow.log_metrics({k: float(v) for k, v in m.items()})
+        typer.echo(f"{variant}: {json.dumps(m)}")
 
 
 if __name__ == "__main__":

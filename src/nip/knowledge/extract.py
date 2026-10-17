@@ -35,6 +35,7 @@ from sqlalchemy import Connection, delete, insert, select, update
 from nip.config import config_dir, pipeline_config
 from nip.contracts.fact import Predicate
 from nip.contracts.plan import Slot
+from nip.ingest.script import HEADING_RE
 from nip.knowledge.entities import Resolver
 from nip.knowledge.grounding import THRESHOLD, grounded
 from nip.runtime.clients import LLMClient, StubLLM
@@ -51,6 +52,8 @@ UNKNOWN = "UNKNOWN"
 # line (7 events on 2 lines); the looping scene reached 10.5. ponytail: a 30-line scene may then ask
 # for 120 events, more than MAX_TOKENS holds; scale max_tokens with it when real scripts need it.
 EVENTS_PER_LINE = 4
+# A speaker's `present_at` at the heading's location is derived, not stated by a quote (2.1B).
+SPEAKER_PRESENCE_CONFIDENCE = 0.9
 IDS_RULE = {
     True: "`subject` and `object` are registry keys (the first word of a registry line). For"
     " someone or something that is not in the registry, use `UNKNOWN` and write its name as the"
@@ -148,8 +151,10 @@ def render(scene: SceneText, registry: Sequence[Entry], enum: bool = True) -> st
         return f"- {e.key}: {e.name}; " + ", ".join(str(b) for b in bits if b)
 
     def line(ln: Line) -> str:
+        # One printed line per script_line: the Fountain reader joins consecutive action paragraphs
+        # with blank lines, and an unnumbered second paragraph was cited as the next line (2.1B I1).
         who = f"{ln.speaker}: " if ln.kind == "dialogue" and ln.speaker else f"({ln.kind}) "
-        return f"[{ln.seq}] {who}{ln.text}"
+        return f"[{ln.seq}] {who}{' '.join(ln.text.split())}"
 
     tpl = Template((config_dir() / "prompts" / f"{PROMPT_VERSION}.md").read_text(encoding="utf-8"))
     return tpl.substitute(
@@ -276,15 +281,17 @@ def save_events(
         ev["dropped"] = (
             "zero confidence"  # the runaway loops enumerate pairs at confidence 0.0
             if ev["confidence"] <= 0
+            else "no subject"
+            if s is None
             else "duplicate"
             if same in seen
             else None
             if ev["typed"]
             else "argument type"
         )
-        seen.add(same)
         if ev["dropped"]:
             continue
+        seen.add(same)  # kept events only: a dropped copy must not shadow a good one (review M1)
         ev["subject_id"] = resolver.ensure(s, pred, "subject")
         ev["object_id"] = resolver.ensure(o, pred, "object")
         rows.append(
@@ -304,14 +311,45 @@ def save_events(
     return len(rows), len(raw) - len(rows)
 
 
-def save_speakers(conn: Connection, show_id: int, scene: SceneText) -> None:
+def scene_location(resolver: Resolver, heading: str) -> int | None:
+    """The location entity the heading names (`INT. PIER NINE - NIGHT` -> Pier Nine), else None."""
+    segs = heading.split(" - ")
+    loc = next((x for x in segs if HEADING_RE.match(x)), segs[0])
+    eid = resolver.match(HEADING_RE.sub("", loc).strip(" ."))
+    return eid if eid is not None and resolver.kinds.get(eid) == "location" else None
+
+
+def save_speakers(conn: Connection, show_id: int, scene: SceneText) -> list[dict[str, Any]]:
     """`script_line.speaker_entity_id` for dialogue lines whose speaker name matches one entity
-    (2.3's plot.dead_acts reads it); unmatched speakers stay NULL (no candidate)."""
+    (2.3's plot.dead_acts reads it); unmatched speakers stay NULL (no candidate).
+
+    Speakers are present where they speak (2.1B, review I1): when the heading names a location
+    entity, each resolved speaker without a `present_at` event for it in the scene gets one on
+    their first line (quote = the whole line, confidence SPEAKER_PRESENCE_CONFIDENCE). Returns the
+    added fact_event rows."""
     resolver = Resolver(conn, show_id)
-    ln = schema.script_line
+    ln, fe = schema.script_line, schema.fact_event
+    where = scene_location(resolver, scene.heading)
+    have = set(
+        conn.execute(
+            select(fe.c.subject_id).where(
+                fe.c.scene_id == scene.id, fe.c.predicate == "present_at", fe.c.object_id == where
+            )
+        ).scalars()
+    )
+    rows = []
     for line in scene.lines:
         if line.speaker and (eid := resolver.match(line.speaker)) is not None:
             conn.execute(update(ln).where(ln.c.id == line.id).values(speaker_entity_id=eid))
+            if where is not None and eid not in have and resolver.kinds.get(eid) == "character":
+                have.add(eid)
+                rows.append({"scene_id": scene.id, "line_id": line.id, "predicate": "present_at",
+                             "subject_id": eid, "object_id": where, "value": None,
+                             "quote": line.text,
+                             "confidence": SPEAKER_PRESENCE_CONFIDENCE})  # fmt: skip
+    if rows:
+        conn.execute(insert(fe), rows)
+    return rows
 
 
 def text_llm(plan: Any) -> LLMClient | StubLLM:

@@ -136,6 +136,7 @@ class FakeLLM:
             },  # the runaway loop's zero-confidence pairs (2.1B)
         ]
         events.append(dict(events[0]))  # a repeated event (2.1B)
+        events.insert(0, events[0] | {"confidence": 0.0})  # a dropped copy first (review M1)
         return schema_.model_validate({"events": events}, context=kw.get("context"))
 
 
@@ -149,7 +150,11 @@ def test_fabricated_quotes_are_dropped_and_unknown_names_become_candidates(
     assert s["status"] == "completed"
     fe, e = schema.fact_event, schema.entity
     with pg.connect() as conn:
-        quotes = conn.execute(select(fe.c.quote)).scalars().all()
+        quotes = (
+            conn.execute(select(fe.c.quote).where(~fe.c.confidence.between(0.899, 0.901)))
+            .scalars()
+            .all()
+        )
         assert quotes and "Ada Kovac is the informant" not in quotes  # every fabricated one dropped
         cands = conn.execute(
             select(e.c.canonical_name, e.c.kind, e.c.origin).where(e.c.status == "candidate")
@@ -173,4 +178,14 @@ def test_fabricated_quotes_are_dropped_and_unknown_names_become_candidates(
     why = {r["predicate"]: r["dropped"] for r in dropped if r["predicate"] != "present_at"}
     assert why == {"learns": "quote", "holds": "argument type", "wearing": "zero confidence"}
     assert all(not r["grounded"] for r in dropped if r["dropped"] == "quote")
-    assert {r["dropped"] for r in dropped if r["predicate"] == "present_at"} == {"duplicate"}
+    present = [r for r in rows if r["predicate"] == "present_at"]
+    assert [r["dropped"] for r in present] == ["zero confidence", None, "duplicate"] * (
+        len(present) // 3
+    )  # the confidence-0 copy does not shadow the good event that follows it (review M1)
+    with pg.connect() as conn:  # speakers are present where they speak (review I1)
+        derived = conn.execute(
+            select(fe.c.quote, ln.c.text, ln.c.speaker_entity_id, fe.c.subject_id)
+            .join(ln, ln.c.id == fe.c.line_id)
+            .where(fe.c.predicate == "present_at", fe.c.confidence.between(0.899, 0.901))
+        ).all()
+    assert derived and all(q == t and sp == sub for q, t, sp, sub in derived)

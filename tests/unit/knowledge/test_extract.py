@@ -77,6 +77,14 @@ def test_events_are_capped_per_scene_line() -> None:  # 2.1B runaway guard (xgra
     assert js["$defs"]["Event"]["properties"]["line"]["enum"] == [1, 2]  # 2.1B: only its lines
 
 
+def test_a_multi_paragraph_line_prints_as_one_numbered_line() -> None:  # review I1
+    sc = SceneText("S01E01/sc/4", "INT. PIER NINE - NIGHT",
+                   [Line(1, "action", "Dov waits.\n\nDov checks the signal flare again."),
+                    Line(2, "dialogue", "Ready.", "DOV")])  # fmt: skip
+    p = render(sc, REGISTRY)
+    assert "[1] (action) Dov waits. Dov checks the signal flare again.\n[2] DOV: Ready." in p
+
+
 def test_a_line_outside_the_scene_is_a_structural_error() -> None:
     schema = event_schema(None)
     ev = {"line": 7, "quote": "x", "predicate": "decision", "subject": "a", "confidence": 1}

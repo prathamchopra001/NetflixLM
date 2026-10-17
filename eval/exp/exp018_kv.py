@@ -22,6 +22,8 @@ import os
 import shutil
 import subprocess
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -196,6 +198,33 @@ def host_used_mib() -> int:
     return int(out.split()[0])
 
 
+@contextmanager
+def gpu_session(purpose: str, arm: str | None = None) -> Iterator[None]:
+    """Hold data/gpu.lock for one GPU job: wait while the desktop holds the room (lock released
+    meanwhile), deploy `arm` if given, run the body, then delete every Serve app and release. Every
+    step after `acquire` is inside the `try`: a crash once left the lock held for 2 h 15 min."""
+    acquire(purpose)
+    try:
+        while (used := host_used_mib()) > BUSY_MIB:  # not a fair start: wait, lock released
+            typer.echo(f"desktop holds {used} MiB > {BUSY_MIB}; lock released, retry in 5 min")
+            release()
+            time.sleep(300)
+            acquire(purpose)
+        if arm:
+            out = ray_head("python3", "-m", "eval.exp.exp018_kv", "up", "--arm", arm, env=MARGIN)
+            if '"load_s"' not in out:
+                raise typer.BadParameter(f"{arm} did not deploy: {out[-1500:]}")
+            typer.echo(out[-1500:])
+        yield
+    finally:
+        try:  # safety net: no Serve app may outlive the session (2.2B's `down` finding)
+            typer.echo(ray_head("python3", "-m", "eval.exp.exp018_kv", "down")[-300:])
+            if (used := host_used_mib()) > BUSY_MIB:  # released anyway; say so (review M2)
+                typer.echo(f"lock released with {used} MiB used on the device", err=True)
+        finally:
+            release()
+
+
 MARGIN = {"NIP_VRAM_MARGIN_GB": os.environ.get("NIP_VRAM_MARGIN_GB", "0.25")}
 
 
@@ -209,13 +238,7 @@ def drive(
     lock is taken per round and released between rounds."""
     OUT.mkdir(parents=True, exist_ok=True)
     for t in range(start, trials + 1):
-        acquire(f"EXP-018 start trials round {t}")
-        while (used := host_used_mib()) > BUSY_MIB:  # the desktop took the room: not a trial
-            typer.echo(f"desktop holds {used} MiB > {BUSY_MIB}; lock released, retry in 5 min")
-            release()
-            time.sleep(300)
-            acquire(f"EXP-018 start trials round {t}")
-        try:
+        with gpu_session(f"EXP-018 start trials round {t}"):
             for arm in arms.split(","):
                 typer.echo(f"== {arm} trial {t} {time.strftime('%H:%M:%S')}")
                 out = ray_head("python3", "-m", "eval.exp.exp018_kv", "trial", "--arm", arm,
@@ -227,11 +250,6 @@ def drive(
                 with (OUT / "trials.jsonl").open("a", encoding="utf-8") as f:
                     f.write(line.removeprefix("RESULT ") + "\n")
                 typer.echo(line[:400])
-        finally:  # safety net: no Serve app may outlive the round (2.2B's `down` finding)
-            try:
-                typer.echo(ray_head("python3", "-m", "eval.exp.exp018_kv", "down")[-300:])
-            finally:  # a crash in `down` once left the lock held for 2 h 15 min
-                release()
         if t < trials:
             time.sleep(150)  # longer than the others' 60 s lock poll, so they get a turn
 

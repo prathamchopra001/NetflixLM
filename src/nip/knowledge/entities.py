@@ -18,7 +18,8 @@ Argument types (2.1B, EXP-006 follow-up): the quote check bounds quotation, not 
 whose resolved subject or object has the wrong entity kind for its predicate (`holds dov -> ada`,
 `learns` of a location) is dropped. `ARG_KINDS` follows the predicate definitions of the prompt
 (config/prompts/knowledge.extract.v1.md); a name that would become a candidate always fits, because
-its kind is guessed from the same table (the first kind).
+its kind is guessed from the same table (the first kind), and an existing candidate fits any kind
+(its kind is only a guess until a reviewer confirms it).
 """
 
 from typing import Any
@@ -75,8 +76,11 @@ class Resolver:
         self.names: list[str] = []
         self.ids: list[int] = []
         self.kinds: dict[int, str] = {}
+        self.provisional: set[int] = set()  # candidates: their kind is a guess (review I2)
         for r in conn.execute(select(e).where(e.c.show_id == show_id).order_by(e.c.id)):
             self.kinds[r.id] = r.kind
+            if r.status == "candidate":
+                self.provisional.add(r.id)
             if r.status == "confirmed":
                 self.keys[r.attributes.get("bible_id") or r.canonical_name] = r.id
             self._add(r.canonical_name, r.id)
@@ -115,11 +119,13 @@ class Resolver:
 
     def typed(self, predicate: str, subject: int | str | None, obj: int | str | None) -> bool:
         """Do looked-up arguments fit the predicate's kinds (ARG_KINDS)? A required object must be
-        there and differ from the subject; a would-be candidate (a surface name) fits."""
+        there and differ from the subject; a would-be candidate (a surface name) fits, and so does
+        an existing candidate: its kind is the guess of whichever event created it, so checking it
+        would make drops depend on event order (review I2). Only confirmed kinds are checked."""
         kinds, obj_kinds = ARG_KINDS[predicate]
 
         def fits(x: int | str, allowed: tuple[str, ...]) -> bool:
-            return isinstance(x, str) or self.kinds.get(x) in allowed
+            return isinstance(x, str) or x in self.provisional or self.kinds.get(x) in allowed
 
         if subject is None or not fits(subject, kinds):
             return False
@@ -147,4 +153,5 @@ class Resolver:
         )
         self._add(name, eid)
         self.kinds[eid] = kind
+        self.provisional.add(eid)
         return eid

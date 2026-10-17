@@ -139,9 +139,14 @@ def extract(
     mode: Annotated[str, typer.Option(help="schema: before | cap | shipped")] = "shipped",
     concurrency: int = 4,
     record: Annotated[bool, typer.Option(help="record replies into tests/fixtures/llm")] = False,
+    deploy: Annotated[str, typer.Option(help="EXP-018 arm to deploy under data/gpu.lock")] = (
+        "default-8k"
+    ),
 ) -> None:
-    """Extract every scene not yet in `cache` (real model at NIP_SERVE_URL)."""
-    from nip.knowledge.extract import MAX_TOKENS
+    """Extract every scene not yet in `cache`: takes data/gpu.lock, deploys `deploy` in ray-head,
+    calls it at NIP_SERVE_URL, deletes the deployment and releases the lock (review M3)."""
+    from eval.exp.exp018_kv import gpu_session
+    from nip.knowledge.extract import EVENTS_PER_LINE, MAX_TOKENS
     from nip.runtime.clients import LLMClient
     from nip.runtime.clients.stub import FIXTURES
 
@@ -158,32 +163,40 @@ def extract(
                 if key not in done:
                     todo.setdefault(key, (sc, prompt, schema))
     llm = LLMClient(VARIANT)
-    typer.echo(f"{len(todo)} calls ({len(done)} cached), concurrency {concurrency}")
+    if not todo:
+        typer.echo(f"0 calls ({len(done)} cached)")
+        return
+    with gpu_session(f"2.1B extraction {arm} -> {cache}", deploy):
+        typer.echo(f"{len(todo)} calls ({len(done)} cached), concurrency {concurrency}")
 
-    def one(key: str, sc: Any, prompt: str, schema: type) -> dict[str, Any]:
-        t = time.perf_counter()
-        row: dict[str, Any] = {"key": key, "scene": sc.ref, "arm": arm, "mode": mode}
-        try:
-            ctx = {"lines": {ln.seq for ln in sc.lines}}
-            out = llm.complete(prompt, schema, max_tokens=MAX_TOKENS, context=ctx)
-            row["events"] = [e.model_dump(mode="json") for e in out.events]
-            row["capped"] = len(row["events"]) >= 4 * len(sc.lines) if mode != "before" else False
-        except Exception as e:  # a failed unit, as the stage records it
-            row["error"] = f"{type(e).__name__}: {str(e)[:300]}"
-        row["s"] = round(time.perf_counter() - t, 2)
-        return row
+        def one(key: str, sc: Any, prompt: str, schema: type) -> dict[str, Any]:
+            t = time.perf_counter()
+            row: dict[str, Any] = {"key": key, "scene": sc.ref, "arm": arm, "mode": mode}
+            try:
+                ctx = {"lines": {ln.seq for ln in sc.lines}}
+                out = llm.complete(prompt, schema, max_tokens=MAX_TOKENS, context=ctx)
+                row["events"] = [e.model_dump(mode="json") for e in out.events]
+                row["capped"] = (
+                    len(row["events"]) >= EVENTS_PER_LINE * len(sc.lines)
+                    if mode != "before"
+                    else False
+                )
+            except Exception as e:  # a failed unit, as the stage records it
+                row["error"] = f"{type(e).__name__}: {str(e)[:300]}"
+            row["s"] = round(time.perf_counter() - t, 2)
+            return row
 
-    cache.parent.mkdir(parents=True, exist_ok=True)
-    t0, n_fail = time.perf_counter(), 0
-    with ThreadPoolExecutor(concurrency) as ex, cache.open("a", encoding="utf-8") as f:
-        futs = [ex.submit(one, k, *v) for k, v in todo.items()]
-        for i, fut in enumerate(as_completed(futs), 1):
-            row = fut.result()
-            n_fail += "error" in row
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
-            f.flush()
-            typer.echo(f"[{i}/{len(futs)}] {row['scene']}: "
-                       f"{row.get('error', len(row.get('events', [])))} {row['s']} s")  # fmt: skip
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        t0, n_fail = time.perf_counter(), 0
+        with ThreadPoolExecutor(concurrency) as ex, cache.open("a", encoding="utf-8") as f:
+            futs = [ex.submit(one, k, *v) for k, v in todo.items()]
+            for i, fut in enumerate(as_completed(futs), 1):
+                row = fut.result()
+                n_fail += "error" in row
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+                f.flush()
+                got = row.get("error", len(row.get("events", [])))
+                typer.echo(f"[{i}/{len(futs)}] {row['scene']}: {got} {row['s']} s")
     wall = round(time.perf_counter() - t0, 1)
     meta = {"calls": len(todo), "failed": n_fail, "wall_s": wall, "arm": arm, "mode": mode,
             "seeds": seeds, "which": which, "concurrency": concurrency,
@@ -237,7 +250,14 @@ def build(
 
     show, show_id, registry, scenes = load(engine, d)
     events: list[dict[str, Any]] = []
-    n = {"scenes": 0, "failed": 0, "missing": 0, "capped": 0, "secret_not_in_scene": 0}
+    n = {
+        "scenes": 0,
+        "failed": 0,
+        "missing": 0,
+        "capped": 0,
+        "secret_not_in_scene": 0,
+        "derived_presence": 0,
+    }
     with engine.begin() as conn:
         for ep, ss in scenes.items():
             for sc in ss:
@@ -251,7 +271,15 @@ def build(
                 save_events(conn, show_id, sc, raw)
                 if secret_check:
                     n["secret_not_in_scene"] += secret_in_scene(conn, sc, raw)
-                save_speakers(conn, show_id, sc)
+                seq = {ln.id: ln.seq for ln in sc.lines}
+                raw += [  # derived speaker presence (shipped, review I1), scored like any event
+                    {"scene": sc.ref, "line": seq[r["line_id"]], "quote": r["quote"],
+                     "predicate": "present_at", "subject_id": r["subject_id"],
+                     "object_id": r["object_id"], "confidence": r["confidence"],
+                     "dropped": None, "derived": True}
+                    for r in save_speakers(conn, show_id, sc)
+                ]  # fmt: skip
+                n["derived_presence"] += sum(bool(e.get("derived")) for e in raw)
                 text_ = {ln.seq: ln.text for ln in sc.lines}
                 no = sc.ref.rsplit("/", 1)[1]
                 for ev in raw:

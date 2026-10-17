@@ -110,7 +110,8 @@ def rates(
     if checks:
         for name, group in (("true", true), ("hallucinated", bad)):
             for why in ("argument type", "zero confidence", "duplicate"):
-                n = sum(e.get("dropped") == why for e in group)
+                # quote failures (< t) are not counted again under another reason (review M5)
+                n = sum(e["score"] >= t and e.get("dropped") == why for e in group)
                 out[f"{name}_dropped_{why.replace(' ', '_')}"] = n
     return out
 

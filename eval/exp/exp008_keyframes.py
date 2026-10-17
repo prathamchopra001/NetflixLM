@@ -21,6 +21,7 @@ MLflow run so `nip eval compare` prints them.
 """
 
 import json
+import os
 import pickle
 import subprocess
 import sys
@@ -78,7 +79,9 @@ app = typer.Typer(no_args_is_help=True)
 
 # ---- the GPU mutex (phased-plan.md > GPU contention) -------------------------------------------
 @contextmanager
-def gpu_lock(purpose: str, poll_s: int = 60) -> Iterator[None]:
+def gpu_lock(
+    purpose: str, poll_s: float = float(os.environ.get("GPU_LOCK_POLL_S", "60"))
+) -> Iterator[None]:
     """`mkdir data/gpu.lock` (atomic) + owner.txt; polls until it is free; removes it on exit."""
     while True:
         try:
@@ -402,7 +405,7 @@ def rescan_cmd(
 @app.command("scan")
 def scan_cmd(
     seeds: str = "1,2,3", cpu: bool = typer.Option(False, help="No GPU (no lock): slower"),
-    films: str = "sintel,tears-of-steel",
+    films: str = "sintel,tears-of-steel", arm: str = typer.Option("", help="Only this arm"),
 ) -> None:  # fmt: skip
     """Read every frame any arm needs, once, and cache the scans (GPU lock unless --cpu)."""
 
@@ -411,7 +414,8 @@ def scan_cmd(
         for seed in map(int, seeds.split(",")):
             for name in films.split(","):
                 film = load_film(name, seed)
-                scan_union(film, reader, make(film), "cpu" if cpu else "gpu")
+                only = {f for _, _, f in policy(film, arm)} if arm else None
+                scan_union(film, reader, make(film), "cpu" if cpu else "gpu", only)
 
     if cpu:
         work()

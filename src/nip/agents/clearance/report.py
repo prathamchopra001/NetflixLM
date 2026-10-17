@@ -46,11 +46,11 @@ def occurrence_rows(
     occs: list[Occurrence],
     tl: Timeline,
     show: str,
-    flag_ids: dict[str, str],
+    flag_ids: dict[tuple[str, str, str | None], str],
     *,
     include_hidden: bool = False,
 ) -> list[dict[str, Any]]:
-    """The CSV rows. `flag_ids`: keyframe ref of a flag's evidence -> the flag's id."""
+    """The CSV rows. `flag_ids`: (check, best keyframe ref, its quote) of a flag -> its id."""
     from nip.contracts import refs
 
     fps = Fraction(*tl.fps)
@@ -59,6 +59,7 @@ def occurrence_rows(
         if o.match.status == "cleared" and not include_hidden:
             continue
         item = o.match.item
+        kf = refs.keyframe(tl.episode, o.best.shot, o.best.n)
         tc = [frame_to_smpte(f + tl.start_tc_frames, fps, tl.drop_frame) for f in o.frames]
         det = o.best.detection_id
         rows.append(
@@ -77,7 +78,9 @@ def occurrence_rows(
                     if det
                     else ""
                 ),
-                "flag_id": flag_ids.get(refs.keyframe(tl.episode, o.best.shot, o.best.n), ""),
+                "flag_id": flag_ids.get(
+                    (o.check, kf, o.best.text), flag_ids.get((o.check, kf, None), "")
+                ),
             }
         )
     return rows
@@ -99,12 +102,12 @@ def stage(ep: Any) -> None:
     """Pipeline stage `clearance.csv`, after `flags`: the report CSV as a run artifact."""
     tl: Timeline = ep.timeline
     occs = episode_occurrences(ep.conn, ep.show, tl, pipeline_config()["clearance"])
-    ids = {
-        e.ref: f.id
+    ids = {  # the best keyframe of a flag is the one with the crop
+        (str(f.check), e.ref, e.quote): f.id
         for f in ep.kept
         if f.agent.value == "clearance_scanner" and f.id
         for e in f.evidence
-        if e.kind is EvidenceKind.KEYFRAME
+        if e.kind is EvidenceKind.KEYFRAME and e.crop is not None
     }
     ep.artifacts["clearance_report.csv"] = to_csv(occurrence_rows(occs, tl, ep.show, ids)).encode()
 
@@ -151,15 +154,16 @@ def report_cmd(
                 ).scalar()
             )
             ids = {
-                r.ref: runs.ext_id("flg", r.id)
+                (r.check_id, r.ref, r.quote): runs.ext_id("flg", r.id)
                 for r in conn.execute(
-                    select(fl.c.id, ev.c.ref)
+                    select(fl.c.id, fl.c.check_id, ev.c.ref, ev.c.quote)
                     .join(ev, ev.c.flag_id == fl.c.id)
                     .where(
                         fl.c.run_id == run_id,
                         fl.c.episode_id == ep.id,
                         fl.c.agent == "clearance_scanner",
                         ev.c.kind == EvidenceKind.KEYFRAME.value,
+                        ev.c.crop.is_not(None),
                     )
                 )
             }

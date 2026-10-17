@@ -189,7 +189,7 @@ def rows(include_hidden: bool = False) -> tuple[list[dict[str, Any]], Timeline]:
         hit("clr.phone", "(617) 482-9154", 2, detection_id=14),
     ]
     occs = analyze(hits, LOG, tl, CFG, KFS)
-    ids = {refs.keyframe("S01E01", 0, 0): "flg_5"}
+    ids = {("clr.phone", refs.keyframe("S01E01", 0, 0), None): "flg_5"}
     return occurrence_rows(occs, tl, "show", ids, include_hidden=include_hidden), tl
 
 

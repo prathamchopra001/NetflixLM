@@ -5,6 +5,12 @@ timeline:
     threshold: 0.5
   keyframes:
     # Middle frame of every shot, plus one every `interval_s` for shots longer than `long_shot_s`.
+    # EXP-008 (injected Sintel + Tears of Steel, 3 seeds, shown recall of the six text checks):
+    # 1 per shot 0.50 at 11.2 keyframes/min; this policy (4 s / 2 s) 1.00 at 26.7 (+139%); one every
+    # 1 s in shots over 1 s 1.00 at 53.9 (+102%, +0 points, so rejected). Kept at 4 s / 2 s: the
+    # dense arm fails the bar (>= +5 points for <= +50% keyframes) against it. A strict reading of
+    # the bar against 1 per shot would also reject this policy (+139% keyframes): set long_shot_s
+    # to 86400 for that (see notes/2.7.md DP-2.7-9).
     long_shot_s: 4.0
     interval_s: 2.0
     jpeg_quality: 90

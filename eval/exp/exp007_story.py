@@ -239,20 +239,20 @@ def up() -> None:
 
 @app.command()
 def down() -> None:
-    """Delete the app and wait for VRAM back to the idle level read by `up`."""
-    from nip.config import vram_margin_gb
-    from nip.contracts import Slot
-    from nip.runtime.catalog import load_catalog
-    from nip.runtime.planner import plan
-    from nip.runtime.probe import probe
-    from nip.runtime.serving import apps, ray_serve, teardown
+    """Delete every Serve app and wait for VRAM back to the idle level read by `up`. (Not a
+    re-plan: with the model loaded the planner no longer fits it and would delete nothing.)"""
+    from nip.runtime.serving import IDLE_TOLERANCE_MIB, gpu_used_mib, ray_serve
 
-    cat, inv = load_catalog(), probe()
-    p = plan(inv, cat, {Slot.TEXT_LLM: 1}, margin_gb=vram_margin_gb())
+    serve, t = ray_serve(), time.monotonic()
     idle_f = Path("/tmp/exp007-idle.txt")
     idle = int(idle_f.read_text()) if idle_f.exists() else None
-    secs = teardown(apps(p, cat, inv, p.groups[0].slots), ray_serve(), idle_mib=idle)
-    typer.echo(json.dumps({"unload_s": secs, "idle_mib": idle}))
+    for name in list(serve.status().applications):
+        serve.delete(name)
+    while idle is not None and gpu_used_mib() > idle + IDLE_TOLERANCE_MIB:
+        if time.monotonic() - t > 180:
+            raise RuntimeError(f"VRAM {gpu_used_mib()} MiB after 180 s, idle was {idle}")
+        time.sleep(0.5)
+    typer.echo(json.dumps({"unload_s": round(time.monotonic() - t, 1), "idle_mib": idle}))
 
 
 # ---- scoring -------------------------------------------------------------------------------------

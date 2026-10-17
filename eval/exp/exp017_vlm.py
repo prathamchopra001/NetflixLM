@@ -158,7 +158,9 @@ def score_cmd(
         reader.variant = VARIANT
         # NER: the same GLiNER as the OCR arm's scan (its cached candidates came from it)
         ner = _ner()
-        scanner = TextScanner(ner, deny_brands=film.deny, fictional=film.fictional)
+        scanner = TextScanner(
+            ner, deny_brands=film.deny, deny_addresses=film.deny_addresses, fictional=film.fictional
+        )
         only = {f for f, v in lines.items() if v is not None}
         u = bench.scan_union(film, reader, scanner, "vlm", only)
         rec = wall.get(key)

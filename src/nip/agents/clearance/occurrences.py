@@ -71,7 +71,7 @@ class Occurrence:
         """Stable name of the occurrence inside its episode (work unit key, flag fingerprint)."""
         m = self.match.item
         who = f"clr/{m.id}" if m else normalize(self.check, self.text)
-        return f"{self.check}/{who}/shot{self.shots[0]}"
+        return f"{self.check}/{who}/f{self.frames[0]}"
 
 
 Geometry = tuple[
@@ -120,6 +120,20 @@ def cells(geo: Geometry, cap_frames: int) -> dict[tuple[int, int], tuple[int, in
             half = max(cap_frames // 2, 1)
             lo, hi = max(lo, f - half), min(hi, f + half)
             out[shot, n] = (lo, max(hi, lo + 1))
+    return out
+
+
+def windows(geo: Geometry, cap_frames: int) -> dict[tuple[int, int], tuple[int, int]]:
+    """(shot, n) -> [lo, hi): what a read keyframe's span covers, `cap_frames` centred on the frame
+    inside its shot, whatever the sampling density. A flag's claim is this range, so it covers about
+    the seconds the text was seen (a denser policy must not make claims narrower)."""
+    _, _, shots, kfs = geo
+    half = max(cap_frames // 2, 1)
+    out = {}
+    for shot, n, f in kfs:
+        a, b = shots[shot]
+        lo, hi = max(a, f - half), min(b, f + half)
+        out[shot, n] = (lo, max(hi, lo + 1))
     return out
 
 

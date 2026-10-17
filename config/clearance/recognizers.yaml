@@ -6,7 +6,11 @@ phone_regions: [US, GB, DE, FR, IL, IN, CA, BR, ES]
 reserved_domains: [example.com, example.net, example.org, example, test, invalid, localhost]
 min_score: {phone: 0.4, email: 0.5, url: 0.5, plate: 0.4, address: 0.5, brand: 0.5}
 # GLiNER label -> Presidio entity
-ner_labels: {address: ADDRESS, organization: BRAND, product: BRAND}
+ner_labels: {address: ADDRESS, organization: BRAND, product: BRAND, person: PERSON, job title: ROLE}
+# A GLiNER person / job-title span at least this sure removes an address or brand span it overlaps.
+person_min_score: 0.6
+# OCR lines of one keyframe at which it counts as a credits / caption card.
+dense_frame_lines: 8
 # Plates arrive as a line of their own on screen: full-line patterns, matched case-sensitively
 # (upper case only), letters + digits. Caption shapes that look the same as a plate are excluded
 # by name in a lookahead: month abbreviations and words before "ABC 1234", units after "123 ABC",

@@ -14,8 +14,8 @@ import sys
 import time
 from pathlib import Path
 
-from nip import pipeline
 from nip.contracts import Slot
+from nip.pipeline import current_plan, slot_reason
 from nip.runtime import serving
 from nip.runtime.catalog import load_catalog
 
@@ -24,9 +24,9 @@ MAX_HOLD_S = 4 * 3600
 
 
 def main() -> None:
-    plan, inv = pipeline.current_plan({Slot.VLM: 1})
+    plan, inv = current_plan({Slot.VLM: 1})
     if Slot.VLM in plan.skipped_slots:
-        sys.exit(f"vlm skipped: {pipeline.slot_reason(plan, Slot.VLM)}")
+        sys.exit(f"vlm skipped: {slot_reason(plan, Slot.VLM)}")
     apps = serving.apps(plan, load_catalog(), inv, [Slot.VLM])
     STOP.unlink(missing_ok=True)
     with serving.group(apps, serving.ray_serve()) as rec:

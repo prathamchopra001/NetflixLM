@@ -46,6 +46,7 @@ from urlextract import URLExtract  # noqa: E402
 from nip.config import config_dir  # noqa: E402
 from nip.store.schema import detection  # noqa: E402
 
+PERSON, ROLE = "PERSON", "ROLE"  # asked from GLiNER only to tell names and credits from brands
 PHONE, EMAIL, URL, PLATE, ADDRESS, BRAND = (
     "PHONE_NUMBER",
     "EMAIL_ADDRESS",
@@ -240,6 +241,11 @@ class TextScanner:
     """Presidio analyzer for on-screen text. Build once (spaCy loads), call `candidates` per line.
 
     deny_brands: extra real brand names (clearance-log items); always brand_text candidates.
+    deny_addresses: clearance-log addresses; always address candidates (a logged item must not
+                 depend on GLiNER guessing it).
+    A keyframe with `dense_frame_lines` or more OCR lines is a credits or caption card: GLiNER's
+    address and brand guesses in it are not used (they were 83-92% of the shown false positives on
+    Sintel and Tears of Steel); the deny-lists, phones, URLs, e-mails and plates still are.
     fictional:   bible fictional brands / organizations; never brand_text candidates.
     """
 
@@ -248,11 +254,14 @@ class TextScanner:
         ner: Any = None,
         *,
         deny_brands: Iterable[str] = (),
+        deny_addresses: Iterable[str] = (),
         fictional: Iterable[str] = (),
     ) -> None:
         cfg = _config()
         langs = cfg["languages"]
         self._min = cfg["min_score"]
+        self._person = cfg["person_min_score"]
+        self._dense = cfg["dense_frame_lines"]
         self._reserved = tuple(cfg["reserved_domains"])
         self._fictional = [n for n in map(_norm, fictional) if n]
         brands = sorted({*cfg["brand_deny_list"], *deny_brands})
@@ -291,6 +300,16 @@ class TextScanner:
                     name="brand_deny_list",
                 )
             )
+            if addresses := sorted(set(deny_addresses)):
+                registry.add_recognizer(
+                    PatternRecognizer(
+                        ADDRESS,
+                        supported_language=lang,
+                        deny_list=addresses,
+                        deny_list_score=0.85,
+                        name="address_deny_list",
+                    )
+                )
             if ner is not None:
                 registry.add_recognizer(NerRecognizer(lang, ner, cfg["ner_labels"]))
         self._engine = AnalyzerEngine(registry=registry, nlp_engine=nlp, supported_languages=langs)
@@ -314,6 +333,8 @@ class TextScanner:
         if entity == ADDRESS:  # GLiNER tags bare phone-number lines as addresses: needs a word
             return re.search(r"[^\W\d_]{3}", span) is None
         if entity == BRAND:
+            if re.search(r"[^\W\d_]{3}", span) is None:  # "IT", "CG", "O0": OCR noise, not a brand
+                return True
             n = _norm(span)
             return any(f == n or f" {f} " in f" {n} " for f in self._fictional)
         return False
@@ -321,12 +342,32 @@ class TextScanner:
     def candidates(self, detections: Iterable[Detection], lang: str = "en") -> list[Candidate]:
         """Typed candidates of the OCR `detections` (`lang`: the language of the on-screen text)."""
         out = []
+        detections = list(detections)
+        dense = len({(d.shot, d.n) for d in detections}) == 1 and len(detections) >= self._dense
         for d in detections:
             text = clean_ocr_urls(d.text)
+            found = self._engine.analyze(text, lang, entities=[*CHECK, PERSON, ROLE])
+            if dense:
+                found = [
+                    r
+                    for r in found
+                    if (r.recognition_metadata or {}).get("recognizer_name") != "gliner"
+                ]
+            # A person's name or a credit line ("CHARACTER RIGGING") is no brand or address:
+            # GLiNER's organization / product reading of text it also reads as a person or a role
+            # is dropped.
+            names = [
+                r for r in found if r.entity_type in (PERSON, ROLE) and r.score >= self._person
+            ]
             raw = [
                 r
-                for r in self._engine.analyze(text, lang, entities=list(CHECK))
-                if r.score >= self._min[_MIN_KEY[r.entity_type]]
+                for r in found
+                if r.entity_type in CHECK
+                and r.score >= self._min[_MIN_KEY[r.entity_type]]
+                and not (
+                    r.entity_type in (ADDRESS, BRAND)
+                    and any(n.start < r.end and r.start < n.end for n in names)
+                )
             ]
             # A phone, URL, email or plate is its own finding: GLiNER's address / brand reading of
             # the same characters ("acme-shop.com" as an organization) and the domain inside an

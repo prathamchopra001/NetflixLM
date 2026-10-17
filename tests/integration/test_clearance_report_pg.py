@@ -70,7 +70,8 @@ def setup(pg: Engine, s3: Any, tmp_path: Path) -> tuple[StubOCR, Path]:
         pytest.skip("ffmpeg not on PATH")
     video = tmp_path / "clip.mp4"
     subprocess.run(
-        ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=24:duration=6",
+        ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i",
+         "testsrc2=size=160x90:rate=24:duration=6",
          "-c:v", "libx264", "-pix_fmt", "yuv420p", str(video)],
         check=True,
     )  # fmt: skip
@@ -139,7 +140,9 @@ def test_flags_detections_crops_and_csv(
     with pg.connect() as conn:
         flags = conn.execute(select(f.c.check_id, f.c.tier, f.c.severity, f.c.title)).all()
         got = {
-            next(t for t in ("212", "415", "617", "Veltrix", "Kappa") if t.lower() in r.title.lower()): r
+            next(
+                t for t in ("212", "415", "617", "Veltrix", "Kappa") if t.lower() in r.title.lower()
+            ): r  # noqa: E501
             for r in flags
         }
         # pending: must_review sev 4; cleared: suppressed (kept for the audit); the denied brand:

@@ -14,8 +14,8 @@ from nip.agents.clearance.checks import ClearanceText, ClrBrandText
 from nip.agents.clearance.matching import Item, Registry
 from nip.agents.clearance.occurrences import Hit, analyze
 from nip.agents.clearance.ocr_text import Detection
-from nip.agents.clearance.stage import Scan, with_ocr
 from nip.agents.clearance.report import COLUMNS, from_csv, occurrence_rows, to_csv
+from nip.agents.clearance.stage import Scan, with_ocr
 from nip.config import pipeline_config
 from nip.contracts import refs
 from nip.contracts.flag import EvidenceKind, EvidenceRole, Flag, ProducedBy, Tier
@@ -176,7 +176,7 @@ def test_work_unit_keys_are_stable() -> None:
     assert (
         [u.key for u in a.units(tl)]
         == [u.key for u in b.units(tl)]
-        == [f"S01E01/clr.phone/clr/1/shot0"]
+        == ["S01E01/clr.phone/clr/1/f0"]
     )
 
 

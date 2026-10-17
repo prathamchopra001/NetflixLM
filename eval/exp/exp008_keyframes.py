@@ -111,6 +111,7 @@ class Film:
     items: list[dict[str, Any]]  # what the injector rendered (`<video>.clr.json`)
     registry: Registry
     deny: tuple[str, ...]
+    deny_addresses: tuple[str, ...]
     fictional: tuple[str, ...]
     labels: list[Label] = field(default_factory=list)
 
@@ -140,12 +141,13 @@ def load_film(name: str, seed: int) -> Film:
     )
     fictional = tuple([*bible.fictional.brands, *bible.fictional.orgs, *bible.fictional.places])
     deny = tuple(i.name for i in reg_items if i.kind in ("brand", "logo", "product", "artwork"))
+    addresses = tuple(i.name for i in reg_items if i.kind in ("address", "location"))
     labels = [
         lb.model_copy(update={"episode": episode})
         for lb in _read_labels(INJECT / f"seed{seed}" / "labels" / f"{name}.jsonl")
     ]
     return Film(name, seed, episode, video, info, shots, items, Registry(reg_items, fictional),
-                deny, fictional, labels)  # fmt: skip
+                deny, addresses, fictional, labels)  # fmt: skip
 
 
 def _read_labels(path: Path) -> list[Label]:
@@ -356,8 +358,45 @@ def _scanner(cuda: bool) -> tuple[Any, Any, Callable[[Film], TextScanner]]:
     return (
         reader,
         ner,
-        lambda film: TextScanner(ner, deny_brands=film.deny, fictional=film.fictional),
+        lambda film: TextScanner(
+            ner, deny_brands=film.deny, deny_addresses=film.deny_addresses, fictional=film.fictional
+        ),
     )
+
+
+@app.command("rescan")
+def rescan_cmd(
+    seeds: str = "1,2,3", src: str = "cpu", dst: str = "cpu2", cpu: bool = True,
+    films: str = "sintel,tears-of-steel",
+) -> None:  # fmt: skip
+    """New candidates from the cached OCR lines of tag `src` (a scanner change needs no new OCR);
+    the sharpness of each candidate is measured again on the cached keyframe image."""
+    from nip.agents.clearance.occurrences import sharpness
+    from nip.runtime.clients.ner import GlinerBackend
+
+    ner = GlinerBackend(cuda=not cpu)
+    for seed in map(int, seeds.split(",")):
+        for name in films.split(","):
+            film = load_film(name, seed)
+            frames = extract(film)
+            scanner = TextScanner(
+                ner,
+                deny_brands=film.deny,
+                deny_addresses=film.deny_addresses,
+                fictional=film.fictional,
+            )
+            old = pickle.loads((ROOT / "scans" / f"{src}-{name}-s{seed}.pkl").read_bytes())
+            new = {}
+            for f, (scan, took) in old.items():
+                cands = scanner.candidates(scan.lines, film.lang)
+                data = frames[f].read_bytes() if cands else b""
+                new[f] = (Scan(scan.lines, cands, [sharpness(data, c.box) for c in cands]), took)
+            (ROOT / "scans" / f"{dst}-{name}-s{seed}.pkl").write_bytes(pickle.dumps(new))
+            print(
+                f"{name} s{seed}: {sum(len(s.candidates) for s, _ in new.values())} candidates "
+                f"(was {sum(len(s.candidates) for s, _ in old.values())})",
+                flush=True,
+            )
 
 
 @app.command("scan")

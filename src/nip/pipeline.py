@@ -60,7 +60,7 @@ from sqlalchemy import Connection, Engine, create_engine, or_, select
 
 from nip.agents import localization
 from nip.agents.base import Check, Input, emit, run_check
-from nip.config import vram_margin_gb
+from nip.config import pipeline_config, vram_margin_gb
 from nip.contracts.flag import CHECK_OWNER, Agent, CheckId, Flag, ProducedBy
 from nip.contracts.inventory import HardwareInventory
 from nip.contracts.plan import Mode, Objective, Plan, Slot, StageGroup
@@ -558,7 +558,9 @@ def current_plan(workload: dict[Slot, int]) -> tuple[Plan, HardwareInventory]:
     """The Plan for this hardware (`nip plan`'s inputs); NIP_PROFILE=cpu gives the stub Plan.
 
     The asr slot is pinned to `timeline.asr.variant` of pipeline.yaml (EXP-003 picked turbo over
-    the planner's quality-ranked large-v3); NIP_PIN_ASR overrides it."""
+    the planner's quality-ranked large-v3) and ner to `clearance.ner_variant` (D-026: gliner-x-base,
+    the one 2.6 measured; the quality-ranked large is neither downloaded nor measured);
+    NIP_PIN_<SLOT> overrides either."""
     from nip.runtime import planner
     from nip.runtime.catalog import load_catalog, validate
     from nip.runtime.probe import probe as probe_hardware
@@ -568,7 +570,8 @@ def current_plan(workload: dict[Slot, int]) -> tuple[Plan, HardwareInventory]:
     except PackageNotFoundError:
         vllm = None
     inv = probe_hardware()  # free VRAM now, as NVML reports it (Windows desktop included)
-    pins = {Slot.ASR: timeline_config()["asr"]["variant"]}
+    pins = {Slot.ASR: timeline_config()["asr"]["variant"],
+            Slot.NER: pipeline_config()["clearance"]["ner_variant"]}  # fmt: skip
     pins |= {s: v for s in Slot if (v := os.environ.get(f"NIP_PIN_{s.upper()}", ""))}
     catalog = validate(load_catalog(), vllm, licenses=None)
     gmu = float(os.environ.get("NIP_GPU_MEM_UTILIZATION", "0.90"))

@@ -60,6 +60,8 @@ knowledge:
 
 # Clearance scanner (2.7): matching, occurrences, prominence, routing.
 clearance:
+  # The planner pins the ner slot to this variant (D-026; 2.6 measured it, the large one is unmeasured).
+  ner_variant: gliner-x-base
   # Detections of one item whose keyframe cells are at most this far apart are one occurrence.
   occurrence_gap_s: 2.0
   # A keyframe proves its text on screen at that frame only; its cell (the stretch of the shot

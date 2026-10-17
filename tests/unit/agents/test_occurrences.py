@@ -30,8 +30,12 @@ def timeline(shots: list[tuple[int, int]], kfs: list[tuple[int, int, int]]) -> T
         t = [frame_to_smpte(x, FPS) for x in (a, b)]
         return Span(kind=kind, ref=ref, frames=(a, b), tc_in=t[0], tc_out=t[1])
 
-    spans = [span(EvidenceKind.SHOT, refs.shot("S01E01", i), a, b) for i, (a, b) in enumerate(shots)]
-    spans += [span(EvidenceKind.KEYFRAME, refs.keyframe("S01E01", i, n), f, f + 1) for i, n, f in kfs]
+    spans = [
+        span(EvidenceKind.SHOT, refs.shot("S01E01", i), a, b) for i, (a, b) in enumerate(shots)
+    ]
+    spans += [
+        span(EvidenceKind.KEYFRAME, refs.keyframe("S01E01", i, n), f, f + 1) for i, n, f in kfs
+    ]
     return Timeline(episode="S01E01", fps=(24, 1), duration_frames=shots[-1][1], spans=tuple(spans))
 
 
@@ -75,7 +79,8 @@ def test_a_cell_is_capped_so_a_long_shot_does_not_claim_all_of_it() -> None:
 
 def test_different_text_or_item_never_merges() -> None:
     tl = two_shots(48)
-    occs = analyze([hit(0, text="(617) 482-9154"), hit(1, text="(617) 482-9155")], Registry(), tl, CFG)
+    hits = [hit(0, text="(617) 482-9154"), hit(1, text="(617) 482-9155")]
+    occs = analyze(hits, Registry(), tl, CFG)
     assert len(occs) == 2
     # two spellings of one logged item are one occurrence
     reg = Registry((Item(7, "(617) 482-9154", "phone", "pending"),))
@@ -142,3 +147,22 @@ def test_sharpness_is_higher_for_crisp_text_than_for_blurred() -> None:
     blur = cv2.imencode(".png", cv2.GaussianBlur(img, (0, 0), 4))[1].tobytes()
     box = (0.05, 0.25, 0.9, 0.5)
     assert sharpness(sharp, box) > 10 * sharpness(blur, box) > 0
+
+
+def test_the_same_text_twice_in_one_long_shot_is_two_occurrences_with_distinct_keys() -> None:
+    tl = timeline([(0, 2400)], [(0, 0, 240), (0, 1, 1200)])
+    a, b = analyze([hit(0, 0), hit(0, 1)], Registry(), tl, CFG)
+    assert a.shots == b.shots == (0,) and a.key != b.key
+
+
+def test_a_keyframe_span_covers_the_same_seconds_whatever_the_sampling() -> None:
+    """The claim of a flag must not narrow as the policy gets denser (EXP-008)."""
+    from nip.agents.clearance.occurrences import cell_cap_frames, geometry, windows
+
+    sparse = timeline([(0, 480)], [(0, 0, 240)])
+    dense = timeline([(0, 480)], [(0, n, 240 + 24 * (n - 2)) for n in range(5)])
+    cap = cell_cap_frames(sparse, CFG)
+    assert windows(geometry(sparse), cap)[0, 0] == (192, 288)
+    assert windows(geometry(dense), cap)[0, 2] == (192, 288)  # one keyframe of five: same width
+    edge = timeline([(0, 480)], [(0, 0, 10)])
+    assert windows(geometry(edge), cap)[0, 0] == (0, 58)  # clipped to the shot

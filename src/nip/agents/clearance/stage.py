@@ -29,11 +29,11 @@ from sqlalchemy import Connection, delete, func, insert, select
 
 from nip.agents.clearance.occurrences import (
     cell_cap_frames,
-    cells,
     crop,
     decode,
     geometry,
     sharpness,
+    windows,
 )
 from nip.agents.clearance.ocr_text import Candidate, Detection, TextScanner
 from nip.config import pipeline_config
@@ -153,10 +153,13 @@ def release_models() -> None:
 
 @cache
 def scanner_for(
-    ner_variant: str | None, deny: tuple[str, ...], fictional: tuple[str, ...]
+    ner_variant: str | None,
+    brands: tuple[str, ...],
+    addresses: tuple[str, ...],
+    fictional: tuple[str, ...],
 ) -> TextScanner:
     ner = ner_backend(ner_variant) if ner_variant else None
-    return TextScanner(ner, deny_brands=deny, fictional=fictional)
+    return TextScanner(ner, deny_brands=brands, deny_addresses=addresses, fictional=fictional)
 
 
 # ---- the stage ---------------------------------------------------------------------------------
@@ -187,22 +190,23 @@ def _source_lang(conn: Connection, episode_id: int) -> str:
     return lang if lang in LANGS else "en"
 
 
-def _names(conn: Connection, show: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+def _names(conn: Connection, show: str) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
     """(brand-like clearance items to always look for, names the bible declares fictional)."""
     from nip.agents.clearance.checks import load_registry
 
     reg = load_registry(conn, show)
-    deny = tuple(i.name for i in reg.items if i.kind in ("brand", "logo", "product", "artwork"))
-    return deny, reg.fictional
+    brands = tuple(i.name for i in reg.items if i.kind in ("brand", "logo", "product", "artwork"))
+    addresses = tuple(i.name for i in reg.items if i.kind in ("address", "location"))
+    return brands, addresses, reg.fictional
 
 
 def with_ocr(tl: Timeline, scans: dict[tuple[int, int], Scan], cfg: dict[str, Any]) -> Timeline:
-    """`tl` for the clearance checks: a keyframe that was read stands for its cell (the stretch of
-    its shot it represents, `occurrences.cells`), so a flag's claim covers about the seconds the
-    text was seen, and carries the OCR text (the lines, then candidate texts the cleaned line
-    changed) so a quote is found in the span's stored text. Run it on the timeline as stored, whose
-    keyframe spans are single frames."""
-    cell = cells(geometry(tl), cell_cap_frames(tl, cfg))
+    """`tl` for the clearance checks: a keyframe that was read stands for the seconds around it
+    (`occurrences.windows`: `cell_cap_s` centred on the frame, inside its shot), so a flag's claim
+    covers about the seconds the text was seen, and carries the OCR text (the lines, then candidate
+    texts the cleaned line changed) so a quote is found in the span's stored text. Run it on the
+    timeline as stored, whose keyframe spans are single frames."""
+    cell = windows(geometry(tl), cell_cap_frames(tl, cfg))
     spans = []
     for s in tl.spans:
         if s.kind is EvidenceKind.KEYFRAME:
@@ -275,8 +279,8 @@ def stage(ep: StageEpisode) -> None:
     if decision is None or not keys:
         return
     ner = ep.plan.decisions.get(Slot.NER)
-    deny, fictional = _names(ep.conn, ep.show)
-    scanner = scanner_for(ner.variant if ner else None, deny, fictional)
+    brands, addresses, fictional = _names(ep.conn, ep.show)
+    scanner = scanner_for(ner.variant if ner else None, brands, addresses, fictional)
     reader = ocr_reader(decision.variant)
     lang = _source_lang(ep.conn, ep.episode_id)
     scans: dict[tuple[int, int], Scan] = {}

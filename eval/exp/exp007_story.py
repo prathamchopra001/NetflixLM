@@ -240,7 +240,8 @@ def up() -> None:
 @app.command()
 def down() -> None:
     """Delete every Serve app and wait for VRAM back to the idle level read by `up`. (Not a
-    re-plan: with the model loaded the planner no longer fits it and would delete nothing.)"""
+    re-plan: with the model loaded the planner no longer fits it and would delete nothing.)
+    Deletes ALL Serve apps in the cluster: run it only while holding data/gpu.lock."""
     from nip.runtime.serving import IDLE_TOLERANCE_MIB, gpu_used_mib, ray_serve
 
     serve, t = ray_serve(), time.monotonic()
@@ -457,7 +458,8 @@ def score(
                     set_=SET, flags=flag_file, labels=[root / "labels"], exp="EXP-007",
                     variant=tag, seed=seed, plan=None, content_hours=None, gpu_seconds=None,
                     wall_seconds=None, coverage=None, baseline=False,
-                    param=[f"story_variant={variant}", f"arm={name}", f"model={MODEL}"],
+                    param=[f"story_variant={variant}", f"arm={name}", f"model={MODEL}"]
+                    + [f"story_prompt=knowledge.story.{arm[4:] or 'v1'}"] * (arm[:3] == "llm"),
                     tracking_uri=TRACKING_URI, out_dir=OUT / "runs",
                 )  # fmt: skip
                 client = MlflowClient(TRACKING_URI)

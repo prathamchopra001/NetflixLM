@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 STAGE = "knowledge.story"
-PROMPT = "knowledge.story.v1.md"
+PROMPT = "knowledge.story.v2.md"  # v1 read a regressing time of day as `earlier` (EXP-007)
 MARKERS = ("flashback", "dream", "vision", "intercut", "continuous")
 
 # --- lexicons, matched on upper-cased text (config keys are proposed in the notes, not added)
@@ -130,7 +130,7 @@ class Story:
 
 
 class Verdict(BaseModel):
-    """The LLM's answer for one ambiguous transition (config/prompts/knowledge.story.v1.md)."""
+    """The LLM's answer for one ambiguous transition (config/prompts/knowledge.story.v2.md)."""
 
     relation: Literal["next_day", "same_day", "later_days", "earlier", "simultaneous"]
     days: int = Field(1, ge=1, le=3650)

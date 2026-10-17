@@ -179,7 +179,9 @@ def ray_head(*args: str, env: dict[str, str] | None = None) -> str:
     """Run `python3 -m eval.exp.exp018_kv <args>` (or any argv) inside ray-head; stdout."""
     e = [x for k, v in (env or {}).items() for x in ("-e", f"{k}={v}")]
     cmd = [*COMPOSE, "exec", "-T", *e, "ray-head", *args]
-    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, check=False)
+    # vLLM logs UTF-8; the Windows default (cp1252) crashed the decode and the round's teardown
+    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, check=False, text=True,
+                       encoding="utf-8", errors="replace")  # fmt: skip
     if r.returncode:
         typer.echo(r.stderr[-3000:], err=True)
     return r.stdout
@@ -212,8 +214,12 @@ def drive(
                     f.write(line.removeprefix("RESULT ") + "\n")
                 typer.echo(line[:400])
         finally:  # safety net: no Serve app may outlive the round (2.2B's `down` finding)
-            typer.echo(ray_head("python3", "-m", "eval.exp.exp018_kv", "down")[-300:])
-            release()
+            try:
+                typer.echo(ray_head("python3", "-m", "eval.exp.exp018_kv", "down")[-300:])
+            finally:  # a crash in `down` once left the lock held for 2 h 15 min
+                release()
+        if t < trials:
+            time.sleep(150)  # longer than the others' 60 s lock poll, so they get a turn
 
 
 @app.command()

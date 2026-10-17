@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines and Tomas share a thermos at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Tomas share a thermos at Quill Archive.\", \"predicate\": \"holds\", \"subject\": \"ines\", \"object\": \"ada\", \"value\": \"use\", \"confidence\": 0.5}, {\"line\": 1, \"quote\": \"Ines and Tomas share a thermos at Quill Archive.\", \"predicate\": \"holds\", \"subject\": \"tomas\", \"object\": \"ada\", \"value\": \"use\", \"confidence\": 0.5}, {\"line\": 2, \"quote\": \"Ines uses the blue folder on the evidence locker.\", \"predicate\": \"holds\", \"subject\": \"ines\", \"object\": \"ada\", \"value\": \"use\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"It worked.\", \"predicate\": \"state\", \"subject\": \"ada\", \"value\": \"healed\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"After all this time.\", \"predicate\": \"state\", \"subject\": \"ada\", \"value\": \"healed\", \"confidence\": 0.8}]}"
+}

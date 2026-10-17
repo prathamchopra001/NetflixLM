@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines and Ada check their watches\", \"predicate\": \"holds\", \"subject\": \"ines\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Station House\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"ada\", \"value\": \"Station House\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Ines picks up the blue folder\", \"predicate\": \"holds\", \"subject\": \"ines\", \"object\": \"ada\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Is that what I think it is?\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"ada\", \"confidence\": 1.0}]}"
+}

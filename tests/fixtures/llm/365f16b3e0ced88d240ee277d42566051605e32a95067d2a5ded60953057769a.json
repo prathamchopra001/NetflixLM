@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Dov wait at Marrow Street Garage\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Marrow Street Garage\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Dov wait at Marrow Street Garage\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Marrow Street Garage\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"have you seen the tide tables\", \"predicate\": \"references\", \"subject\": \"ada\", \"object\": \"The Lantern Bar\", \"confidence\": 0.8}, {\"line\": 3, \"quote\": \"The coffee went cold again\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"cold\", \"confidence\": 0.9}, {\"line\": 4, \"quote\": \"let's get moving\", \"predicate\": \"decision\", \"subject\": \"ada\", \"value\": \"get moving\", \"confidence\": 1.0}]}"
+}

@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Ada argue quietly at The Lantern Bar.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"The Lantern Bar\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Ada argue quietly at The Lantern Bar.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"The Lantern Bar\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Ada argue quietly at The Lantern Bar.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"dov\",\n      \"object\": \"ada\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Dov picks up the signal flare.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"dov\",\n      \"object\": \"ada\",\n      \"value\": \"obtain\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

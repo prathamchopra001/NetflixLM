@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines sits alone at Saltworks Yard\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"a stack of old papers on the table\", \"predicate\": \"setup\", \"subject\": \"ada\", \"value\": \", \", \"confidence\": 0.5}, {\"line\": 1, \"quote\": \"A blue folder sits on a shelf\", \"predicate\": \"setup\", \"subject\": \"sasha\", \"value\": \", \", \"confidence\": 0.5}]}"
+}

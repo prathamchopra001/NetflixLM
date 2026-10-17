@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha and Dov argue quietly at The Lantern Bar.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Dov argue quietly at The Lantern Bar.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Dov argue quietly at The Lantern Bar.\", \"predicate\": \"relationship\", \"subject\": \"sasha\", \"object\": \"dov\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Dov, have you seen the tide tables?\", \"predicate\": \"references\", \"subject\": \"sasha\", \"object\": \"secret_1\", \"confidence\": 0.9}, {\"line\": 3, \"quote\": \"Ask me after another cup.\", \"predicate\": \"decision\", \"subject\": \"dov\", \"value\": \"to drink another cup\", \"confidence\": 1.0}, {\"line\": 4, \"quote\": \"Then let's get moving.\", \"predicate\": \"decision\", \"subject\": \"sasha\", \"value\": \"to get moving\", \"confidence\": 1.0}]}"
+}

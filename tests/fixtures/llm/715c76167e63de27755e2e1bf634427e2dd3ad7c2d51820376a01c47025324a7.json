@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Sasha wait at Station House.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Sasha wait at Station House.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tomas Vale takes money from Greywater Holdings.\", \"predicate\": \"references\", \"subject\": \"dov\", \"object\": \"secret_4\", \"confidence\": 1.0}]}"
+}

@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 2, \"quote\": \"Maya Reyes started the fire at Marrow Street Garage\", \"predicate\": \"learns\", \"subject\": \"ines\", \"object\": \"secret_2\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Tomas argue quietly at Tidewater Diner\", \"predicate\": \"relationship\", \"subject\": \"ines\", \"object\": \"tomas\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 1, \"quote\": \"Ines and Tomas argue quietly at Tidewater Diner\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Tomas argue quietly at Tidewater Diner\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"I never suspected. Not once.\", \"predicate\": \"state\", \"subject\": \"tomas\", \"value\": \"surprised\", \"confidence\": 0.9}]}"
+}

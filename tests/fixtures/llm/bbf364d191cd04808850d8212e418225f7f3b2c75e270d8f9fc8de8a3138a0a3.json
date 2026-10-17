@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines and Ada check their watches\", \"predicate\": \"holds\", \"subject\": \"ines\", \"object\": \"Kappa Cola\", \"value\": \"obtain\", \"confidence\": 0.9}, {\"line\": 1, \"quote\": \"Ines and Ada check their watches\", \"predicate\": \"holds\", \"subject\": \"ada\", \"object\": \"Kappa Cola\", \"value\": \"obtain\", \"confidence\": 0.9}, {\"line\": 2, \"quote\": \"Grab me a Kappa Cola\", \"predicate\": \"mentions\", \"subject\": \"ines\", \"object\": \"Kappa Cola\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"I counted gulls instead of sleeping\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"secret_1\", \"confidence\": 0.8}]}"
+}

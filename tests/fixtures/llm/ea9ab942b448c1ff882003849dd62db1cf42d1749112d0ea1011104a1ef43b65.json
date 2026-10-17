@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Sasha, Leo and Ada crowd into Station House.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"Saltworks Yard\",\n      \"object\": \"Station House\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Grab me a Kappa Cola on your way back, Leo.\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"Saltworks Yard\",\n      \"object\": \"Kappa Cola\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 3,\n      \"quote\": \"Not a minute. The harbor never goes quiet.\",\n      \"predicate\": \"state\",\n      \"subject\": \"The Lantern Bar\",\n      \"value\": \"injured: <detail>\",\n      \"confidence\": 0.5\n    }\n  ]\n}"
-}

@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada, Maya and Leo crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada, Maya and Leo crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada, Maya and Leo crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"leo\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Hey the detective\", \"predicate\": \"references\", \"subject\": \"ada\", \"object\": \"Harbor City PD\", \"confidence\": 0.8}, {\"line\": 3, \"quote\": \"Somebody has to keep the lights on.\", \"predicate\": \"state\", \"subject\": \"maya\", \"value\": \"present_at\", \"confidence\": 0.9}, {\"line\": 4, \"quote\": \"Keep your head down out there.\", \"predicate\": \"state\", \"subject\": \"maya\", \"value\": \"present_at\", \"confidence\": 0.9}]}"
+}

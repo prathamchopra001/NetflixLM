@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Maya check their watches\", \"predicate\": \"holds\", \"subject\": \"ada\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Maya check their watches\", \"predicate\": \"holds\", \"subject\": \"maya\", \"object\": \"maya\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Ferry Terminal\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Ferry Terminal\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me Ferry Terminal is still standing\", \"predicate\": \"references\", \"subject\": \"ada\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"The harbor never goes quiet\", \"predicate\": \"references\", \"subject\": \"maya\", \"object\": \"The Lantern Bar\", \"confidence\": 0.5}]}"
+}

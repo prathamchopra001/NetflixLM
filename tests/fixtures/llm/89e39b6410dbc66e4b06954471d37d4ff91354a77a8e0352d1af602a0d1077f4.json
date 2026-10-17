@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Rui and Ada share a thermos\", \"predicate\": \"holds\", \"subject\": \"rui\", \"object\": \"ada\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Rui and Ada share a thermos\", \"predicate\": \"holds\", \"subject\": \"ada\", \"object\": \"rui\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Tidewater Diner\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Tidewater Diner\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"have you seen the tide tables?\", \"predicate\": \"references\", \"subject\": \"rui\", \"object\": \"The Lantern Bar\", \"confidence\": 0.8}, {\"line\": 3, \"quote\": \"It held through the night, mostly.\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"held\", \"confidence\": 1.0}]}"
+}

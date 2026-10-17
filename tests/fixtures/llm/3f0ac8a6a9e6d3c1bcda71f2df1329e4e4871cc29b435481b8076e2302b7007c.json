@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines, Dov and Maya crowd into Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines, Dov and Maya crowd into Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines, Dov and Maya crowd into Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Did you sleep at all, Dov?\", \"predicate\": \"mentions\", \"subject\": \"ines\", \"object\": \"Kappa Cola\", \"confidence\": 0.0}, {\"line\": 3, \"quote\": \"Somebody has to keep the lights on.\", \"predicate\": \"mentions\", \"subject\": \"dov\", \"object\": \"Brightwave Energy\", \"confidence\": 0.0}]}"
+}

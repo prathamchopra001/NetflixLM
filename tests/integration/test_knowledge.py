@@ -57,8 +57,9 @@ def test_synthetic_show_extracts_on_the_cpu_profile(
     assert s["status"] == "completed" and s["episodes"]["S01E01"]["units"] == {"done": 26}
     fe, fa = schema.fact_event, schema.fact
     n_events, n_facts = count(pg, fe), count(pg, fa, fa.c.status == "active")
-    # replayed qwen3.5-4b-awq responses (EXP-020 enum pass): its 75 S01E01 events, all grounded
-    assert n_events == 75 and 0 < n_facts <= n_events
+    # replayed qwen3.5-4b-awq responses (2.1B shipped-schema enum pass): 68 S01E01 events kept
+    # after grounding and the confidence / duplicate / argument-type drops
+    assert n_events == 68 and 0 < n_facts <= n_events
     raw = s3.objects["nip-artifacts", "runs/run_1/S01E01/knowledge.events.raw.jsonl"].decode()
     assert len(raw.splitlines()) >= n_events
     first = active_ids(pg)
@@ -116,7 +117,25 @@ class FakeLLM:
                 "object": "secret_1",
                 "confidence": 0.99,
             },  # fabricated quote
+            {
+                "line": 1,
+                "quote": line1[:25],
+                "predicate": "holds",
+                "subject": "maya",
+                "object": "ada",
+                "confidence": 0.9,
+            },  # a character is not a prop: wrong argument type (2.1B)
+            {
+                "line": 1,
+                "quote": line1[:25],
+                "predicate": "wearing",
+                "subject": "rui",
+                "object": "UNKNOWN",
+                "object_name": "thermos",
+                "confidence": 0.0,
+            },  # the runaway loop's zero-confidence pairs (2.1B)
         ]
+        events.append(dict(events[0]))  # a repeated event (2.1B)
         return schema_.model_validate({"events": events}, context=kw.get("context"))
 
 
@@ -149,6 +168,9 @@ def test_fabricated_quotes_are_dropped_and_unknown_names_become_candidates(
     assert q["facts"] and all(f.confidence < 0.8 for f in q["facts"])  # the 0.5 present_at facts
     raw = s3.objects["nip-artifacts", "runs/run_1/S01E01/knowledge.events.raw.jsonl"].decode()
     rows = [json.loads(r) for r in raw.splitlines()]
-    dropped = [r for r in rows if not r["grounded"]]  # raw keeps the dropped, with the verdict
-    assert dropped and all(r["quote"] == "Ada Kovac is the informant" for r in dropped)
+    dropped = [r for r in rows if r["dropped"]]  # raw keeps the dropped, with the reason
     assert len(rows) - len(dropped) == len(quotes)
+    why = {r["predicate"]: r["dropped"] for r in dropped if r["predicate"] != "present_at"}
+    assert why == {"learns": "quote", "holds": "argument type", "wearing": "zero confidence"}
+    assert all(not r["grounded"] for r in dropped if r["dropped"] == "quote")
+    assert {r["dropped"] for r in dropped if r["predicate"] == "present_at"} == {"duplicate"}

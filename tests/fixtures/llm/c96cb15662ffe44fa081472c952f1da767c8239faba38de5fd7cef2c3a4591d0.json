@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Maya and Tomas argue quietly at Saltworks Yard.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Maya and Tomas argue quietly at Saltworks Yard.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Grab me a Kappa Cola on your way back, Tomas.\", \"predicate\": \"mentions\", \"subject\": \"maya\", \"object\": \"Kappa Cola\", \"confidence\": 1.0}]}"
+}

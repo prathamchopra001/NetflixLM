@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas, Dov and Sasha crowd into Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas, Dov and Sasha crowd into Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas, Dov and Sasha crowd into Greywater Dock.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"sasha\",\n      \"object\": \"Greywater Dock\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 4,\n      \"quote\": \"But I am not carrying the crates.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"tomas\",\n      \"object\": \"UNKNOWN\",\n      \"value\": \"lose\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

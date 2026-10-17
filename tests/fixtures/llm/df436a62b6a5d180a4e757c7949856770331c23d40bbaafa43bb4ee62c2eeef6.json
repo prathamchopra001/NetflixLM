@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Tomas check their watches\", \"predicate\": \"holds\", \"subject\": \"ada\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas check their watches\", \"predicate\": \"holds\", \"subject\": \"tomas\", \"object\": \"tomas\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Ada uses the storm lantern\", \"predicate\": \"holds\", \"subject\": \"ada\", \"object\": \"ada\", \"value\": \"use\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"It worked\", \"predicate\": \"state\", \"subject\": \"ada\", \"value\": \"healed\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"After all this time\", \"predicate\": \"mentions\", \"subject\": \"tomas\", \"object\": \"secret_3\", \"confidence\": 1.0}]}"
+}

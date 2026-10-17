@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Rui and Tomas share a thermos\", \"predicate\": \"holds\", \"subject\": \"rui\", \"object\": \"ada\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Rui and Tomas share a thermos\", \"predicate\": \"holds\", \"subject\": \"tomas\", \"object\": \"rui\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Rui collapses\", \"predicate\": \"state\", \"subject\": \"rui\", \"value\": \"injured: collapsed\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Rui collapses\", \"predicate\": \"state\", \"subject\": \"rui\", \"value\": \"dead\", \"confidence\": 0.8}, {\"line\": 4, \"quote\": \"Rui? Stay with me\", \"predicate\": \"learns\", \"subject\": \"tomas\", \"object\": \"rui\", \"confidence\": 0.9}]}"
+}

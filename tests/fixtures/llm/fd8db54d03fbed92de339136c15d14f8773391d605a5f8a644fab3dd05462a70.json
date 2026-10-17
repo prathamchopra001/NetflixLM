@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines and Rui argue quietly at Tidewater Diner\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Rui argue quietly at Tidewater Diner\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Rui argue quietly at Tidewater Diner\", \"predicate\": \"relationship\", \"subject\": \"ines\", \"object\": \"rui\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Did you sleep at all, Rui?\", \"predicate\": \"mentions\", \"subject\": \"ines\", \"object\": \"Kappa Cola\", \"confidence\": 0.0}, {\"line\": 3, \"quote\": \"Somebody has to keep the lights on\", \"predicate\": \"mentions\", \"subject\": \"rui\", \"object\": \"Brightwave Energy\", \"confidence\": 0.0}, {\"line\": 4, \"quote\": \"Good. Stay close\", \"predicate\": \"mentions\", \"subject\": \"ines\", \"object\": \"Greywater Holdings\", \"confidence\": 0.0}]}"
+}

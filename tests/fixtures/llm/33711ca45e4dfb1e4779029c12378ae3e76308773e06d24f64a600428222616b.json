@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha, Ada and Ines crowd into Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha, Ada and Ines crowd into Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha, Ada and Ines crowd into Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Ada, have you seen the tide tables?\", \"predicate\": \"references\", \"subject\": \"sasha\", \"object\": \"secret_2\", \"confidence\": 0.8}, {\"line\": 3, \"quote\": \"I counted gulls instead of sleeping.\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"secret_2\", \"confidence\": 0.9}]}"
+}

@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Tomas share a thermos at Quill Archive.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ines\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Tomas share a thermos at Quill Archive.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"ines\",\n      \"object\": \"ada\",\n      \"value\": \"use\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Tomas share a thermos at Quill Archive.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"tomas\",\n      \"object\": \"ada\",\n      \"value\": \"use\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"It worked.\",\n      \"predicate\": \"state\",\n      \"subject\": \"secret_1\",\n      \"value\": \"healed\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

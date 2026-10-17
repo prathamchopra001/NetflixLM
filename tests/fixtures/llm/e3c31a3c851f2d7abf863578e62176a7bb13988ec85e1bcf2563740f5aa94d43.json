@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Tomas argue quietly at Quill Archive.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Tomas argue quietly at Quill Archive.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Quill Archive\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Dov and Tomas argue quietly at Quill Archive.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"dov\",\n      \"object\": \"tomas\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Nobody told me we were meeting at Quill Archive, Tomas.\",\n      \"predicate\": \"learns\",\n      \"subject\": \"dov\",\n      \"object\": \"secret_1\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas and Ada argue quietly at The Lantern Bar.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"The Lantern Bar\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas and Ada argue quietly at The Lantern Bar.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"The Lantern Bar\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Tomas and Ada argue quietly at The Lantern Bar.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"tomas\",\n      \"object\": \"ada\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Tomas checks the pocket watch again.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"tomas\",\n      \"object\": \"ada\",\n      \"value\": \"use\",\n      \"confidence\": 0.9\n    }\n  ]\n}"
-}

@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha and Dov check their watches\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"sasha\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Dov check their watches\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"dov\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tomas Vale takes money from Greywater Holdings\", \"predicate\": \"references\", \"subject\": \"sasha\", \"object\": \"secret_4\", \"confidence\": 1.0}]}"
+}

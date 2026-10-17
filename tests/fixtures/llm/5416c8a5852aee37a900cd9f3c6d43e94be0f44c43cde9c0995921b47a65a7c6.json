@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Leo and Rui share a thermos\",\n      \"predicate\": \"holds\",\n      \"subject\": \"leo\",\n      \"object\": \"ada\",\n      \"value\": \"share\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"at Saltworks Yard\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"leo\",\n      \"object\": \"Saltworks Yard\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"at Saltworks Yard\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"rui\",\n      \"object\": \"Saltworks Yard\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

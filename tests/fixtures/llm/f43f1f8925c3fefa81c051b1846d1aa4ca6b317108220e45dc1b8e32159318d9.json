@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Sasha share a thermos at Quill Archive.\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"ada\", \"value\": \"use\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Sasha share a thermos at Quill Archive.\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"dov\", \"value\": \"use\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Sasha share a thermos at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Sasha share a thermos at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Hey Sasha, got a minute?\", \"predicate\": \"mentions\", \"subject\": \"dov\", \"object\": \"Kappa Cola\", \"confidence\": 0.0}, {\"line\": 3, \"quote\": \"They said noon. They always say noon.\", \"predicate\": \"references\", \"subject\": \"sasha\", \"object\": \"secret_1\", \"confidence\": 0.8}]}"
+}

@@ -45,8 +45,13 @@ class LLMClient:
         from openai import OpenAI
 
         self.variant = variant
+        # max_retries=0: the SDK's default 2 retries re-sent a timed-out reply at T=0, so a looping
+        # scene held its slot for 3 x timeout_s (2.1B: 1,802 s); instructor's one repair stays.
         self._client = OpenAI(
-            base_url=f"{base_url}/models/{variant}/v1", api_key="unused", timeout=timeout_s
+            base_url=f"{base_url}/models/{variant}/v1",
+            api_key="unused",
+            timeout=timeout_s,
+            max_retries=0,
         )
         self._structured = instructor.from_openai(self._client, mode=instructor.Mode.JSON_SCHEMA)
 

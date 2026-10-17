@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Sasha and Tomas argue quietly at Tidewater Diner.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"sasha\",\n      \"object\": \"Tidewater Diner\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Sasha and Tomas argue quietly at Tidewater Diner.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Tidewater Diner\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Sasha and Tomas argue quietly at Tidewater Diner.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"sasha\",\n      \"object\": \"tomas\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Sasha checks the brass ledger again.\",\n      \"predicate\": \"holds\",\n      \"subject\": \"sasha\",\n      \"object\": \"ada\",\n      \"value\": \"check\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

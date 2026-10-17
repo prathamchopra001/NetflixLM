@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Rui argue quietly at Tidewater Diner.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ines\",\n      \"object\": \"Tidewater Diner\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Rui argue quietly at Tidewater Diner.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"rui\",\n      \"object\": \"Tidewater Diner\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ines and Rui argue quietly at Tidewater Diner.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"ines\",\n      \"object\": \"rui\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    }\n  ]\n}"
-}

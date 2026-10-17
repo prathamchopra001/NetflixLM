@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Tomas and Ines check their watches\", \"predicate\": \"holds\", \"subject\": \"Tidewater Diner\", \"object\": \"Tidewater Diner\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas and Ines check their watches\", \"predicate\": \"holds\", \"subject\": \"Tidewater Diner\", \"object\": \"Tidewater Diner\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Maya Reyes started the fire at Marrow Street Garage\", \"predicate\": \"learns\", \"subject\": \"Tidewater Diner\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Not a word to anyone\", \"predicate\": \"references\", \"subject\": \"Tidewater Diner\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}]}"
+}

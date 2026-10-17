@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Dov wait at Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Dov wait at Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Dov, have you seen the tide tables?\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"ada\",\n      \"object\": \"Kappa Cola\",\n      \"confidence\": 0.0\n    }\n  ]\n}"
-}

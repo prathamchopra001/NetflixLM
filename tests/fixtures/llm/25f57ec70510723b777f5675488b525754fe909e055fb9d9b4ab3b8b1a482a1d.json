@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha and Rui share a thermos\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"ada\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Rui share a thermos\", \"predicate\": \"holds\", \"subject\": \"rui\", \"object\": \"sasha\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Sasha checks the brass ledger again\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Put it away before someone sees\", \"predicate\": \"mentions\", \"subject\": \"rui\", \"object\": \"ada\", \"confidence\": 1.0}]}"
+}

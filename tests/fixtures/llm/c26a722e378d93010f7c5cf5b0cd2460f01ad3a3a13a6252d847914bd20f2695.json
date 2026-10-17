@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Maya and Rui check their watches\",\n      \"predicate\": \"holds\",\n      \"subject\": \"maya\",\n      \"object\": \"ada\",\n      \"value\": \"check\"\n    ,\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

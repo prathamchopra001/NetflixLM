@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Pier Nine.\", \"predicate\": \"relationship\", \"subject\": \"dov\", \"object\": \"tomas\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Tell me Pier Nine is still standing, Tomas.\", \"predicate\": \"references\", \"subject\": \"dov\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Ask me after another cup.\", \"predicate\": \"mentions\", \"subject\": \"tomas\", \"object\": \"ada\", \"confidence\": 0.9}, {\"line\": 4, \"quote\": \"Keep your head down out there.\", \"predicate\": \"mentions\", \"subject\": \"tomas\", \"object\": \"Harbor City PD\", \"confidence\": 0.8}]}"
+}

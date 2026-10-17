@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines and Dov share a thermos at Station House.\", \"predicate\": \"holds\", \"subject\": \"ines\", \"object\": \"ada\", \"value\": \"use\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Dov share a thermos at Station House.\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"ines\", \"value\": \"use\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Dov share a thermos at Station House.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Dov share a thermos at Station House.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Did you sleep at all, Dov?\", \"predicate\": \"mentions\", \"subject\": \"ines\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Not a minute. The harbor never goes quiet.\", \"predicate\": \"mentions\", \"subject\": \"dov\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}]}"
+}

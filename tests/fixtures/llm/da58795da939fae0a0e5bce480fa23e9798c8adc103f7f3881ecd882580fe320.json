@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Rui share a thermos\",\n      \"predicate\": \"holds\",\n      \"subject\": \"ada\",\n      \"object\": \"ada\",\n      \"value\": \"share\"\n    ,\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Rui share a thermos\",\n      \"predicate\": \"holds\",\n      \"subject\": \"rui\",\n      \"object\": \"rui\",\n      \"value\": \"share\"\n    ,\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Grab me a Kappa Cola\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"ada\",\n      \"object\": \"Kappa Cola\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 3,\n      \"quote\": \"It held through the night\",\n      \"predicate\": \"state\",\n      \"subject\": \"Kappa Cola\",\n      \"value\": \"held\"\n    ,\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

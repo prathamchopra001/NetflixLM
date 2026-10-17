@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines sits alone at Pier Nine\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"a stack of old papers on the table\", \"predicate\": \"setup\", \"subject\": \"ada\", \"value\": \", \", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Maya Reyes started the fire at Marrow Street Garage\", \"predicate\": \"learns\", \"subject\": \"ines\", \"object\": \"secret_2\", \"confidence\": 1.0}]}"
+}

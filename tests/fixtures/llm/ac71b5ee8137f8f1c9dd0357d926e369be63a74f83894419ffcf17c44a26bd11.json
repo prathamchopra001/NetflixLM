@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Maya, Rui and Ada crowd into Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"maya\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Maya, Rui and Ada crowd into Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"rui\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Maya, Rui and Ada crowd into Marrow Street Garage.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Where is everyone, Rui?\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"maya\",\n      \"object\": \"Marrow Street Garage\",\n      \"confidence\": 0.8\n    }\n  ]\n}"
-}

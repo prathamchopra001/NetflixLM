@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Maya and Tomas argue quietly at Saltworks Yard.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"maya\",\n      \"object\": \"Saltworks Yard\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Maya and Tomas argue quietly at Saltworks Yard.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"tomas\",\n      \"object\": \"Saltworks Yard\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Maya and Tomas argue quietly at Saltworks Yard.\",\n      \"predicate\": \"relationship\",\n      \"subject\": \"maya\",\n      \"object\": \"tomas\",\n      \"value\": \"colleagues\",\n      \"confidence\": 0.8\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Grab me a Kappa Cola on your way back, Tomas.\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"maya\",\n      \"object\": \"Kappa Cola\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Sasha argue quietly at Station House.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ada\",\n      \"object\": \"Station House\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Ada and Sasha argue quietly at Station House.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"sasha\",\n      \"object\": \"Station House\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Hey the pilot, got a minute?\",\n      \"predicate\": \"references\",\n      \"subject\": \"ada\",\n      \"object\": \"sasha\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

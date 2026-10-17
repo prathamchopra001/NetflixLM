@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Ines wait at Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Ines wait at Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me Greywater Dock is still standing, Ines.\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"They said noon.\", \"predicate\": \"references\", \"subject\": \"ines\", \"object\": \"The Lantern Bar\", \"confidence\": 0.5}]}"
+}

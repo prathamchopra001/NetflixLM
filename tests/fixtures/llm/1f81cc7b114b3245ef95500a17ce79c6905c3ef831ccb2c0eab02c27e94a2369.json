@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Tomas, Leo and Rui crowd into Tidewater Diner.\", \"predicate\": \"present_at\", \"subject\": \"Tidewater Diner\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Where is everyone, Leo?\", \"predicate\": \"mentions\", \"subject\": \"Tidewater Diner\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Ask me after another cup.\", \"predicate\": \"mentions\", \"subject\": \"Tidewater Diner\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}]}"
+}

@@ -75,18 +75,16 @@ def up() -> None:
 
 @app.command()
 def down() -> None:
-    """Delete the app and wait for VRAM back to the idle level read by `up`."""
-    from nip.contracts import Slot
-    from nip.runtime.catalog import load_catalog
-    from nip.runtime.planner import plan
-    from nip.runtime.probe import probe
-    from nip.runtime.serving import apps, ray_serve, teardown
+    """Delete every Serve app and wait for VRAM back to the idle level read by `up`. (Not a
+    re-plan: with the model loaded the planner no longer fits it and deleted nothing, 2.2B.)"""
+    from nip.runtime.serving import ray_serve, teardown
 
-    cat, inv = load_catalog(), probe()
-    p = plan(inv, cat, {Slot.TEXT_LLM: 1})
     idle_f = Path("/tmp") / "exp020-idle.txt"
     idle = int(idle_f.read_text()) if idle_f.exists() else None
-    secs = teardown(apps(p, cat, inv, p.groups[0].slots), ray_serve(), idle_mib=idle)
+    serve = ray_serve()
+    for name in list(serve.status().applications):
+        serve.delete(name)
+    secs = teardown([], serve, idle_mib=idle, timeout_s=180)
     typer.echo(json.dumps({"unload_s": secs, "idle_mib": idle}))
 
 
@@ -320,7 +318,9 @@ def metrics(events: list[dict[str, Any]], show: Any) -> dict[str, float]:
 
 
 @app.command("score")
-def score_cmd() -> None:
+def score_cmd(
+    suffix: Annotated[str, typer.Option(help="variant suffix, e.g. -checks (2.1B re-score)")] = "",
+) -> None:
     """Metrics per arm from data/exp020/<arm>/events.jsonl -> MLflow (one run per arm)."""
     import mlflow
 
@@ -341,9 +341,14 @@ def score_cmd() -> None:
             "s_per_scene": meta["s_per_scene"],
             "failed_scenes": len(meta["failures"]),
         }
-        tags = {"exp": "EXP-020", "variant": arm, "seed": str(SEED), "labeller": "generator"}
-        _clear("exp020-resolution", "EXP-020", arm)
-        with mlflow.start_run(run_name=f"EXP-020-{arm}"):
+        tags = {
+            "exp": "EXP-020",
+            "variant": arm + suffix,
+            "seed": str(SEED),
+            "labeller": "generator",
+        }
+        _clear("exp020-resolution", "EXP-020", arm + suffix)
+        with mlflow.start_run(run_name=f"EXP-020-{arm}{suffix}"):
             mlflow.set_tags(tags)
             mlflow.log_params(
                 {

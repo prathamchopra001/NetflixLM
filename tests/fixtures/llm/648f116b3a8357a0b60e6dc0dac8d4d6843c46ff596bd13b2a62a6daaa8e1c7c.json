@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Leo wait at Tidewater Diner.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Leo wait at Tidewater Diner.\", \"predicate\": \"present_at\", \"subject\": \"leo\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me Tidewater Diner is still standing, Leo.\", \"predicate\": \"references\", \"subject\": \"ada\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"It held through the night, mostly.\", \"predicate\": \"state\", \"subject\": \"Tidewater Diner\", \"value\": \"standing\", \"confidence\": 1.0}, {\"line\": 4, \"quote\": \"Stay close.\", \"predicate\": \"decision\", \"subject\": \"ada\", \"value\": \"to stay close\", \"confidence\": 1.0}]}"
+}

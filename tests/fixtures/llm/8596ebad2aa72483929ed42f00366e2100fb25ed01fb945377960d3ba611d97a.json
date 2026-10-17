@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov, Ada and Sasha crowd into Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov, Ada and Sasha crowd into Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov, Ada and Sasha crowd into Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me Ferry Terminal is still standing, Ada.\", \"predicate\": \"references\", \"subject\": \"dov\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Barely. The coffee went cold again.\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"cold\", \"confidence\": 0.8}]}"
+}

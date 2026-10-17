@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Rui and Dov argue quietly at Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Rui and Dov argue quietly at Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Rui and Dov argue quietly at Greywater Dock.\", \"predicate\": \"relationship\", \"subject\": \"rui\", \"object\": \"dov\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"the fog is worse than yesterday.\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"injured: <detail>\", \"confidence\": 0.5}, {\"line\": 3, \"quote\": \"Somebody has to keep the lights on.\", \"predicate\": \"decision\", \"subject\": \"dov\", \"value\": \"keep the lights on\", \"confidence\": 1.0}]}"
+}

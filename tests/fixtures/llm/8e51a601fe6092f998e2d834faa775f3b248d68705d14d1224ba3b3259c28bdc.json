@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Rui and Dov check their watches\",\n      \"predicate\": \"holds\",\n      \"subject\": \"rui\",\n      \"object\": \"rui\",\n      \"value\": \"check\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Rui and Dov check their watches\",\n      \"predicate\": \"holds\",\n      \"subject\": \"dov\",\n      \"object\": \"dov\",\n      \"value\": \"check\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"at Pier Nine\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"rui\",\n      \"object\": \"Pier Nine\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"at Pier Nine\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"dov\",\n      \"object\": \"Pier Nine\",\n      \"confidence\": 1.0\n    }\n  ]\n}"
-}

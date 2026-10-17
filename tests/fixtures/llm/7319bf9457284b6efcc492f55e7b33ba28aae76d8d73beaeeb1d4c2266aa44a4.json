@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\n  \"events\": [\n    {\n      \"line\": 1,\n      \"quote\": \"Sasha, Ines and Rui crowd into Pier Nine.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"sasha\",\n      \"object\": \"Pier Nine\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Sasha, Ines and Rui crowd into Pier Nine.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"ines\",\n      \"object\": \"Pier Nine\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 1,\n      \"quote\": \"Sasha, Ines and Rui crowd into Pier Nine.\",\n      \"predicate\": \"present_at\",\n      \"subject\": \"rui\",\n      \"object\": \"Pier Nine\",\n      \"confidence\": 1.0\n    },\n    {\n      \"line\": 2,\n      \"quote\": \"Ines, the fog is worse than yesterday.\",\n      \"predicate\": \"mentions\",\n      \"subject\": \"sasha\",\n      \"object\": \"Kappa Cola\",\n      \"confidence\": 0.0\n    }\n  ]\n}"
-}

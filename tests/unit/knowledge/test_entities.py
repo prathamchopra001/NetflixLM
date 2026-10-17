@@ -76,3 +76,19 @@ def test_an_exact_name_wins_and_a_repeated_unknown_name_reuses_its_candidate() -
     assert first >= 100 and r.resolve("UNKNOWN", "VALE", "present_at", "subject") == first
     assert r.resolve("UNKNOWN", "Ada Kovac", "present_at", "subject") == 1
     assert r.match("ada  kovac") == 1 and r.match("Ada Maria") == 9
+
+
+def test_argument_kinds_must_fit_the_predicate() -> None:  # 2.1B, EXP-006 follow-up
+    r = resolver(NAMES)
+    r.kinds = {1: "character", 3: "character", 5: "location", 6: "org", 9: "secret"}
+    assert r.typed("present_at", 1, 5) and not r.typed("present_at", 5, 1)
+    assert not r.typed("holds", 3, 1)  # "holds dov -> ada": a character is not a prop
+    assert r.typed("holds", 3, "thermos")  # a new name becomes a prop candidate
+    assert (
+        r.typed("learns", 1, 9) and not r.typed("learns", 1, 5) and not r.typed("learns", 1, None)
+    )
+    assert not r.typed("relationship", 1, 1) and r.typed("relationship", 1, 3)
+    assert (
+        r.typed("mentions", 1, 6) and r.typed("decision", 3, None) and not r.typed("state", 9, None)
+    )
+    assert not r.typed("present_at", None, 5)

@@ -14,6 +14,7 @@ from nip.knowledge.extract import (
     event_schema,
     extract_scene,
     render,
+    request,
     value_json,
 )
 from nip.runtime.clients import StubLLM
@@ -61,6 +62,19 @@ def test_schema_constrains_ids_to_the_registry_plus_unknown() -> None:
     assert '"enum": ["maya", "leo", "secret_1", "Harbor Warehouse", "UNKNOWN"]' in js
     free = event_schema(None)
     free.model_validate({"events": [ev | {"subject": "Maya"}]})
+
+
+def test_events_are_capped_per_scene_line() -> None:  # 2.1B runaway guard (xgrammar maxItems)
+    ev = {"line": 1, "quote": "x", "predicate": "decision", "subject": "a", "confidence": 1}
+    schema = event_schema(None, 2)
+    schema.model_validate({"events": [ev, ev]})
+    with pytest.raises(ValidationError):
+        schema.model_validate({"events": [ev, ev, ev]})
+    assert '"maxItems": 2' in json.dumps(schema.model_json_schema())
+    _, sch = request(SCENE, REGISTRY)
+    js = sch.model_json_schema()
+    assert js["properties"]["events"]["maxItems"] == 8  # 4 x 2 lines
+    assert js["$defs"]["Event"]["properties"]["line"]["enum"] == [1, 2]  # 2.1B: only its lines
 
 
 def test_a_line_outside_the_scene_is_a_structural_error() -> None:

@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov, Maya and Sasha crowd into Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov, Maya and Sasha crowd into Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov, Maya and Sasha crowd into Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me Pier Nine is still standing, Maya.\", \"predicate\": \"references\", \"subject\": \"dov\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Ask me after another cup.\", \"predicate\": \"mentions\", \"subject\": \"maya\", \"object\": \"Kappa Cola\", \"confidence\": 0.5}]}"
+}

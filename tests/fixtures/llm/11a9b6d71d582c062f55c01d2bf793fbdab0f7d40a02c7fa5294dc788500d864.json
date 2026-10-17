@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha and Dov argue quietly at Marrow Street Garage.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Marrow Street Garage\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Dov argue quietly at Marrow Street Garage.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Marrow Street Garage\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Dov argue quietly at Marrow Street Garage.\", \"predicate\": \"relationship\", \"subject\": \"sasha\", \"object\": \"dov\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"The brass ledger slips from Sasha's hand and shatters.\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"The Lantern Bar\", \"value\": \"lose\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"The brass ledger slips from Sasha's hand and shatters.\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"destroyed\", \"confidence\": 1.0}]}"
+}

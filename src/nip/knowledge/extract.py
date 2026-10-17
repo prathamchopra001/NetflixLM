@@ -8,6 +8,14 @@ afterwards). A line number outside the scene is a structural error (one instruct
 quote is not: the grounding validator drops it afterwards, so the raw events are kept per run
 (`runs/{run_id}/{ep}/knowledge.events.raw.jsonl`) and EXP-006 re-thresholds without new calls.
 
+Runaway guard (2.1B): the model sometimes loops inside schema-valid JSON (one 4-line scene: 42
+events, 7 distinct, 40 `wearing` at confidence 0.0, until max_tokens). The schema caps `events` at
+EVENTS_PER_LINE per scene line (xgrammar enforces `maxItems`, so the reply closes instead of running
+to max_tokens), `line` is an enum of the scene's line numbers (a cited line outside a one-line
+scene failed the unit even after the repair), and `save_events` drops zero-confidence and
+repeated events and events whose arguments have the wrong entity kind for the predicate
+(`entities.ARG_KINDS`).
+
 Registry keys: the bible id for characters, the canonical name otherwise (secret ids, place,
 brand, org and term names). Candidates are not in the enum (their names change between runs, and
 with them every later prompt); `UNKNOWN` names are matched against their aliases (`entities`).
@@ -39,6 +47,10 @@ _CFG = pipeline_config()["knowledge"]["extract"]
 PROMPT_VERSION: str = _CFG["prompt_version"]
 MAX_TOKENS = int(_CFG["max_tokens"])
 UNKNOWN = "UNKNOWN"
+# Cap on events per scene line (2.1B runaway fix). Real replies on the synthetic show reach 3.5 per
+# line (7 events on 2 lines); the looping scene reached 10.5. ponytail: a 30-line scene may then ask
+# for 120 events, more than MAX_TOKENS holds; scale max_tokens with it when real scripts need it.
+EVENTS_PER_LINE = 4
 IDS_RULE = {
     True: "`subject` and `object` are registry keys (the first word of a registry line). For"
     " someone or something that is not in the registry, use `UNKNOWN` and write its name as the"
@@ -86,12 +98,17 @@ def _line_in_scene(v: int, info: ValidationInfo) -> int:
     return v
 
 
-def event_schema(keys: Sequence[str] | None) -> type[BaseModel]:
-    """`Extraction{events: [Event]}`; subject/object an enum of `keys` + UNKNOWN, or free text."""
+def event_schema(
+    keys: Sequence[str] | None, max_events: int | None = None, lines: Sequence[int] = ()
+) -> type[BaseModel]:
+    """`Extraction{events: [Event]}`; subject/object an enum of `keys` + UNKNOWN, or free text;
+    at most `max_events` events (`maxItems`); `line` an enum of the scene's `lines` when given (the
+    grammar then cannot cite a line outside the scene, 2.1B), else any int checked by context."""
     ref: Any = Literal[(*keys, UNKNOWN)] if keys is not None else str
+    line: Any = Literal[tuple(lines)] if lines else int
     event = create_model(
         "Event",
-        line=(Annotated[int, AfterValidator(_line_in_scene)], ...),
+        line=(Annotated[line, AfterValidator(_line_in_scene)], ...),
         quote=(str, ...),
         predicate=(Predicate, ...),
         subject=(ref, ...),
@@ -101,7 +118,7 @@ def event_schema(keys: Sequence[str] | None) -> type[BaseModel]:
         value=(str | None, None),
         confidence=(float, Field(ge=0, le=1)),
     )
-    return create_model("Extraction", events=(list[event], ...))
+    return create_model("Extraction", events=(list[event], Field(max_length=max_events)))
 
 
 def _present(scene: SceneText, registry: Sequence[Entry]) -> list[Entry]:
@@ -143,13 +160,21 @@ def render(scene: SceneText, registry: Sequence[Entry], enum: bool = True) -> st
     )
 
 
+def request(
+    scene: SceneText, registry: Sequence[Entry], enum: bool = True
+) -> tuple[str, type[BaseModel]]:
+    """The scene's prompt and schema (also the recording key's inputs)."""
+    keys = [e.key for e in registry] if enum else None
+    seqs = [ln.seq for ln in scene.lines]
+    return render(scene, registry, enum), event_schema(keys, EVENTS_PER_LINE * len(seqs), seqs)
+
+
 def extract_scene(
     llm: LLMClient | StubLLM, scene: SceneText, registry: Sequence[Entry], enum: bool = True
 ) -> list[dict[str, Any]]:
     """Raw (pre-grounding) events of one scene: the model's events plus `scene` (the ref)."""
     out = llm.complete(
-        render(scene, registry, enum),
-        event_schema([e.key for e in registry] if enum else None),
+        *request(scene, registry, enum),
         max_tokens=MAX_TOKENS,
         context={"lines": {ln.seq for ln in scene.lines}},
     )
@@ -226,26 +251,42 @@ def save_events(
     threshold: float = THRESHOLD,
 ) -> tuple[int, int]:
     """Replace the scene's fact_event rows with the grounded, resolved `raw` events. Returns
-    (kept, dropped: quote not grounded, or no subject name at all). Unresolved names become
-    candidate entities (`Resolver`). Each raw event is annotated in place with `grounded` and,
-    when grounded, the resolved `subject_id` / `object_id`."""
+    (kept, dropped). Each raw event is annotated in place: `grounded`, then (when grounded) `typed`
+    (`Resolver.typed`) and `dropped` = None or why (`quote`, `zero confidence`, `duplicate`,
+    `argument type`), and for kept events the resolved `subject_id` / `object_id`. Unresolved
+    names of kept events become candidate entities (`Resolver`)."""
     fe = schema.fact_event
     conn.execute(delete(fe).where(fe.c.scene_id == scene.id))
     lines = {ln.seq: ln for ln in scene.lines}
     resolver = Resolver(conn, show_id)
     rows: list[dict[str, Any]] = []
+    seen: set[tuple[Any, ...]] = set()
     for ev in raw:
         ln = lines[ev["line"]]
         ev["grounded"] = grounded(ev["quote"], ln.text, threshold)
         if not ev["grounded"]:
+            ev["dropped"] = "quote"
             continue
         pred = ev["predicate"]
-        ev["subject_id"] = resolver.resolve(ev["subject"], ev.get("subject_name"), pred, "subject")
-        ev["object_id"] = resolver.resolve(ev.get("object"), ev.get("object_name"), pred, "object")
-        if ev["subject_id"] is None:  # an empty name: nothing to resolve or create
+        s = resolver.lookup(ev["subject"], ev.get("subject_name"))
+        o = resolver.lookup(ev.get("object"), ev.get("object_name"))
+        ev["typed"] = resolver.typed(pred, s, o)
+        same = tuple(ev.get(k) for k in ("line", "predicate", "subject", "subject_name",
+                                         "object", "object_name", "value"))  # fmt: skip
+        ev["dropped"] = (
+            "zero confidence"  # the runaway loops enumerate pairs at confidence 0.0
+            if ev["confidence"] <= 0
+            else "duplicate"
+            if same in seen
+            else None
+            if ev["typed"]
+            else "argument type"
+        )
+        seen.add(same)
+        if ev["dropped"]:
             continue
-        if ev["object_id"] is None and pred in ("holds", "owns", "wearing"):
-            continue  # holding nothing: would merge with any other object-less holds (review M-8)
+        ev["subject_id"] = resolver.ensure(s, pred, "subject")
+        ev["object_id"] = resolver.ensure(o, pred, "object")
         rows.append(
             {
                 "scene_id": scene.id,

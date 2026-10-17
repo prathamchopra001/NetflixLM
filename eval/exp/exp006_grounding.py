@@ -11,6 +11,11 @@ Labels: an event is `true` when the line supports it (predicate, subject, object
 else `hallucinated`. Events matching a truth.json fact of their line are `true` (labeller:
 generator); the rest are labelled by the agent (eval/exp/exp006_labels.jsonl, labeller: agent).
 Metrics per threshold: share of true events dropped, share of hallucinated events kept.
+
+2.1B follow-up (variant `t90-checks`): the same sample after `extract --replay` with the shipped
+`save_events`, which also drops zero-confidence events, repeated events and events whose arguments
+have the wrong entity kind (`entities.ARG_KINDS`); an event is kept when its quote scores >= 90 and
+`dropped` is empty. The drop reasons are counted per label.
 """
 
 import json
@@ -87,16 +92,27 @@ def sheet() -> None:
     )
 
 
-def rates(events: list[dict[str, Any]], labels: dict[str, str], t: float) -> dict[str, float]:
+def rates(
+    events: list[dict[str, Any]], labels: dict[str, str], t: float, checks: bool = False
+) -> dict[str, float]:
+    def kept(e: dict[str, Any]) -> bool:
+        return e["score"] >= t and not (checks and e.get("dropped"))
+
     true = [e for e in events if labels[e["id"]] == "true"]
     bad = [e for e in events if labels[e["id"]] == "hallucinated"]
-    return {
-        "true_dropped_rate": sum(e["score"] < t for e in true) / max(len(true), 1),
-        "hallucinated_kept_rate": sum(e["score"] >= t for e in bad) / max(len(bad), 1),
-        "kept_rate": sum(e["score"] >= t for e in events) / len(events),
+    out = {
+        "true_dropped_rate": sum(not kept(e) for e in true) / max(len(true), 1),
+        "hallucinated_kept_rate": sum(kept(e) for e in bad) / max(len(bad), 1),
+        "kept_rate": sum(map(kept, events)) / len(events),
         "n_true": len(true),
         "n_hallucinated": len(bad),
     }
+    if checks:
+        for name, group in (("true", true), ("hallucinated", bad)):
+            for why in ("argument type", "zero confidence", "duplicate"):
+                n = sum(e.get("dropped") == why for e in group)
+                out[f"{name}_dropped_{why.replace(' ', '_')}"] = n
+    return out
 
 
 @app.command()
@@ -111,9 +127,9 @@ def sweep() -> None:
         raise typer.BadParameter(f"{len(missing)} events unlabelled; run `sheet` first")
     mlflow.set_tracking_uri(TRACKING_URI)
     mlflow.set_experiment("exp006-grounding")
-    for t in THRESHOLDS:
-        variant = f"t{t}"
-        m = rates(events, labels, t) | {"n_generator_labels": len(gen)}
+    arms = [(f"t{t}", t, False) for t in THRESHOLDS] + [("t90-checks", 90, True)]
+    for variant, t, checks in arms:
+        m = rates(events, labels, t, checks) | {"n_generator_labels": len(gen)}
         _clear("exp006-grounding", "EXP-006", variant)
         with mlflow.start_run(run_name=f"EXP-006-{variant}"):
             mlflow.set_tags(
@@ -127,7 +143,8 @@ def sweep() -> None:
             mlflow.log_params(
                 {
                     "threshold": t,
-                    "scorer": "rapidfuzz partial_ratio",
+                    "scorer": "rapidfuzz partial_ratio"
+                    + (" + confidence/duplicate/argument-type checks" if checks else ""),
                     "n": N,
                     "source": "EXP-020 enum arm, qwen3.5-4b-awq",
                 }

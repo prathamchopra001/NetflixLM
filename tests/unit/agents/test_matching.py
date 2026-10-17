@@ -98,3 +98,40 @@ def test_strictest_status_wins() -> None:
     )
     m = match(reg, "clr.brand_text", "Veltrix Cola", "S01E01")
     assert (m.status, m.item and m.item.id) == ("denied", 2)
+
+
+def test_the_clearance_log_wins_over_the_fictional_and_title_rules() -> None:
+    """N1: a logged pending / denied item is never swallowed by the film's own names."""
+    reg = Registry(
+        (
+            Item(1, "Waffle House", "brand", "denied"),  # contains the show title "House"
+            Item(2, "12 Springfield Road", "address", "pending"),  # a one-word bible place
+            Item(3, "Sound Design", "brand", "pending"),
+        ),
+        fictional=("House", "Springfield"),
+    )
+    assert match(reg, "clr.brand_text", "WAFFLE HOUSE", "S01E01").status == "denied"
+    assert match(reg, "clr.address", "12 Springfield Road", "S01E01").status == "pending"
+    assert match(reg, "clr.brand_text", "Sound Design", "S01E01").status == "pending"
+    # unlogged text with the film's own words is still the production's, not a clearance item
+    assert match(reg, "clr.brand_text", "THE HOUSE OF CARDS", "S01E01").status == "fictional"
+    assert match(reg, "clr.address", "9 Springfield Lane", "S01E01").status == "fictional"
+
+
+def test_an_exact_read_of_a_cleared_number_stays_cleared_only_by_exact_match() -> None:
+    """N3: cleared needs an exact read of the cleared entry, even when a denied number is one edit
+    from it; a read merely near the cleared one is not cleared (near a denied one: denied)."""
+    reg = Registry(
+        (
+            Item(1, "(415) 555-2671", "phone", "cleared"),
+            Item(2, "(415) 555-2672", "phone", "denied"),  # one digit from the cleared one
+        )
+    )
+    exact = match(reg, "clr.phone", "(415) 555-2671", "S01E01")
+    assert (exact.status, exact.item and exact.item.id, exact.near) == ("cleared", 1, False)
+    other = match(reg, "clr.phone", "(415) 555-2672", "S01E01")
+    assert (other.status, other.item and other.item.id) == ("denied", 2)
+    slip = match(reg, "clr.phone", "(415) 555-2673", "S01E01")  # one off both
+    assert (slip.status, slip.item and slip.item.id, slip.near) == ("denied", 2, True)
+    only_cleared = Registry((Item(1, "(415) 555-2671", "phone", "cleared"),))
+    assert match(only_cleared, "clr.phone", "(415) 555-2679", "S01E01").status == "unknown"

@@ -69,3 +69,30 @@ def test_a_credits_card_gives_no_gliner_guesses_but_keeps_the_deny_lists_and_ide
         ("clr.phone", "(617) 482-9154"),
     ]
     assert len(card) == 10 >= 8 and len(sparse) < 8
+
+
+def test_logged_items_survive_the_junk_rules_but_unlogged_look_alikes_do_not() -> None:
+    """N1: credit words, person/role overlaps and the film's own names drop only what no clearance
+    log entry (a deny list) found."""
+    recorded = {
+        "SOUND DESIGN": [
+            ent("SOUND DESIGN", "product", 0.8),
+            ent("SOUND DESIGN", "job title", 0.9),
+        ],
+        "Studio Camera Set": [ent("Studio Camera Set", "address", 0.8)],
+    }
+    logged = TextScanner(
+        StubNER(recorded),
+        deny_brands=["Sound Design", "Waffle House"],
+        deny_addresses=["Studio Camera Set"],
+        fictional=["House"],  # the show's own title
+    )
+    got = sorted((c.check, c.text) for c in logged.candidates(
+        lines(["SOUND DESIGN", "Studio Camera Set", "WAFFLE HOUSE"])))  # fmt: skip
+    assert got == [
+        ("clr.address", "Studio Camera Set"),
+        ("clr.brand_text", "SOUND DESIGN"),
+        ("clr.brand_text", "WAFFLE HOUSE"),
+    ]
+    unlogged = TextScanner(StubNER(recorded), fictional=["House"])
+    assert unlogged.candidates(lines(["SOUND DESIGN", "Studio Camera Set", "WAFFLE HOUSE"])) == []

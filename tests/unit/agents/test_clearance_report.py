@@ -10,7 +10,13 @@ from eval.injectors.base import Label, Target
 from eval.metrics import SHOWN, match
 from nip.agents.base import Input, run_check
 from nip.agents.clearance import CHECKS, ClrPhone
-from nip.agents.clearance.checks import ClearanceText, ClrBrandText, ClrPlate, ClrUrl
+from nip.agents.clearance.checks import (
+    ClearanceText,
+    ClrAddress,
+    ClrBrandText,
+    ClrPlate,
+    ClrUrl,
+)
 from nip.agents.clearance.matching import Item, Registry
 from nip.agents.clearance.occurrences import Hit, Occurrence, analyze
 from nip.agents.clearance.ocr_text import Detection
@@ -270,3 +276,30 @@ def test_csv_round_trips() -> None:
     back = from_csv(text)
     assert back == [{k: str(v) for k, v in row.items()} for row in r]
     assert len(back) == 4
+
+
+def test_logged_items_with_the_films_own_words_still_flag_and_get_a_csv_row() -> None:
+    """N1: a pending / denied item containing the show title, a one-word bible name or credit
+    words is must_review and in the CSV (the junk rules never ran before the log)."""
+    reg = Registry(
+        (
+            Item(1, "Waffle House", "brand", "denied"),
+            Item(2, "12 Springfield Road", "address", "pending"),
+            Item(3, "Sound Design", "brand", "pending"),
+        ),
+        fictional=("House", "Springfield"),
+    )
+    hits = [
+        hit("clr.brand_text", "WAFFLE HOUSE", 0, 0.2),
+        hit("clr.address", "12 Springfield Road", 1, 0.2),
+        hit("clr.brand_text", "Sound Design", 2, 0.2),
+    ]
+    tl, occs = build(hits, reg)
+    flags = flags_of(hits, ClrBrandText, reg) + flags_of(hits, ClrAddress, reg)
+    assert len(flags) == 3 and all(f.tier is Tier.MUST_REVIEW for f in flags)
+    csv_rows = occurrence_rows(occs, tl, "show", {})
+    assert [(r["item"], r["status"]) for r in csv_rows] == [
+        ("Waffle House", "denied"),
+        ("12 Springfield Road", "pending"),
+        ("Sound Design", "pending"),
+    ]

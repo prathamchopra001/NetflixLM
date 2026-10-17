@@ -142,9 +142,6 @@ def match(
 ) -> Match:
     """The registry status of one detection (`check`: its clr.* id, `episode`: S01E03)."""
     n = normalize(check, text)
-    names = check in NAME_CHECKS  # the bible declares brands, organizations, places
-    if names and any(_fictional(n, normalize(check, f), threshold) for f in registry.fictional):
-        return Match("fictional")
     kinds = _cfg()["kinds"][check]
     hits = [
         i
@@ -171,4 +168,10 @@ def match(
         if close:
             best = max(close, key=lambda i: _STRICT[i.status])
             return Match(best.status, best, near=True)
+    # What the bible declares fictional (and the show's own title) is not a clearance item, but
+    # only after the log: an entry of the clearance log always wins over the junk rules (N1).
+    if check in NAME_CHECKS and any(
+        _fictional(n, normalize(check, f), threshold) for f in registry.fictional
+    ):
+        return Match("fictional")
     return Match("unknown")

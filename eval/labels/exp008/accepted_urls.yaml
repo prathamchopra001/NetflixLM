@@ -1,7 +1,8 @@
-# Agent-provisional decision (2026-10-17, 2.7 fix round): real web addresses printed in the films' own
-# credits are correct `unknown` clr.url flags (architecture.md: "Unknown (not in log) -> Flag"), so
-# they count as native true positives. Listed by `exp008_keyframes natives`; rejected as OCR
-# fragments: l.org, DivX.Inc ("DivX, Inc"), Yi.us. Not reviewed by a person.
+# Agent-provisional decision (2026-10-17, 2.7 fix rounds 1-2): real web addresses printed in the
+# films' own credits are correct `unknown` clr.url flags (architecture.md: "Unknown (not in log) ->
+# Flag"), so they count as native true positives. Listed by `exp008_keyframes natives`.
+# Rejected: OCR fragments (l.org, DivX.Inc = "DivX, Inc", Yi.us) and the production's own site
+# www.sintel.org (a first-party address, not third-party). Not reviewed by a person.
 sintel:
   - orange.blender.org
   - peach.blender.org
@@ -10,7 +11,6 @@ sintel:
   - blendswap.com
   - graphicall.org
   - clipland.com
-  - www.sintel.org
 tears-of-steel:
   - www.blender.org
   - blender.org

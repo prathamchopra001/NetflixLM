@@ -46,6 +46,7 @@ from urlextract import URLExtract  # noqa: E402
 from nip.config import config_dir  # noqa: E402
 from nip.store.schema import detection  # noqa: E402
 
+LOG_RECOGNIZERS = ("brand_deny_list", "address_deny_list")  # what the clearance log feeds
 PERSON, ROLE = "PERSON", "ROLE"  # asked from GLiNER only to tell names and credits from brands
 PHONE, EMAIL, URL, PLATE, ADDRESS, BRAND = (
     "PHONE_NUMBER",
@@ -325,7 +326,10 @@ class TextScanner:
         host = host.lower().rstrip(".")
         return any(host == d or host.endswith("." + d) for d in self._reserved)
 
-    def _dropped(self, entity: str, text: str, start: int, end: int) -> bool:
+    def _dropped(self, entity: str, text: str, start: int, end: int, logged: bool = False) -> bool:
+        """`logged`: the hit comes from a deny list (a clearance-log item or the real-brand seed
+        list). The junk rules below (credit lines, the film's own names, short noise) only drop what
+        matches no log entry: a logged item is never lost to them (N1)."""
         span = text[start:end]
         if entity == EMAIL:
             return self._reserved_host(span.rsplit("@", 1)[-1])
@@ -337,6 +341,8 @@ class TextScanner:
             token = text[text.rfind(" ", 0, start) + 1 :].split(" ")[0]  # a brand; urlextract
             if self._reserved_host(token.strip(".,;:!?()\"'")):  # does not know .test
                 return True
+        if logged:
+            return False
         if entity in (ADDRESS, BRAND):
             words = _norm(span).split()
             if words and all(w in self._credit for w in words):
@@ -370,6 +376,10 @@ class TextScanner:
             names = [
                 r for r in found if r.entity_type in (PERSON, ROLE) and r.score >= self._person
             ]
+
+            def from_log(r: RecognizerResult) -> bool:
+                return (r.recognition_metadata or {}).get("recognizer_name") in LOG_RECOGNIZERS
+
             raw = [
                 r
                 for r in found
@@ -377,6 +387,7 @@ class TextScanner:
                 and r.score >= self._min[_MIN_KEY[r.entity_type]]
                 and not (
                     r.entity_type in (ADDRESS, BRAND)
+                    and not from_log(r)
                     and any(n.start < r.end and r.start < n.end for n in names)
                 )
             ]
@@ -390,7 +401,7 @@ class TextScanner:
                 return any(e.start < r.end and r.start < e.end for e in spans)
 
             for r in raw:
-                if self._dropped(r.entity_type, text, r.start, r.end):
+                if self._dropped(r.entity_type, text, r.start, r.end, from_log(r)):
                     continue
                 if r.entity_type in (ADDRESS, BRAND) and inside(r, fixed):
                     continue

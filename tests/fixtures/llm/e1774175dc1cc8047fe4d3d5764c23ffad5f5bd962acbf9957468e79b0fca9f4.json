@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"The brass ledger slips from Sasha's hand and shatters.\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"ada\", \"value\": \"lose\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"The brass ledger slips from Sasha's hand and shatters.\", \"predicate\": \"state\", \"subject\": \"ada\", \"value\": \"destroyed\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Well. That is that.\", \"predicate\": \"learns\", \"subject\": \"dov\", \"object\": \"secret_2\", \"confidence\": 0.5}]}"
+}

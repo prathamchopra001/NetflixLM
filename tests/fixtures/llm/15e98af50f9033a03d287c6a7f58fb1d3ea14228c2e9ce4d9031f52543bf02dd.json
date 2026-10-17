@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Ines share a thermos\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"ada\", \"value\": \"use\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Ines share a thermos\", \"predicate\": \"holds\", \"subject\": \"ines\", \"object\": \"dov\", \"value\": \"use\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"The rusted key slips from Dov's hand\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"ada\", \"value\": \"lose\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"The rusted key slips from Dov's hand and shatters\", \"predicate\": \"state\", \"subject\": \"ada\", \"value\": \"destroyed\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Well. That is that.\", \"predicate\": \"learns\", \"subject\": \"ines\", \"object\": \"secret_1\", \"confidence\": 0.5}]}"
+}

@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Sasha wait at Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Sasha wait at Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Dov checks the rusted key again.\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"rui\", \"value\": \"check\", \"confidence\": 1.0}]}"
-}

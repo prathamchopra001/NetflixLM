@@ -57,9 +57,9 @@ def test_synthetic_show_extracts_on_the_cpu_profile(
     assert s["status"] == "completed" and s["episodes"]["S01E01"]["units"] == {"done": 26}
     fe, fa = schema.fact_event, schema.fact
     n_events, n_facts = count(pg, fe), count(pg, fa, fa.c.status == "active")
-    # replayed qwen3.5-4b-awq responses (2.1B shipped-schema enum pass): 68 S01E01 events kept
-    # after grounding and the confidence / duplicate / argument-type drops
-    assert n_events == 68 and 0 < n_facts <= n_events
+    # replayed qwen3.5-4b-awq responses (2.1B fix-round-1 enum pass): 86 S01E01 fact_event rows,
+    # the events kept after the drops plus the speakers' derived present_at events
+    assert n_events == 86 and 0 < n_facts <= n_events
     raw = s3.objects["nip-artifacts", "runs/run_1/S01E01/knowledge.events.raw.jsonl"].decode()
     assert len(raw.splitlines()) >= n_events
     first = active_ids(pg)

@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Maya wait at Station House.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Maya wait at Station House.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Dov checks the signal flare again.\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}]}"
-}

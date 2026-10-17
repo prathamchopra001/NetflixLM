@@ -34,7 +34,7 @@ from secrets import token_hex
 from typing import Annotated, Any
 
 import typer
-from sqlalchemy import Engine, create_engine, make_url, select, text, update
+from sqlalchemy import Engine, create_engine, delete, make_url, select, text, update
 
 from eval.exp.exp020_resolution import metrics as fact_metrics
 from eval.exp.exp020_resolution import truth_ids
@@ -241,12 +241,14 @@ def build(
     enum: bool,
     mode: str = "shipped",
     secret_check: bool = False,
+    presence: bool = True,
 ) -> tuple[Show, list[dict[str, Any]], dict[str, int]]:
     """The show's store from cached replies (shipped save_events / save_speakers / consolidation);
     (show, annotated raw events, counts). `secret_check`: the `secret_in_scene` variant."""
     from nip.knowledge.consolidate import consolidate_show
     from nip.knowledge.extract import save_events, save_speakers
     from nip.knowledge.grounding import score
+    from nip.store import schema
 
     show, show_id, registry, scenes = load(engine, d)
     events: list[dict[str, Any]] = []
@@ -279,6 +281,11 @@ def build(
                      "dropped": None, "derived": True}
                     for r in save_speakers(conn, show_id, sc)
                 ]  # fmt: skip
+                if not presence:  # ablation: the store without the derived presence events
+                    fe = schema.fact_event
+                    conn.execute(delete(fe).where(fe.c.scene_id == sc.id, fe.c.predicate ==
+                                 "present_at", fe.c.confidence.between(0.899, 0.901)))  # fmt: skip
+                    raw = [e for e in raw if not e.get("derived")]
                 n["derived_presence"] += sum(bool(e.get("derived")) for e in raw)
                 text_ = {ln.seq: ln.text for ln in sc.lines}
                 no = sc.ref.rsplit("/", 1)[1]
@@ -304,16 +311,18 @@ def flags(
     secret_check: Annotated[
         bool, typer.Option(help="variant: secret must be in the scene")
     ] = False,
+    presence: Annotated[bool, typer.Option(help="--no-presence: ablate speaker presence")] = True,
 ) -> None:
     """Per seed and twin: store from the cached replies, consolidation, the four plot rules with
     verification -> `<cache dir>/<arm>/seed{N}-{which}.flags.jsonl` + `.facts.json`."""
-    cached, out = read_cache(cache), cache.parent / (arm + "+secret" * secret_check)
+    suffix = "+secret" * secret_check + "-nopresence" * (not presence)
+    cached, out = read_cache(cache), cache.parent / (arm + suffix)
     out.mkdir(parents=True, exist_ok=True)
     for seed in map(int, seeds.split(",")):
         for w in which.split(","):
             with scratch_db() as engine:
                 show, events, n = build(
-                    engine, show_dir(seed, w), cached, ARMS[arm], mode, secret_check
+                    engine, show_dir(seed, w), cached, ARMS[arm], mode, secret_check, presence
                 )
                 got, _ = run_rules(engine, list(show.episodes))
             m = (

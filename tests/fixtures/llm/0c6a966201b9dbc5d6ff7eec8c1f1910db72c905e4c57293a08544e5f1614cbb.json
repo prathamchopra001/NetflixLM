@@ -1,5 +1,0 @@
-{
- "variant": "qwen3.5-4b-awq",
- "schema": "Extraction",
- "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Maya check their watches\", \"predicate\": \"holds\", \"subject\": \"ada\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Maya check their watches\", \"predicate\": \"holds\", \"subject\": \"maya\", \"object\": \"maya\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Maya check their watches\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Maya check their watches\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Ada picks up the storm lantern\", \"predicate\": \"holds\", \"subject\": \"ada\", \"object\": \"ada\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Is that what I think it is?\", \"predicate\": \"learns\", \"subject\": \"maya\", \"object\": \"secret_1\", \"confidence\": 1.0}]}"
-}

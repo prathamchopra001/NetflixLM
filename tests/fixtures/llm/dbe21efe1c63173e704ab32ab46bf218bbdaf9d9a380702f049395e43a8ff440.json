@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Maya check their watches at Greywater Dock\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Maya check their watches at Greywater Dock\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Maya check their watches at Greywater Dock\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"ada\", \"value\": \"use\", \"confidence\": 0.8}, {\"line\": 1, \"quote\": \"The signal flare slips from Dov's hand and shatters\", \"predicate\": \"state\", \"subject\": \"ada\", \"value\": \"destroyed\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Well. That is that.\", \"predicate\": \"learns\", \"subject\": \"maya\", \"object\": \"secret_1\", \"confidence\": 0.5}]}"
+}

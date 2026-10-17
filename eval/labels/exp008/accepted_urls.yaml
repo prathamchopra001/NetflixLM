@@ -1,0 +1,19 @@
+# Agent-provisional decision (2026-10-17, 2.7 fix round): real web addresses printed in the films' own
+# credits are correct `unknown` clr.url flags (architecture.md: "Unknown (not in log) -> Flag"), so
+# they count as native true positives. Listed by `exp008_keyframes natives`; rejected as OCR
+# fragments: l.org, DivX.Inc ("DivX, Inc"), Yi.us. Not reviewed by a person.
+sintel:
+  - orange.blender.org
+  - peach.blender.org
+  - blenderartists.org
+  - blendernation.com
+  - blendswap.com
+  - graphicall.org
+  - clipland.com
+  - www.sintel.org
+tears-of-steel:
+  - www.blender.org
+  - blender.org
+  - BlenderCN.org
+  - TabletMod.com
+  - z25.org

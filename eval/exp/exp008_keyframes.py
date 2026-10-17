@@ -34,12 +34,13 @@ from typing import Any
 
 import typer
 
+from eval.corpus.downloader import load_manifest
 from eval.injectors import Label, write_labels
 from eval.injectors.base import Target
 from nip.agents.base import run_check
 from nip.agents.clearance import TEXT_CHECKS
 from nip.agents.clearance.matching import Item, Registry
-from nip.agents.clearance.occurrences import Hit
+from nip.agents.clearance.occurrences import Hit, analyze
 from nip.agents.clearance.ocr_text import TextScanner
 from nip.agents.clearance.stage import Scan, confidence, scan_image, with_ocr
 from nip.config import pipeline_config
@@ -55,6 +56,7 @@ from nip.verification.verify import verify
 ROOT = Path("data/exp008")
 INJECT = Path("data/inject-clr/mvp")
 SIDECAR = Path("eval/corpus/sidecar")
+NATIVE = Path("eval/labels/exp008")  # agent-provisional labels of text the films already had
 TRACKING = "sqlite:///data/mlflow/mlflow.db"
 LOCK = Path("data/gpu.lock")
 # film -> (picture.json with the shots, episode ref in the benchmark run)
@@ -117,6 +119,8 @@ class Film:
     deny_addresses: tuple[str, ...]
     fictional: tuple[str, ...]
     labels: list[Label] = field(default_factory=list)
+    natives: list[Label] = field(default_factory=list)
+    title: str = ""
 
     @property
     def hours(self) -> float:
@@ -142,15 +146,26 @@ def load_film(name: str, seed: int) -> Film:
     reg_items = tuple(
         Item(i, e.item, e.kind, e.status, e.scope or None) for i, e in enumerate(log, 1)
     )
-    fictional = tuple([*bible.fictional.brands, *bible.fictional.orgs, *bible.fictional.places])
+    title = next(t["title"] for t in load_manifest()["titles"] if t["id"] == name)
+    # What the production invented is not a clearance item, and neither is its own title
+    # (the show row carries it in the store: `load_registry`).
+    fictional = tuple(
+        [title, *bible.fictional.brands, *bible.fictional.orgs, *bible.fictional.places]
+    )
     deny = tuple(i.name for i in reg_items if i.kind in ("brand", "logo", "product", "artwork"))
     addresses = tuple(i.name for i in reg_items if i.kind in ("address", "location"))
     labels = [
         lb.model_copy(update={"episode": episode})
         for lb in _read_labels(INJECT / f"seed{seed}" / "labels" / f"{name}.jsonl")
     ]
+    native_file = NATIVE / f"{name}.native.jsonl"
+    natives = (
+        [lb.model_copy(update={"episode": episode}) for lb in _read_labels(native_file)]
+        if native_file.exists()
+        else []
+    )
     return Film(name, seed, episode, video, info, shots, items, Registry(reg_items, fictional),
-                deny, addresses, fictional, labels)  # fmt: skip
+                deny, addresses, fictional, labels, natives, title)  # fmt: skip
 
 
 def _read_labels(path: Path) -> list[Label]:
@@ -275,7 +290,9 @@ def arm_flags(
 ) -> tuple[list[Flag], list[tuple[Flag, str]]]:
     """The six checks over the arm's detections, then verification (kept, dropped)."""
     cfg = pipeline_config()["clearance"]
-    tl = with_ocr(timeline(film, kfs), scans, cfg)
+    stored = timeline(film, kfs)
+    occs = analyze(hits_of(scans, cfg), film.registry, stored, cfg, kfs)
+    tl = with_ocr(stored, scans, occs)
     checks = [
         c(hits=hits_of(scans, cfg), registry=film.registry, keyframes=kfs, cfg=cfg)
         for c in TEXT_CHECKS
@@ -290,13 +307,18 @@ def arm_flags(
 def nip_eval_run(
     flags: list[Flag], labels: list[Label], *, exp: str, variant: str, seed: int, out: Path,
     content_hours: float, gpu_seconds: float, extra: dict[str, float], params: dict[str, str],
+    natives: Sequence[Label] = (),
 ) -> str:  # fmt: skip
     """Write the files, call `nip eval run`, add `extra` metrics to its MLflow run; its output."""
     out.mkdir(parents=True, exist_ok=True)
     (out / "flags.jsonl").write_text("".join(f.model_dump_json() + "\n" for f in flags), "utf-8")
     write_labels(labels, out / "labels.jsonl")
+    label_args = ["--labels", str(out / "labels.jsonl")]
+    if natives:  # `*.native.jsonl`: a flag on text the film already had is a native TP, not a FP
+        write_labels(list(natives), out / "text.native.jsonl")
+        label_args += ["--labels", str(out / "text.native.jsonl")]
     cmd = [str(Path(sys.executable).with_name("nip")), "eval", "run", "--set", "mvp",
-           "--flags", str(out / "flags.jsonl"), "--labels", str(out / "labels.jsonl"),
+           "--flags", str(out / "flags.jsonl"), *label_args,
            "--exp", exp, "--variant", variant, "--seed", str(seed),
            "--content-hours", f"{content_hours:.6f}", "--gpu-seconds", f"{gpu_seconds:.3f}",
            "--tracking-uri", TRACKING, "--out-dir", str(out / "eval")]  # fmt: skip
@@ -318,9 +340,9 @@ def score_arm(
     arm: str, exp: str, seed: int, root: Path, extra_params: dict[str, str] | None = None,
     arm_name: str | None = None, prefix: str = "exp008",
 ) -> dict[str, Any]:  # fmt: skip
-    """Flags of every film for one arm and seed, scored twice: against the official labels (what
-    the benchmark counts) and against every rendered positive (detection recall; the variant gets
-    the suffix `@all-positives` and is read with `--subset all`)."""
+    """Flags of every film for one arm and seed, scored against the official (injected) labels,
+    again with the agent-provisional native labels (`+native`) and against every rendered positive
+    (detection recall; `@all-positives`, read with `--subset all`)."""
     flags: list[Flag] = []
     n_kf = 0
     secs = 0.0
@@ -343,10 +365,17 @@ def score_arm(
     params = {"arm": arm, **(extra_params or {})}
     official = [lb for f in sel for lb in f.labels]
     allpos = [lb for f in sel for lb in all_positive_labels(f)]
-    for variant, labels in ((name, official), (f"{name}@all-positives", allpos)):
+    natives = [lb for f in sel for lb in f.natives]
+    runs: list[tuple[str, list[Label], list[Label]]] = [
+        (name, official, []),  # precision against the injected labels only
+        (f"{name}@all-positives", allpos, []),
+    ]
+    if natives:  # plus the film's own real third-party text (agent-provisional native labels)
+        runs.insert(1, (f"{name}+native", official, natives))
+    for variant, labels, nat in runs:
         line = nip_eval_run(flags, labels, exp=exp, variant=variant, seed=seed,
                             out=root / f"{variant}-s{seed}", content_hours=hours, gpu_seconds=secs,
-                            extra=extra, params=params)  # fmt: skip
+                            extra=extra, params=params, natives=nat)  # fmt: skip
         print(line, flush=True)
     return {"flags": flags, "keyframes": n_kf, "secs": secs, "hours": hours}
 
@@ -365,6 +394,115 @@ def _scanner(cuda: bool) -> tuple[Any, Any, Callable[[Film], TextScanner]]:
             ner, deny_brands=film.deny, deny_addresses=film.deny_addresses, fictional=film.fictional
         ),
     )
+
+
+@app.command("collisions")
+def collisions_cmd(
+    tag: str = "cpu4", seeds: str = "1,2,3", arm: str = "1-per-shot+2s",
+    films: str = "sintel,tears-of-steel",
+) -> None:  # fmt: skip
+    """R13: how many flags of one run share a fingerprint with another (must be 0)."""
+    from collections import Counter
+
+    from nip.store.runs import fingerprint
+
+    for seed in map(int, seeds.split(",")):
+        for name in films.split(","):
+            film = load_film(name, seed)
+            union = pickle.loads((ROOT / "scans" / f"{tag}-{name}-s{seed}.pkl").read_bytes())
+            kfs, scans, _ = arm_scans(film, arm, union)
+            kept, _ = arm_flags(film, kfs, scans, "collisions")
+            c = Counter(fingerprint(f) for f in kept)
+            dup = sum(v for v in c.values() if v > 1)
+            print(f"{name} s{seed}: {len(kept)} flags, {len(c)} fingerprints, {dup} colliding")
+
+
+@app.command("natives")
+def natives_cmd(
+    tag: str = "cpu4", seed: int = 1, accept: bool = False, films: str = "sintel,tears-of-steel"
+) -> None:
+    """Unknown clr.url flags on text the film already had (outside every injected window), of the
+    `1-per-shot+2s` flags of one seed. Without --accept: list them. With --accept: write
+    `eval/labels/exp008/<film>.native.jsonl` for the texts of `accepted_urls.yaml` there
+    (a person-or-agent decision per text: a real third-party web address printed in the credits is a
+    correct `unknown` flag). The labels are agent-provisional: `injector` clr.native.agent.v1,
+    `reviewed` false, frames = the flag's occurrence range."""
+    import yaml
+
+    accepted: dict[str, list[str]] = {}
+    if accept:
+        accepted = yaml.safe_load((NATIVE / "accepted_urls.yaml").read_text("utf-8"))
+    for name in films.split(","):
+        film = load_film(name, seed)
+        union = pickle.loads((ROOT / "scans" / f"{tag}-{name}-s{seed}.pkl").read_bytes())
+        kfs, scans, _ = arm_scans(film, "1-per-shot+2s", union)
+        kept, _ = arm_flags(film, kfs, scans, "natives")
+        wins = [tuple(it["frames"]) for it in film.items]
+        labels: list[Label] = []
+        for f in kept:
+            if str(f.check) != "clr.url" or "not in the clearance log" not in f.explanation:
+                continue
+            claim = next(e for e in f.evidence if e.role.value == "claim")
+            a, b = claim.frames or (0, 1)
+            if any(min(b, y) > max(a, x) for x, y in wins):
+                continue  # on an injected overlay
+            text = claim.quote or ""
+            if not accept:
+                print(f"{name}: {a}-{b} {text}")
+            elif text in accepted.get(name, []):
+                labels.append(
+                    Label(
+                        label_id=f"{name}-native-url-{len(labels) + 1}", title=name,
+                        episode=film.episode, check="clr.url",
+                        target=Target(kind="frame_range", frames=(a, b)),
+                        description=f"labeller: agent (provisional): third-party web address "
+                        f"{text!r} printed in the film's own credits",
+                        injector="clr.native.agent.v1", seed=0, reviewed=False,
+                    )
+                )  # fmt: skip
+        if accept:
+            write_labels(labels, NATIVE / f"{name}.native.jsonl")
+            print(f"{name}: {len(labels)} native labels")
+
+
+@app.command("dense-cost")
+def dense_cost_cmd(
+    seed: int = 2, src: str = "cpu", films: str = "sintel,tears-of-steel", lo: int = 8
+) -> None:
+    """What the credits-card rule costs: GLiNER address / brand candidates on keyframes with `lo` or
+    more OCR lines that the rule removes, split into 8-11 lines (text in a scene) and 12 or more
+    (credits). Same cached OCR lines, the scanner with and without the rule."""
+    from nip.runtime.clients.ner import GlinerBackend
+
+    ner = GlinerBackend(cuda=False)
+    for name in films.split(","):
+        film = load_film(name, seed)
+        old = pickle.loads((ROOT / "scans" / f"{src}-{name}-s{seed}.pkl").read_bytes())
+        off = TextScanner(
+            ner, deny_brands=film.deny, deny_addresses=film.deny_addresses,
+            fictional=film.fictional, dense_lines=10**6,
+        )  # fmt: skip
+        on = TextScanner(
+            ner, deny_brands=film.deny, deny_addresses=film.deny_addresses,
+            fictional=film.fictional,
+        )  # fmt: skip
+        gone: dict[str, list[str]] = {"8-11": [], "12+": []}
+        n_frames = {"8-11": 0, "12+": 0}
+        for f, (scan, _) in sorted(old.items()):
+            n = len(scan.lines)
+            if n < lo:
+                continue
+            band = "8-11" if n < 12 else "12+"
+            n_frames[band] += 1
+            kept = {(c.check, c.text) for c in on.candidates(scan.lines, film.lang)}
+            for c in off.candidates(scan.lines, film.lang):
+                if (c.check, c.text) not in kept:
+                    gone[band].append(f"{f}:{c.check}:{c.text}")
+        print(f"{name} s{seed}: frames with 8-11 lines {n_frames['8-11']}, 12+ {n_frames['12+']}")
+        for band, items in gone.items():
+            print(f"  removed in {band}: {len(items)}")
+        for it in gone["8-11"]:
+            print("   ", it)
 
 
 @app.command("rescan")

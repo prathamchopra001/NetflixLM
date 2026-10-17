@@ -55,11 +55,23 @@ def test_variants_and_ocr_slips_match_names() -> None:
     assert status("clr.brand_text", "Veltrix") == ("unknown", None)  # one token is not a name
 
 
-def test_identifiers_match_exactly() -> None:
+def test_identifiers_match_exactly_against_cleared_and_unknown() -> None:
     """One digit or letter off is another number or plate; a wrong 'cleared' would hide it."""
-    assert status("clr.phone", "(212) 555-0235") == ("unknown", None)
-    assert status("clr.plate", "7KLM462") == ("unknown", None)
+    assert status("clr.phone", "(415) 555-2672") == ("unknown", None)  # one off a CLEARED number
+    assert status("clr.phone", "(212) 555-0299") == ("unknown", None)  # two off the pending one
+    assert status("clr.plate", "7KLX4X2") == ("unknown", None)
     assert status("clr.email", "ines.valdor@quillmere-book.com") == ("unknown", None)
+
+
+def test_one_edit_off_a_pending_or_denied_identifier_is_a_near_match_of_it() -> None:
+    """I3: an OCR slip must never turn a pending / denied phone or plate into unknown or hidden."""
+    m = match(REG, "clr.phone", "(212) 555-0235", "S01E01")  # last digit misread
+    assert (m.status, m.item and m.item.id, m.near) == ("pending", 1, True)
+    assert match(REG, "clr.phone", "(212) 55-0234", "S01E01").near  # a dropped digit
+    assert match(REG, "clr.plate", "7KLM462", "S01E01").status == "denied"  # 8 -> 6
+    assert match(REG, "clr.plate", "7KIM482", "S01E01").near  # L -> I
+    assert not match(REG, "clr.plate", "7KLM482", "S01E01").near  # an exact read is exact
+    assert match(REG, "clr.plate", "7K482", "S01E01").status == "unknown"  # too short to compare
 
 
 def test_a_check_only_matches_its_kinds() -> None:

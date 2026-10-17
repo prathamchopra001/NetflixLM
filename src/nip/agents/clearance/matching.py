@@ -15,6 +15,8 @@ another number, and a wrong "cleared" would hide it). Names (addresses, brands) 
 tokens are contained in each other or `rapidfuzz.ratio >= threshold`, which absorbs OCR slips.
 An item whose `scope` does not cover the episode does not apply: its text is unknown there.
 When several in-scope items match, the strictest status wins (denied > pending > cleared).
+A phone number or plate that is exactly one edit from a pending / denied one (and matches nothing
+exactly) is a `near` match of that item and routes as it does (I3: an OCR slip never hides it).
 """
 
 import re
@@ -24,12 +26,18 @@ from typing import Any
 
 import yaml
 from rapidfuzz import fuzz
+from rapidfuzz.distance import Levenshtein
 
 from nip.config import config_dir
 
 STATUSES = ("fictional", "cleared", "pending", "denied", "unknown")
 _STRICT = {"denied": 3, "pending": 2, "cleared": 1}
 NAME_CHECKS = ("clr.address", "clr.brand_text")
+NEAR_CHECKS = (
+    "clr.phone",
+    "clr.plate",
+)  # OCR slips of these must never hide a pending / denied item
+MIN_NEAR_LEN = 6  # shorter identifiers are one edit from too many others
 
 
 @cache
@@ -61,6 +69,7 @@ class Registry:
 class Match:
     status: str  # one of STATUSES
     item: Item | None = None  # the registry row behind cleared / pending / denied
+    near: bool = False  # not an exact read: one character off a pending / denied identifier
 
 
 def normalize(check: str, text: str) -> str:
@@ -95,6 +104,13 @@ def _same_name(a: str, b: str, threshold: float) -> bool:
     return a == b or fuzz.ratio(a, b) >= threshold
 
 
+def _fictional(n: str, f: str, threshold: float) -> bool:
+    """A detection is the bible's own name when it equals it (OCR slips allowed) or contains it as
+    whole words ("SINTEL HAS" holds the film's title): what the production invented is not a
+    clearance item."""
+    return _same_name(n, f, threshold) or bool(f) and set(f.split()) <= set(n.split())
+
+
 def _same(check: str, a: str, b: str, threshold: float) -> bool:
     if check in NAME_CHECKS:
         return _same_name(a, b, threshold)
@@ -127,7 +143,7 @@ def match(
     """The registry status of one detection (`check`: its clr.* id, `episode`: S01E03)."""
     n = normalize(check, text)
     names = check in NAME_CHECKS  # the bible declares brands, organizations, places
-    if names and any(_same_name(n, normalize(check, f), threshold) for f in registry.fictional):
+    if names and any(_fictional(n, normalize(check, f), threshold) for f in registry.fictional):
         return Match("fictional")
     kinds = _cfg()["kinds"][check]
     hits = [
@@ -137,7 +153,22 @@ def match(
         and in_scope(i.scope, episode)
         and _same(check, n, normalize(check, i.name), threshold)
     ]
-    if not hits:
-        return Match("unknown")
-    best = max(hits, key=lambda i: _STRICT.get(i.status, 0))
-    return Match(best.status, best)
+    if hits:
+        best = max(hits, key=lambda i: _STRICT.get(i.status, 0))
+        return Match(best.status, best)
+    if check in NEAR_CHECKS and len(n) >= MIN_NEAR_LEN:
+        # An OCR misread (O/0, 1/I, a dropped digit) of a pending / denied phone number or plate
+        # is a possible match of that item: it escalates like the item itself, never to hidden.
+        # Exact matching stays the rule for "cleared": a wrong one would hide another number.
+        close = [
+            i
+            for i in registry.items
+            if i.kind in kinds
+            and i.status in ("pending", "denied")
+            and in_scope(i.scope, episode)
+            and Levenshtein.distance(n, normalize(check, i.name)) <= 1
+        ]
+        if close:
+            best = max(close, key=lambda i: _STRICT[i.status])
+            return Match(best.status, best, near=True)
+    return Match("unknown")

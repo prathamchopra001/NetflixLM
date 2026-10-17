@@ -155,14 +155,14 @@ def test_the_same_text_twice_in_one_long_shot_is_two_occurrences_with_distinct_k
     assert a.shots == b.shots == (0,) and a.key != b.key
 
 
-def test_a_keyframe_span_covers_the_same_seconds_whatever_the_sampling() -> None:
-    """The claim of a flag must not narrow as the policy gets denser (EXP-008)."""
-    from nip.agents.clearance.occurrences import cell_cap_frames, geometry, windows
-
-    sparse = timeline([(0, 480)], [(0, 0, 240)])
-    dense = timeline([(0, 480)], [(0, n, 240 + 24 * (n - 2)) for n in range(5)])
-    cap = cell_cap_frames(sparse, CFG)
-    assert windows(geometry(sparse), cap)[0, 0] == (192, 288)
-    assert windows(geometry(dense), cap)[0, 2] == (192, 288)  # one keyframe of five: same width
-    edge = timeline([(0, 480)], [(0, 0, 10)])
-    assert windows(geometry(edge), cap)[0, 0] == (0, 58)  # clipped to the shot
+def test_occurrence_refs_are_stable_and_separate_distinct_items() -> None:
+    tl = timeline([(0, 96)], [(0, 0, 48)])
+    one = analyze([hit(0, text="orange.blender.org", check="clr.url")], Registry(), tl, CFG)
+    two = analyze(
+        [hit(0, text="orange.blender.org", check="clr.url"),
+         hit(0, text="peach.blender.org", check="clr.url")], Registry(), tl, CFG,
+    )  # fmt: skip
+    assert len({o.ref for o in two}) == 2 and one[0].ref in {o.ref for o in two}
+    assert one[0].ref == analyze([hit(0, text="orange.blender.org", check="clr.url")],
+                                 Registry(), tl, CFG)[0].ref  # fmt: skip
+    assert one[0].ref.startswith("clr/occ-") and refs.parse(one[0].ref).id.startswith("occ-")

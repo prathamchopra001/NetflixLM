@@ -42,9 +42,22 @@ def show_of(film: str, seed: int, tag: str) -> str:
     return f"clr-{film}-s{seed}-{tag}"
 
 
+def set_title(show: str, title: str) -> None:
+    """`nip ingest` names a show by its slug; the clearance scan treats the show's title as the
+    production's own name (never a clearance item), so give it the film's real one."""
+    from sqlalchemy import create_engine, text
+
+    from nip.store.db import database_url
+
+    engine = create_engine(database_url())
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE show SET title = :t WHERE slug = :s"), {"t": title, "s": show})
+    engine.dispose()
+
+
 def files(show: str, mode: str) -> tuple[Path, Path]:
     """(out dir of `nip run`, its summary json): `cpu` = run-cpu, `gpu` = the shipped `nip run`."""
-    sfx = "" if mode == "cpu" else f"-{mode}"
+    sfx = "" if mode == "cpu" else f"-{mode}"  # cpu | gpu (host `nip run`) | cluster
     return ROOT / show / f"out{sfx}", ROOT / show / f"run-stdout{sfx}.json"
 
 
@@ -82,6 +95,7 @@ def prepare(
                 f"clearance_log={side / 'clearance_log.csv'}")  # fmt: skip
             out = nip("ingest", "--show", show, "--episode", "S01E01",
                       "--picture", str(folder / "picture.json"), str(film.video))  # fmt: skip
+            set_title(show, film.title)
             print(show, f"{time.perf_counter() - t:.0f} s", out.stdout.replace("\n", " ")[:200])
 
 
@@ -103,6 +117,46 @@ def run(seeds: str = "1,2,3", films: str = "sintel,tears-of-steel", tag: str = "
                 stages = {x["stage"]: x["wall_s"] for x in ep["stages"] if x["wall_s"] > 0.5}
                 print(show, s["status"], f"{wall:.0f} s", ep["flags_kept"], "flags", ep["units"],
                       stages, ep["skipped_stages"], flush=True)  # fmt: skip
+
+
+@app.command("run-cluster")
+def run_cluster(
+    seeds: str = "1", films: str = "sintel", tag: str = "b", container: str = "netflixlm-ray-head-1"
+) -> None:
+    """The shipped GPU path once: `nip run --in-cluster` inside ray-head (OCR and GLiNER in-process;
+    Plan's llm group staged around its stages), under data/gpu.lock. `NIP_PIN_NER=gliner-x-base`
+    because the planner prefers the unmeasured large model on the laptop (no code pin)."""
+    env = ["-e", "NIP_OCR_MODELS=/models/rapidocr", "-e", "NIP_PIN_NER=gliner-x-base",
+           "-e", "NIP_VRAM_MARGIN_GB=0.25"]  # fmt: skip
+    with bench.gpu_lock("2.7 nip run --in-cluster on a film (OCR + GLiNER + llm group)"):
+        for seed in map(int, seeds.split(",")):
+            for name in films.split(","):
+                show = show_of(name, seed, tag)
+                out, summary_json = files(show, "cluster")
+                t = time.perf_counter()
+                nip_plan = ["docker", "exec", *env, container, "nip", "plan", "--units", "1"]
+                plan = subprocess.run(nip_plan, capture_output=True, text=True)
+                (ROOT / show).mkdir(parents=True, exist_ok=True)
+                (ROOT / show / "plan-cluster.json").write_text(plan.stdout, encoding="utf-8")
+                res = subprocess.run(
+                    ["docker", "exec", *env, container, "nip", "run", "--show", show,
+                     "--episodes", "S01E01", "--agents", "clearance_scanner", "--in-cluster",
+                     "--out-dir", "/tmp/clr-cluster"],
+                    capture_output=True, text=True,
+                )  # fmt: skip
+                wall = time.perf_counter() - t
+                (ROOT / show / "run-stderr-cluster.txt").write_text(res.stderr, encoding="utf-8")
+                summary_json.write_text(res.stdout, encoding="utf-8")
+                subprocess.run(["docker", "cp", f"{container}:/tmp/clr-cluster/.", str(out)],
+                               check=False)  # fmt: skip
+                subprocess.run(["docker", "exec", container, "rm", "-rf", "/tmp/clr-cluster"],
+                               check=False)  # fmt: skip
+                print(show, f"exit {res.returncode}", f"{wall:.0f} s", flush=True)
+                if res.returncode == 0:
+                    sm = json.loads(res.stdout)
+                    ep = sm["episodes"]["S01E01"]
+                    print(sm["status"], ep["flags_kept"], ep["units"], sm["serving"],
+                          sm["plan"]["skipped_slots"], flush=True)  # fmt: skip
 
 
 @app.command("run-cpu")
@@ -173,7 +227,10 @@ def score(
         official = [lb for f in sel for lb in f.labels]
         allpos = [lb for f in sel for lb in bench.all_positive_labels(f)]
         extra: dict[str, Any] = {"e2e/ocr_stage_s_per_content_hour": wall / hours}
-        for name, labels in ((variant, official), (f"{variant}@all-positives", allpos)):
+        natives = [lb for f in sel for lb in f.natives]
+        runs = [(variant, official, []), (f"{variant}+native", official, natives),
+                (f"{variant}@all-positives", allpos, [])]  # fmt: skip
+        for name, labels, nat in runs:
             out = ROOT / "scored" / f"{name}-s{seed}"
             params = {"arm": arm, "path": "nip ingest + nip run"}
             line = bench.nip_eval_run(
@@ -187,6 +244,7 @@ def score(
                 gpu_seconds=wall,
                 extra=extra,
                 params=params,
+                natives=nat,
             )
             print(line, flush=True)
 

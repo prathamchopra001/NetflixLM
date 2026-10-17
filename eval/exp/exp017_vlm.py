@@ -187,7 +187,11 @@ def score_cmd(
                 sel, unions[name], arm, "EXP-017", seed, ROOT / "runs",
                 {"reader": arm_name, "keyframe_policy": arm,
                  "failed_frames": str(sum(failed[(f.name, f.seed)] for f in sel if f.seed == seed))
-                 if name == VARIANT else "0"},
+                 if name == VARIANT else "0",
+                 "seconds_are": "wall of the read phase at 8 requests at once (vlm, no GLiNER)"
+                 if name == VARIANT else
+                 "wall of the OCR stage one frame at a time, GLiNER included; the seed-1 GPU scan, "
+                 "copied to every seed (one measurement, not three)"},
                 arm_name=arm_name + suffix, prefix="exp017",
             )  # fmt: skip
 

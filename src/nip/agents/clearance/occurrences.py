@@ -13,6 +13,7 @@ whole shot. Scene boundaries are not used: store scenes are only script estimate
 and a text that returns within 2 s across a scene cut is still the same sign.
 """
 
+import hashlib
 import json
 import logging
 import math
@@ -65,13 +66,28 @@ class Occurrence:
     best: Hit  # the keyframe shown as evidence: largest, most central, sharpest view
     confidence: float  # the strongest hit
     severity: int
+    episode: str = ""
+
+    @property
+    def who(self) -> str:
+        """The item the occurrence is about: its registry item, else its normalized text."""
+        m = self.match.item
+        return f"clr/{m.id}" if m else normalize(self.check, self.text)
 
     @property
     def key(self) -> str:
-        """Stable name of the occurrence inside its episode (work unit key, flag fingerprint)."""
-        m = self.match.item
-        who = f"clr/{m.id}" if m else normalize(self.check, self.text)
-        return f"{self.check}/{who}/f{self.frames[0]}"
+        """Name of the occurrence inside its episode (work unit key)."""
+        return f"{self.check}/{self.who}/f{self.frames[0]}"
+
+    @property
+    def ref(self) -> str:
+        """Stable evidence ref of the occurrence, `clr/occ-<hash>` (the contract has no occurrence
+        kind: it parses as a clearance-item ref). The hash is of episode, check, the item or its
+        normalized text, and the first keyframe that saw it, so two distinct unknown items never
+        share a ref and a re-run with the same keyframes reproduces it (R13 fingerprint)."""
+        first = min((h.shot, h.n) for h in self.hits)
+        raw = f"{self.episode}|{self.check}|{self.who}|{first[0]}.{first[1]}"
+        return "clr/occ-" + hashlib.sha1(raw.encode()).hexdigest()[:12]
 
 
 Geometry = tuple[
@@ -120,20 +136,6 @@ def cells(geo: Geometry, cap_frames: int) -> dict[tuple[int, int], tuple[int, in
             half = max(cap_frames // 2, 1)
             lo, hi = max(lo, f - half), min(hi, f + half)
             out[shot, n] = (lo, max(hi, lo + 1))
-    return out
-
-
-def windows(geo: Geometry, cap_frames: int) -> dict[tuple[int, int], tuple[int, int]]:
-    """(shot, n) -> [lo, hi): what a read keyframe's span covers, `cap_frames` centred on the frame
-    inside its shot, whatever the sampling density. A flag's claim is this range, so it covers about
-    the seconds the text was seen (a denser policy must not make claims narrower)."""
-    _, _, shots, kfs = geo
-    half = max(cap_frames // 2, 1)
-    out = {}
-    for shot, n, f in kfs:
-        a, b = shots[shot]
-        lo, hi = max(a, f - half), min(b, f + half)
-        out[shot, n] = (lo, max(hi, lo + 1))
     return out
 
 
@@ -197,9 +199,9 @@ def _analyze(
                 run.append(hm)
                 end = max(end, hi)
             else:
-                out.append(_occurrence(run, cell, fps, cfg))
+                out.append(_occurrence(run, cell, fps, cfg, episode))
                 run, end = [hm], hi
-        out.append(_occurrence(run, cell, fps, cfg))
+        out.append(_occurrence(run, cell, fps, cfg, episode))
     out.sort(key=lambda o: (o.frames, o.check, o.text))
     return tuple(out)
 
@@ -209,6 +211,7 @@ def _occurrence(
     cell_of: dict[tuple[int, int], tuple[int, int]],
     fps: Fraction,
     cfg: dict[str, Any],
+    episode: str,
 ) -> Occurrence:
     hits = tuple(h for h, _ in run)
     spans = sorted({cell_of[h.shot, h.n] for h in hits})
@@ -233,6 +236,7 @@ def _occurrence(
         best=best,
         confidence=max(h.confidence for h in hits),
         severity=severity(m, featured, cfg["severity"]),
+        episode=episode,
     )
 
 

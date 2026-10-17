@@ -158,6 +158,12 @@ def test_flags_detections_crops_and_csv(
             and counts["sharpness"] == counts["clr.phone"] + counts["clr.brand_text"]
         )
         assert conn.execute(select(func.count()).select_from(ev)).scalar_one() >= 4
+        claims = conn.execute(
+            select(ev.c.ref, ev.c.frames).where(ev.c.role == "claim")
+        ).all()  # the claim of every flag is its occurrence: a `clr/occ-` span with the range
+        assert len(claims) == len(flags) and all(
+            c.ref.startswith("clr/occ-") and c.frames is not None for c in claims
+        )
         crops = [k for _, k in s3.objects if k.startswith("demo/S01E01/crops/")]
         n_cand = conn.execute(
             select(func.count()).select_from(d).where(d.c.label.like("clr.%"))

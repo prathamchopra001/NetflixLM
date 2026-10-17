@@ -7,10 +7,10 @@ timeline:
     # Middle frame of every shot, plus one every `interval_s` for shots longer than `long_shot_s`.
     # EXP-008 (injected Sintel + Tears of Steel, 3 seeds, shown recall of the six text checks):
     # 1 per shot 0.50 at 11.2 keyframes/min; this policy (4 s / 2 s) 1.00 at 26.7 (+139%); one every
-    # 1 s in shots over 1 s 1.00 at 53.9 (+102%, +0 points, so rejected). Kept at 4 s / 2 s: the
-    # dense arm fails the bar (>= +5 points for <= +50% keyframes) against it. A strict reading of
-    # the bar against 1 per shot would also reject this policy (+139% keyframes): set long_shot_s
-    # to 86400 for that (see notes/2.7.md DP-2.7-9).
+    # 1 s in shots over 1 s 1.00 at 53.9 (+102%, +0 points). The bar (a denser policy is kept only
+    # if recall rises >= 5 points for <= 50% more keyframes) rejects both denser arms, so by its
+    # text 1 per shot wins. OVERRIDDEN here (controller ruling): 1 per shot's recall of 0.50 fails
+    # the 0.85 MVP target of evaluation.md. See notes/2.7.md DP-2.7-9.
     long_shot_s: 4.0
     interval_s: 2.0
     jpeg_quality: 90
@@ -66,8 +66,6 @@ knowledge:
 
 # Clearance scanner (2.7): matching, occurrences, prominence, routing.
 clearance:
-  # The planner pins the ner slot to this variant (D-026; 2.6 measured it, the large one is unmeasured).
-  ner_variant: gliner-x-base
   # Detections of one item whose keyframe cells are at most this far apart are one occurrence.
   occurrence_gap_s: 2.0
   # A keyframe proves its text on screen at that frame only; its cell (the stretch of the shot

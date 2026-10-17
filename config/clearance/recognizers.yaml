@@ -24,3 +24,24 @@ plate_patterns:
 # Seed deny-list of real brands: always a brand_text candidate (the clearance log's own items are
 # added by 2.7 through `TextScanner(deny_brands=...)`).
 brand_deny_list: [Adidas, Amazon, Apple, BMW, Budweiser, Coca-Cola, Ford, Google, Heineken, McDonald's, Marlboro, Microsoft, Nike, Pepsi, Rolex, Samsung, Sony, Starbucks, Toyota, Volkswagen]
+# GLiNER address / brand guesses are only trusted on text OCR read at least this surely (the 0.8 line
+# is 2.6's own low-confidence set: 93 of 1,607 lines on Sintel). Deny-list and rule-based hits are not.
+ner_min_ocr_confidence: 0.8
+# Words of film credits (crew roles and credit lines). A brand or address guess made only of these (and
+# the joining words) is a credit line, not a brand: "SCREENPLAY BY", "MUSIC AND SOUND". A generic
+# vocabulary of the trade, not derived from one title.
+credit_joiners: [and, by, of, the, for, to, with, "&"]
+credit_words: [
+  directed, director, directors, produced, producer, producers, executive, written, writer, writers,
+  screenplay, story, music, composer, composed, sound, audio, design, designer, designers, animation,
+  animator, animators, rigging, modeling, modelling, texturing, sculpting, lighting, compositing,
+  rendering, render, farm, servers, effects, vfx, cg, cgi, foley, casting, cast, editor, editing,
+  mixing, mastering, recording, consultancy, software, support, development, developers, team,
+  artwork, additional, props, environment, concept, art, storyboard, production, assistant, coordinator,
+  manager, supervisor, crew, studio, location, film, camera, equipment, grip, key, set, costumer,
+  dresser, make, up, hair, tracking, motion, fixing, bug, original, thanks, special, credits,
+  cinematography, photography, violinist, session, performed, orchestra, vocals, voice, actor,
+  actress, characters, character, creature, scenes, textures, sponsors, gold, financial,
+  administration, printing, websites, projects, production, presents, presented, logo, titles,
+  title, sequence, editorial, post, postproduction, color, grading, dubbing, subtitles,
+]

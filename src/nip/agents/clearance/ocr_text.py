@@ -213,9 +213,12 @@ class NerRecognizer(EntityRecognizer):
         pass
 
     def analyze(self, text: str, entities: list[str], nlp_artifacts: Any = None) -> Any:
+        # GLiNER reads names and organizations far better in natural case than in the all-caps OCR
+        # gives for titles and credits; title() keeps every offset.
+        read = text.title() if text.isupper() and len(text) > 3 else text
         return [
             RecognizerResult(self._labels[e.label], e.start, e.end, e.score)
-            for e in self._ner.predict(text, list(self._labels))
+            for e in self._ner.predict(read, list(self._labels))
         ]
 
 
@@ -241,6 +244,7 @@ class TextScanner:
     """Presidio analyzer for on-screen text. Build once (spaCy loads), call `candidates` per line.
 
     deny_brands: extra real brand names (clearance-log items); always brand_text candidates.
+    dense_lines: override of `dense_frame_lines` (experiments).
     deny_addresses: clearance-log addresses; always address candidates (a logged item must not
                  depend on GLiNER guessing it).
     A keyframe with `dense_frame_lines` or more OCR lines is a credits or caption card: GLiNER's
@@ -255,13 +259,16 @@ class TextScanner:
         *,
         deny_brands: Iterable[str] = (),
         deny_addresses: Iterable[str] = (),
+        dense_lines: int | None = None,
         fictional: Iterable[str] = (),
     ) -> None:
         cfg = _config()
         langs = cfg["languages"]
         self._min = cfg["min_score"]
         self._person = cfg["person_min_score"]
-        self._dense = cfg["dense_frame_lines"]
+        self._dense = dense_lines if dense_lines is not None else cfg["dense_frame_lines"]
+        self._ner_min_ocr = cfg["ner_min_ocr_confidence"]
+        self._credit = frozenset(cfg["credit_words"]) | frozenset(cfg["credit_joiners"])
         self._reserved = tuple(cfg["reserved_domains"])
         self._fictional = [n for n in map(_norm, fictional) if n]
         brands = sorted({*cfg["brand_deny_list"], *deny_brands})
@@ -330,6 +337,10 @@ class TextScanner:
             token = text[text.rfind(" ", 0, start) + 1 :].split(" ")[0]  # a brand; urlextract
             if self._reserved_host(token.strip(".,;:!?()\"'")):  # does not know .test
                 return True
+        if entity in (ADDRESS, BRAND):
+            words = _norm(span).split()
+            if words and all(w in self._credit for w in words):
+                return True  # a credit line ("SCREENPLAY BY"), not a brand or an address
         if entity == ADDRESS:  # GLiNER tags bare phone-number lines as addresses: needs a word
             return re.search(r"[^\W\d_]{3}", span) is None
         if entity == BRAND:
@@ -347,7 +358,7 @@ class TextScanner:
         for d in detections:
             text = clean_ocr_urls(d.text)
             found = self._engine.analyze(text, lang, entities=[*CHECK, PERSON, ROLE])
-            if dense:
+            if dense or d.confidence < self._ner_min_ocr:
                 found = [
                     r
                     for r in found

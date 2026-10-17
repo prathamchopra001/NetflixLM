@@ -6,10 +6,9 @@ check id, plus a `sharpness` companion row per candidate); a check only reads th
 the candidates and the clearance registry, matches them (`matching.py`), merges them into
 occurrences (`occurrences.py`) and emits ONE flag per occurrence of its check id.
 
-Evidence of a flag: the keyframes that show it as `claim`, the best view first with the quote and
-the crop box (a keyframe span stands for the stretch of its shot it represents, so the claim covers
-about the seconds the text was seen and matches a labelled frame range by overlap); its shots and
-the clearance item, when the log has it, as `context`.
+Evidence of a flag: the occurrence as `claim` (a span `clr/occ-<hash>` the OCR stage adds to the
+run's timeline, frames = the occurrence's range, the one the CSV reports); the best keyframe with
+the quote and the crop box, its shots and the clearance item, when the log has it, as `context`.
 
 Routing (architecture.md > Review tiers): pending and denied are `must_review` whatever the
 confidence; cleared is `suppressed` (hidden by default, kept for the audit); unknown goes by
@@ -42,7 +41,6 @@ from nip.store import schema
 log = logging.getLogger(__name__)
 
 SHARPNESS = "sharpness"  # label of a candidate's companion row: `confidence` holds the variance
-MAX_KEYFRAMES = 6  # keyframes cited as claim per flag
 MAX_SHOTS = 6  # shots cited as context
 
 WHAT = {  # check -> (what it is, fix)
@@ -82,7 +80,10 @@ def load_registry(conn: Connection, show: str) -> Registry:
         .join(sh, sh.c.id == en.c.show_id)
         .where(sh.c.slug == show, en.c.fictional.is_(True))
     ).subquery()
-    names = [r[0] for r in conn.execute(select(fic.c.canonical_name))]
+    names = [
+        r[0] for r in conn.execute(select(sh.c.title).where(sh.c.slug == show))
+    ]  # its own title
+    names += [r[0] for r in conn.execute(select(fic.c.canonical_name))]
     names += [r[0] for r in conn.execute(select(al.c.alias).join(fic, fic.c.id == al.c.entity_id))]
     return Registry(items, tuple(dict.fromkeys(names)))
 
@@ -207,7 +208,7 @@ class ClearanceText(Check):
         self._by_key = {o.key: o for o in occs}
         out = []
         for o in occs:
-            spans = [tl.resolve(r) for r in keyframe_refs(o, tl.episode)]
+            spans = [tl.resolve(o.ref), tl.resolve(keyframe_ref(o, tl.episode))]
             spans += [tl.resolve(refs.shot(tl.episode, i)) for i in o.shots[:MAX_SHOTS]]
             out.append(WorkUnit(f"{tl.episode}/{o.key}", tuple(s for s in spans if s)))
         return out
@@ -217,23 +218,26 @@ class ClearanceText(Check):
         return [finding(o, tl)]
 
     def recheck(self, flag: Flag, tl: Timeline) -> bool:
-        """The occurrence is still there: same best keyframe, same text, same logged item."""
-        kf = next((e for e in flag.evidence if e.kind is EvidenceKind.KEYFRAME), None)
-        item = next((e.ref for e in flag.evidence if e.kind is EvidenceKind.CLEARANCE_ITEM), None)
-        return kf is not None and any(
-            kf.ref == refs.keyframe(tl.episode, o.best.shot, o.best.n)
-            and kf.quote in (None, o.best.text)  # no quote: the span had no text to quote from
-            and item == (f"clr/{o.match.item.id}" if o.match.item else None)
+        """The occurrence is still there: its ref (episode, check, item or text, first keyframe)
+        and the same logged item."""
+        claim = next((e.ref for e in flag.evidence if e.role is EvidenceRole.CLAIM), None)
+        item = next(
+            (
+                e.ref
+                for e in flag.evidence
+                if e.kind is EvidenceKind.CLEARANCE_ITEM and e.role is EvidenceRole.CONTEXT
+            ),
+            None,
+        )
+        return any(
+            claim == o.ref and item == (f"clr/{o.match.item.id}" if o.match.item else None)
             for o in self.occurrences(tl)
         )
 
 
-def keyframe_refs(o: Occurrence, episode: str) -> list[str]:
-    """The occurrence's distinct keyframes, the best view first (at most MAX_KEYFRAMES)."""
-    rest = sorted({(h.shot, h.n) for h in o.hits} - {(o.best.shot, o.best.n)})
-    return [refs.keyframe(episode, s, n) for s, n in [(o.best.shot, o.best.n), *rest]][
-        :MAX_KEYFRAMES
-    ]
+def keyframe_ref(o: Occurrence, episode: str) -> str:
+    """The keyframe that shows the occurrence best (quote and crop)."""
+    return refs.keyframe(episode, o.best.shot, o.best.n)
 
 
 def finding(o: Occurrence, tl: Timeline) -> Finding:
@@ -243,19 +247,26 @@ def finding(o: Occurrence, tl: Timeline) -> Finding:
     kind = "featured" if o.featured else "background"
     item = o.match.item
     status = STATUS_TEXT[o.match.status].format(name=item.name if item else "")
-    kf_ref = keyframe_refs(o, tl.episode)[0]
+    if o.match.near and item:
+        status = (
+            f"may be the {o.match.status} item {item.name!r} (one character different: "
+            "an OCR misread of it is treated as the item, never as unknown or cleared)"
+        )
+    kf_ref = keyframe_ref(o, tl.episode)
     kf = tl.resolve(kf_ref)
-    evidence = [  # the keyframes that show it (best first) claim it; the best one has the quote
+    # The claim is the occurrence: its frame range, the one the CSV reports (a span the OCR stage
+    # adds to the run's timeline, `clr/occ-...`). The best keyframe carries the quote and the crop.
+    evidence = [
+        Evidence(
+            kind=EvidenceKind.CLEARANCE_ITEM, ref=o.ref, role=EvidenceRole.CLAIM, quote=o.text
+        ),
         Evidence(
             kind=EvidenceKind.KEYFRAME,
-            ref=ref,
-            role=EvidenceRole.CLAIM,
-            quote=o.best.text
-            if ref == kf_ref and kf is not None and o.best.text in kf.text
-            else None,
-            crop=Crop(keyframe=ref, box=list(o.best.box)) if ref == kf_ref else None,
-        )
-        for ref in keyframe_refs(o, tl.episode)
+            ref=kf_ref,
+            role=EvidenceRole.CONTEXT,
+            quote=o.best.text if kf is not None and o.best.text in kf.text else None,
+            crop=Crop(keyframe=kf_ref, box=list(o.best.box)),
+        ),
     ]
     evidence += [
         Evidence(kind=EvidenceKind.SHOT, ref=refs.shot(tl.episode, i), role=EvidenceRole.CONTEXT)

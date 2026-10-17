@@ -251,7 +251,8 @@ class Builder:
         self.scenes.append((ep, sc))
 
 
-def build(seed: int = 1) -> Show:
+def build(seed: int = 1, *, ambiguous: bool = False) -> Show:
+    """The clean show; `ambiguous=True` is the EXP-007 variant (eval/synthetic/ambiguous.py)."""
     b = Builder(seed)
     rng = b.rng
     slots: list[tuple[str, dict[str, Any]] | None] = [None] * N
@@ -456,6 +457,10 @@ def build(seed: int = 1) -> Show:
         episodes=ep_scenes,
     )
     _identity(show)
+    if ambiguous:
+        from eval.synthetic.ambiguous import ambiguate
+
+        ambiguate(show, seed)
     return show
 
 

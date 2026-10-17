@@ -187,6 +187,15 @@ def ray_head(*args: str, env: dict[str, str] | None = None) -> str:
     return r.stdout
 
 
+BUSY_MIB = 1500  # device use before a round; above it the planner no longer places the model
+
+
+def host_used_mib() -> int:
+    out = subprocess.run(["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                         capture_output=True, text=True, check=True).stdout  # fmt: skip
+    return int(out.split()[0])
+
+
 MARGIN = {"NIP_VRAM_MARGIN_GB": os.environ.get("NIP_VRAM_MARGIN_GB", "0.25")}
 
 
@@ -201,6 +210,11 @@ def drive(
     OUT.mkdir(parents=True, exist_ok=True)
     for t in range(start, trials + 1):
         acquire(f"EXP-018 start trials round {t}")
+        while (used := host_used_mib()) > BUSY_MIB:  # the desktop took the room: not a trial
+            typer.echo(f"desktop holds {used} MiB > {BUSY_MIB}; lock released, retry in 5 min")
+            release()
+            time.sleep(300)
+            acquire(f"EXP-018 start trials round {t}")
         try:
             for arm in arms.split(","):
                 typer.echo(f"== {arm} trial {t} {time.strftime('%H:%M:%S')}")

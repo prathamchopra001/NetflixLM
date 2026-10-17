@@ -417,7 +417,7 @@ def scan_cmd(
                 only = {f for _, _, f in policy(film, arm)} if arm else None
                 scan_union(film, reader, make(film), "cpu" if cpu else "gpu", only)
 
-    if cpu:
+    if cpu or os.environ.get("GPU_LOCK_HELD"):  # a driver (exp017_session) holds the lock
         work()
     else:
         with gpu_lock("EXP-008 OCR keyframe scans"):

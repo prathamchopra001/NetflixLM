@@ -130,10 +130,11 @@ def read_cmd(
 @app.command("score")
 def score_cmd(
     seeds: str = "1,2,3", arm: str = "1-per-shot+2s", ocr_tag: str = "gpu",
-    films: str = "sintel,tears-of-steel", reads: str = "",
+    films: str = "sintel,tears-of-steel", reads: str = "", timing_tag: str = "", suffix: str = "",
 ) -> None:  # fmt: skip
     """Score the two readers on the same frames: flags -> `nip eval run` for each, per seed.
-    `reads`: the read-*.json whose wall times give the vlm's cost (default: the newest)."""
+    `reads`: the read-*.json whose wall times give the vlm's cost (default: the newest);
+    `timing_tag`: take the OCR arm's seconds per frame from this tag's seed-1 scan (GPU)."""
     sel = [bench.load_film(n, s) for s in map(int, seeds.split(",")) for n in films.split(",")]
     unions: dict[str, dict[tuple[str, int], dict[int, tuple[Scan, float]]]] = {
         VARIANT: {},
@@ -163,12 +164,23 @@ def score_cmd(
         )
         only = {f for f, v in lines.items() if v is not None}
         u = bench.scan_union(film, reader, scanner, "vlm", only)
+        for _, _, f in bench.policy(
+            film, arm
+        ):  # a frame the model failed to read is a gap: no lines
+            u.setdefault(f, (Scan([], [], []), 0.0))
         rec = wall.get(key)
         per_frame = rec["wall_s"] / max(rec["frames"], 1) if rec else 0.0  # amortized wall seconds
         unions[VARIANT][key] = {f: (s, per_frame) for f, (s, _) in u.items()}
         unions["ocr"][key] = pickle.loads(
             (bench.ROOT / "scans" / f"{ocr_tag}-{film.name}-s{film.seed}.pkl").read_bytes()
         )
+        if timing_tag:  # the frames are the same in every seed: time them as on the GPU, seed 1
+            t1 = pickle.loads(
+                (bench.ROOT / "scans" / f"{timing_tag}-{film.name}-s1.pkl").read_bytes()
+            )
+            unions["ocr"][key] = {
+                f: (s, t1[f][1]) for f, (s, _) in unions["ocr"][key].items() if f in t1
+            }
     for seed in map(int, seeds.split(",")):
         for name, arm_name in ((VARIANT, VARIANT), ("ocr", "pp-ocrv6-medium")):
             bench.score_arm(
@@ -176,7 +188,7 @@ def score_cmd(
                 {"reader": arm_name, "keyframe_policy": arm,
                  "failed_frames": str(sum(failed[(f.name, f.seed)] for f in sel if f.seed == seed))
                  if name == VARIANT else "0"},
-                arm_name=arm_name, prefix="exp017",
+                arm_name=arm_name + suffix, prefix="exp017",
             )  # fmt: skip
 
 

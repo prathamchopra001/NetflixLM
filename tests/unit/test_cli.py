@@ -48,7 +48,8 @@ def test_dry_run_prints_the_wired_stage_order_once(monkeypatch: pytest.MonkeyPat
     assert got["stages"] == [
         "timeline.asr", "timeline.align", "knowledge.story", "knowledge.extract",
         "knowledge.consolidate", "knowledge.index", "timeline", "timeline.cue_align",
-        "loc.observed", "checks", "verification", "flags", "report",
+        "loc.observed", "clearance.ocr", "checks", "verification", "flags", "clearance.csv",
+        "report",
     ]  # fmt: skip
-    assert {c.split(".")[0] for c in got["checks"]} == {"loc", "plot"}
+    assert {c.split(".")[0] for c in got["checks"]} == {"loc", "plot", "clr"}
     assert "plot.dead_acts" in got["checks"] and "loc.term" in got["checks"]

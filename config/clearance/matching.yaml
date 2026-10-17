@@ -1,0 +1,27 @@
+# Clearance matching (architecture.md > Agent 2 > Matching): how a detection is normalized and which
+# registry kinds a check may match. Thresholds live in pipeline.yaml (`clearance:`).
+
+# Which clearance_item kinds a check's detections are compared with.
+kinds:
+  clr.phone: [phone]
+  clr.url: [url]
+  clr.email: [email]
+  clr.address: [address, location]
+  clr.plate: [plate]
+  clr.brand_text: [brand, logo, product, artwork]
+
+# "Known variants" of names: street and legal-form abbreviations expand / drop before comparing.
+abbreviations:
+  st: street
+  rd: road
+  ave: avenue
+  av: avenue
+  ln: lane
+  ct: court
+  dr: drive
+  blvd: boulevard
+  hwy: highway
+  pl: place
+  sq: square
+legal_suffixes: [inc, llc, ltd, corp, co, gmbh, sa, plc]
+leading_words: [the]

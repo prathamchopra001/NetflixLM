@@ -14,7 +14,8 @@ Store run (`run_store`; R8: synchronous and in-process, the queue and controller
 Stage contract. A stage is `(name, fn)` with `fn(ep: EpisodeRun) -> None`; add one with
 `add_stage(name, fn, before="timeline")` (repeated calls keep their call order); `wire()` adds
 Phase 2's content stages in order (asr, align, story, extract, consolidate, index; cue_align and
-loc.observed after `timeline`) and the script_critic and clearance packages. A stage
+loc.observed and clearance.ocr after `timeline`, clearance.csv after `flags`) and the
+script_critic and clearance packages. A stage
 - reads and fills `ep` and writes rows through `ep.conn` (the run's transaction);
 - reads the Plan as `ep.plan` (e.g. `ep.plan.decisions[Slot.TEXT_LLM].variant`, `ep.plan.plan_id`);
 - does each unit of work inside `with ep.unit(stage, key, model_variant=...):`. A unit that
@@ -201,9 +202,11 @@ STAGE_SLOTS = {
     "knowledge.story": Slot.TEXT_LLM,
     "knowledge.extract": Slot.TEXT_LLM,
     "knowledge.index": Slot.TEXT_EMBEDDER,
+    "clearance.ocr": Slot.OCR,
 }
 RULES_ONLY = {"knowledge.story"}  # runs without its slot, on rules alone
-FEEDS = {"knowledge.extract": "plot."}  # the plot rules read the extracted facts
+# The plot rules read the extracted facts; the clr. checks read the OCR stage's detections.
+FEEDS = {"knowledge.extract": "plot.", "clearance.ocr": "clr."}
 
 
 def slot_reason(plan: Plan, slot: Slot) -> str:
@@ -352,6 +355,8 @@ def wire() -> None:
     if "timeline.asr" in dict(STAGES):
         return
     from nip.agents import clearance, script_critic
+    from nip.agents.clearance import report as clearance_report
+    from nip.agents.clearance import stage as clearance_stage
     from nip.agents.localization import term
     from nip.knowledge import consolidate, extract, index, story
     from nip.timeline import align, asr, cue_align
@@ -364,6 +369,8 @@ def wire() -> None:
     add_stage(index.STAGE, index.stage)
     add_stage("timeline.cue_align", cue_align.stage, before="checks")
     add_stage("loc.observed", term.stage, before="checks")
+    add_stage(clearance_stage.STAGE, clearance_stage.stage, before="checks")
+    add_stage("clearance.csv", clearance_report.stage, before="report")
     AGENTS.extend(p for p in (script_critic, clearance) if p not in AGENTS)
 
 
@@ -544,7 +551,7 @@ def run_store(
     return summary
 
 
-MODEL_SLOTS = (Slot.ASR, Slot.TEXT_LLM, Slot.TEXT_EMBEDDER)  # the slots the wired stages call
+MODEL_SLOTS = (Slot.ASR, Slot.TEXT_LLM, Slot.TEXT_EMBEDDER, Slot.OCR, Slot.NER)  # wired stages call
 
 
 def current_plan(workload: dict[Slot, int]) -> tuple[Plan, HardwareInventory]:

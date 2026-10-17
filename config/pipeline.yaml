@@ -57,3 +57,28 @@ knowledge:
     excerpt_chars: 600
     # "N WEEKS LATER" and friends, in story days.
     days_per_unit: {WEEK: 7, MONTH: 30, YEAR: 365}
+
+# Clearance scanner (2.7): matching, occurrences, prominence, routing.
+clearance:
+  # Detections of one item whose keyframe cells are at most this far apart are one occurrence.
+  occurrence_gap_s: 2.0
+  # A keyframe proves its text on screen at that frame only; its cell (the stretch of the shot
+  # nearer to it than to any other keyframe) is capped at this length, centred on the frame.
+  cell_cap_s: 4.0
+  # rapidfuzz ratio (0-100) for names (address, brand). Phones, plates, emails, URLs match exactly:
+  # a one-character difference is a different number, and a wrong "cleared" would hide it.
+  match_threshold: 90
+  prominence:
+    # Each term is scaled to 0-1 by its reference value, then weighted (weights sum to 1).
+    area_ref: 0.03        # box area as a fraction of the frame at which a text counts as large
+    sharpness_ref: 300.0  # variance of the Laplacian of the text crop at which it counts as sharp
+    duration_ref_s: 4.0   # screen time at which an occurrence counts as long
+    weights: {area: 0.30, centrality: 0.15, sharpness: 0.15, duration: 0.40}
+    featured_min: 0.5     # at or above: featured, below: background
+  # Severity (data-model.md > Flag): pending / denied are high whatever the prominence; an item
+  # that is not in the log is rated by prominence.
+  severity: {denied: 5, pending: 4, featured: 4, background: 2}
+  # Confidence of a candidate is its OCR confidence x max(recognizer score, this floor). A
+  # recognizer whose rule validates the value (libphonenumber, the e-mail and URL grammars) is as
+  # sure as the validation; its pattern score (phone: 0.4) only says how loose its regex is.
+  certainty_floor: {phone: 0.9, email: 0.9, url: 0.85}

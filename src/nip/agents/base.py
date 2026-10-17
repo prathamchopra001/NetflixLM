@@ -63,6 +63,9 @@ class Finding:
     evidence: list[Evidence]
     suggested_fix: str | None = None
     lang: str | None = None
+    # Routing that confidence must not decide (B-064): a clearance item that is pending / denied is
+    # `must_review` however low the confidence; a cleared one is `suppressed` (kept for the audit).
+    tier: Tier | None = None
 
 
 class Check(ABC):
@@ -146,7 +149,7 @@ def emit(
         lang=finding.lang,
         severity=finding.severity,
         confidence=finding.confidence,
-        tier=tier_for(finding.confidence),
+        tier=finding.tier or tier_for(finding.confidence),
         title=finding.title,
         explanation=finding.explanation,
         suggested_fix=finding.suggested_fix,

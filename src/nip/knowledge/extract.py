@@ -63,6 +63,19 @@ IDS_RULE = {
     " speaker's name). Leave `object` out when the predicate has none, and leave `subject_name`"
     " and `object_name` out.",
 }
+HOLDS_EVENTS = {"obtain", "use", "give", "lose", "lost", "drop", "sell"}  # consolidate.END + obtain
+OBTAIN_VERBS = {
+    "take",
+    "takes",
+    "pick up",
+    "picks up",
+    "grab",
+    "grabs",
+    "get",
+    "gets",
+    "find",
+    "finds",
+}
 # value text -> fact_event.value: the head goes under this key, "head: detail" adds "detail"
 VALUE_KEY = {"state": "state", "holds": "event", "owns": "event", "wearing": "event",
              "relationship": "kind", "setup": "importance"}  # fmt: skip
@@ -188,10 +201,18 @@ def extract_scene(
 
 def value_json(predicate: str, value: str | None) -> dict[str, Any] | None:
     """`"injured: left hand cut"` -> {"state": "injured", "detail": "left hand cut"}; the head of
-    a setup's value is its importance (int); other predicates keep the text under "detail"."""
+    a setup's value is its importance (int); other predicates keep the text under "detail".
+
+    holds/owns events use the prompt's vocabulary (obtain, use, give, lose, ...): the model also
+    writes the line's verb ("check", "share": 357 of 417 kept free-text holds in fix round 1), which
+    by the prompt's own definition is a use, so any other verb becomes `use` and keeps the verb as
+    `detail`; take/pick up/grab/get/find become `obtain`."""
     if not value or not value.strip():
         return None
     head, _, detail = (s.strip() for s in value.partition(":"))
+    if predicate in ("holds", "owns") and head.lower() not in HOLDS_EVENTS:
+        verb = head.lower()
+        head, detail = ("obtain" if verb in OBTAIN_VERBS else "use"), detail or verb
     key = VALUE_KEY.get(predicate, "detail")
     out: dict[str, Any] = {key: int(head) if key == "importance" and head.isdigit() else head}
     return out | ({"detail": detail} if detail else {})

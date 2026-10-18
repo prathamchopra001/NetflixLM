@@ -56,6 +56,9 @@ dependencies = [
 serve = [
     "ray[serve]==2.58.0; sys_platform == 'linux'",
     "vllm==0.30.0; sys_platform == 'linux'",
+    # CTranslate2 4.8 (faster-whisper) dlopens libcublas.so.12; the image's CUDA is 13. No cuDNN
+    # wheel: the Linux CTranslate2 build does not use cuDNN. The Dockerfile puts the dir on ldconfig.
+    "nvidia-cublas-cu12; sys_platform == 'linux'",
 ]
 
 [project.scripts]

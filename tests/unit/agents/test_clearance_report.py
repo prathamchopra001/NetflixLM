@@ -78,6 +78,16 @@ def build(
     return with_ocr(tl, scans, occs), occs
 
 
+def test_with_ocr_replaces_the_spans_of_an_earlier_scan() -> None:
+    """`load_timeline` hands the stage a timeline that already has the stored occurrences."""
+    hits = [hit("clr.phone", TEXT, 0)]
+    tl, occs = build(hits)
+    again = with_ocr(tl, {}, occs)
+    assert [s.ref for s in again.spans if refs.is_occurrence(s.ref)] == [o.ref for o in occs]
+    assert with_ocr(tl, {}, []).resolve(occs[0].ref) is None
+    assert with_ocr(tl, {}, []).resolve(refs.keyframe("S01E01", 0, 0)).text == TEXT  # type: ignore[union-attr]
+
+
 def flags_of(
     hits: list[Hit], check: type[ClearanceText] = ClrPhone, registry: Registry = LOG,
     ocr_text: bool = True,

@@ -21,24 +21,27 @@ import gc
 import logging
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from fractions import Fraction
 from functools import cache
 from typing import Any, Protocol
 
 import cv2
 from sqlalchemy import Connection, delete, func, insert, select
 
+from nip.agents.clearance.checks import (
+    episode_occurrences,
+    keyframe_text,
+    with_text_and_occurrences,
+)
 from nip.agents.clearance.occurrences import Occurrence, crop, decode, sharpness
 from nip.agents.clearance.ocr_text import Candidate, Detection, TextScanner
 from nip.config import pipeline_config
 from nip.contracts import refs
 from nip.contracts.flag import EvidenceKind
 from nip.contracts.plan import Slot
-from nip.contracts.timeline import Span, Timeline
+from nip.contracts.timeline import Timeline
 from nip.runtime.clients.ner import StubNER
 from nip.runtime.clients.ocr import StubOCR
 from nip.store import objects, schema
-from nip.timecode import frame_to_smpte
 
 log = logging.getLogger(__name__)
 
@@ -198,27 +201,15 @@ def _names(conn: Connection, show: str) -> tuple[tuple[str, ...], tuple[str, ...
 def with_ocr(
     tl: Timeline, scans: dict[tuple[int, int], Scan], occs: Sequence[Occurrence]
 ) -> Timeline:
-    """`tl` for the clearance checks: the keyframe spans carry the OCR text (the lines, then
-    candidate texts the cleaned line changed), so a quote is found in the span's stored text, and
-    every occurrence is a span `clr/occ-<hash>` with the occurrence's frame range and text, which
-    is what a flag claims. Run it on the timeline as stored."""
-    fps = Fraction(*tl.fps)
-    spans = []
-    for s in tl.spans:
-        if s.kind is EvidenceKind.KEYFRAME:
-            shot, _, n = refs.parse(s.ref).id.partition(".")
-            if scan := scans.get((int(shot), int(n))):
-                lines = [d.text for d in scan.lines]
-                extra = [c.text for c in scan.candidates if not any(c.text in x for x in lines)]
-                s = s.model_copy(update={"text": "\n".join(lines + extra)})
-        spans.append(s)
-    for o in occs:
-        t = [frame_to_smpte(f + tl.start_tc_frames, fps, tl.drop_frame) for f in o.frames]
-        spans.append(
-            Span(kind=EvidenceKind.CLEARANCE_ITEM, ref=o.ref, frames=o.frames, text=o.text,
-                 tc_in=t[0], tc_out=t[1])
-        )  # fmt: skip
-    return tl.model_copy(update={"spans": tuple(spans)})
+    """`tl` for the clearance checks: the keyframe spans carry the OCR text, so a quote is found
+    in the span's stored text, and every occurrence is a span `clr/occ-<hash>` with the
+    occurrence's frame range and text, which is what a flag claims. Run it on the timeline as
+    stored (spans of an earlier scan, which `load_timeline` adds, are replaced)."""
+    text = {
+        k: keyframe_text([d.text for d in sc.lines], [c.text for c in sc.candidates])
+        for k, sc in scans.items()
+    }
+    return with_text_and_occurrences(tl, text, occs)
 
 
 def persist(
@@ -292,8 +283,6 @@ def stage(ep: StageEpisode) -> None:
             scans[shot, n] = scan_image(shot, n, image, reader, scanner, lang)
     cfg = pipeline_config()["clearance"]
     found = persist(ep.conn, ep.s3, ep.show, ep.episode, ep.episode_id, scans, cfg)
-    from nip.agents.clearance.checks import episode_occurrences
-
     occs = episode_occurrences(ep.conn, ep.show, ep.timeline, cfg)  # what the checks will see
     ep.tl = with_ocr(ep.timeline, scans, occs)
     log.info("%s %s: %d keyframes read, %d candidates", STAGE, ep.episode, len(scans), found)

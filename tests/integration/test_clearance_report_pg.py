@@ -12,11 +12,12 @@ from typing import Any
 
 import pytest
 from PIL import Image
-from sqlalchemy import Engine, func, select
+from sqlalchemy import Engine, delete, func, select
 from typer.testing import CliRunner
 
 from nip import pipeline
 from nip.agents import clearance
+from nip.agents.base import run_check
 from nip.agents.clearance import report, stage
 from nip.agents.clearance.stage import STAGE
 from nip.contracts import (
@@ -28,11 +29,15 @@ from nip.contracts import (
     Slot,
     SlotDecision,
     StageGroup,
+    refs,
 )
+from nip.contracts.flag import ProducedBy
 from nip.ingest.media import probe
 from nip.runtime.clients.ocr import OcrLine, StubOCR, fingerprint
 from nip.store import objects, schema
 from nip.store.ingest import ingest_files
+from nip.store.load import load_timeline
+from nip.verification.verify import verify
 
 pytestmark = pytest.mark.integration
 
@@ -191,6 +196,39 @@ def test_flags_detections_crops_and_csv(
     cli_rows = report.from_csv(res.output)
     assert [r["status"] for r in cli_rows] == ["pending", "cleared", "denied", "unknown"]
     assert cli_rows[0]["flag_id"].startswith("flg_") and cli_rows[1]["flag_id"].startswith("flg_")
+
+
+def test_a_stored_flag_reverifies_from_the_store_without_reading_the_keyframes(
+    pg: Engine, s3: Any, wired: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`load_timeline` rebuilds the `clr/occ-` claim spans and the keyframe text from the stored
+    detections: the checks reproduce the stored flags on it and verification keeps them all."""
+    run(pg, s3)
+    monkeypatch.setattr(stage, "ocr_reader", lambda variant: pytest.fail("OCR was read again"))
+    ev = schema.evidence
+    with pg.connect() as conn:
+        tl = load_timeline(conn, "demo", "S01E01")
+        occ = [s for s in tl.spans if refs.is_occurrence(s.ref)]
+        stored = {
+            r.ref: (r.frames.lower, r.frames.upper)
+            for r in conn.execute(select(ev.c.ref, ev.c.frames).where(ev.c.role == "claim"))
+        }
+        assert len(occ) == len(stored) == 4
+        assert {s.ref: s.frames for s in occ} == stored and all(s.tc_in and s.text for s in occ)
+        checks = [c(conn, "demo") for c in clearance.CHECKS]
+        flags = [
+            f
+            for c in checks
+            for f in run_check(c, tl, "run_9", ProducedBy(model_variant=None, plan_id="p"))
+        ]
+        kept, dropped = verify(flags, tl, checks)
+        assert len(flags) == len(kept) == 4 and dropped == []
+        assert {e.ref for f in kept for e in f.evidence if refs.is_occurrence(e.ref)} == set(stored)
+        # an episode no OCR stage has read has none of this
+        conn.execute(delete(schema.detection))
+        assert not [
+            s for s in load_timeline(conn, "demo", "S01E01").spans if refs.is_occurrence(s.ref)
+        ]
 
 
 def test_an_unreadable_keyframe_is_a_gap_and_the_others_still_count(

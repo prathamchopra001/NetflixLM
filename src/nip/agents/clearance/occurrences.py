@@ -87,7 +87,7 @@ class Occurrence:
         share a ref and a re-run with the same keyframes reproduces it (R13 fingerprint)."""
         first = min((h.shot, h.n) for h in self.hits)
         raw = f"{self.episode}|{self.check}|{self.who}|{first[0]}.{first[1]}"
-        return "clr/occ-" + hashlib.sha1(raw.encode()).hexdigest()[:12]
+        return refs.occurrence(hashlib.sha1(raw.encode()).hexdigest()[:12])
 
 
 Geometry = tuple[

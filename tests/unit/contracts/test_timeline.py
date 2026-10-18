@@ -24,6 +24,13 @@ def test_refs_build_and_parse() -> None:
     assert refs.parse("clr/77").kind is EvidenceKind.CLEARANCE_ITEM
 
 
+def test_occurrence_refs() -> None:
+    ref = refs.occurrence("3fa9c0d1e2b4")
+    assert ref == "clr/occ-3fa9c0d1e2b4" and refs.is_occurrence(ref)
+    assert refs.parse(ref) == ("clearance_item", None, "occ-3fa9c0d1e2b4", None)
+    assert not refs.is_occurrence("clr/77") and not refs.is_occurrence("S01E01/kf/1.0")
+
+
 @pytest.mark.parametrize("bad", ["sintel_en.srt", "E1/es/x", "E1//3", "fact/", "E1/sc/1/2", "x/7"])
 def test_refs_parse_rejects(bad: str) -> None:
     with pytest.raises(ValueError, match="not an evidence ref"):

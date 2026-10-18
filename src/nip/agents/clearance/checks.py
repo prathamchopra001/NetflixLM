@@ -17,6 +17,7 @@ confidence. Severity: `occurrences.severity`.
 
 import logging
 from collections.abc import Sequence
+from fractions import Fraction
 from typing import Any, ClassVar
 
 from sqlalchemy import Connection, func, select
@@ -35,8 +36,9 @@ from nip.contracts.flag import (
     Flag,
     Tier,
 )
-from nip.contracts.timeline import Timeline
+from nip.contracts.timeline import Span, Timeline
 from nip.store import schema
+from nip.timecode import frame_to_smpte
 
 log = logging.getLogger(__name__)
 
@@ -165,6 +167,65 @@ def episode_occurrences(
         cfg,
         load_keyframes(conn, show, tl.episode),
     )
+
+
+def keyframe_text(lines: Sequence[str], candidates: Sequence[str]) -> str:
+    """A keyframe span's text: the OCR lines, then candidate texts the cleaned line changed."""
+    return "\n".join([*lines, *(c for c in candidates if not any(c in x for x in lines))])
+
+
+def with_text_and_occurrences(
+    tl: Timeline, text: dict[tuple[int, int], str], occs: Sequence[Occurrence]
+) -> Timeline:
+    """`tl` with `text[(shot, n)]` on its keyframe spans and one span `clr/occ-<hash>` per
+    occurrence (frames = its range, text = what OCR read); spans of an earlier call are dropped."""
+    fps = Fraction(*tl.fps)
+    spans = []
+    for s in tl.spans:
+        if refs.is_occurrence(s.ref):
+            continue
+        if s.kind is EvidenceKind.KEYFRAME:
+            shot, _, n = refs.parse(s.ref).id.partition(".")
+            if (int(shot), int(n)) in text:
+                s = s.model_copy(update={"text": text[int(shot), int(n)]})
+        spans.append(s)
+    for o in occs:
+        t = [frame_to_smpte(f + tl.start_tc_frames, fps, tl.drop_frame) for f in o.frames]
+        spans.append(
+            Span(kind=EvidenceKind.CLEARANCE_ITEM, ref=o.ref, frames=o.frames, text=o.text,
+                 tc_in=t[0], tc_out=t[1])
+        )  # fmt: skip
+    return tl.model_copy(update={"spans": tuple(spans)})
+
+
+def with_stored_ocr(conn: Connection, show: str, tl: Timeline) -> Timeline:
+    """What the OCR stage leaves in the run's timeline, rebuilt from the stored `detection` rows:
+    `load_timeline` returns it for an episode that has been read, so a stored clr flag resolves
+    (claim `clr/occ-<hash>`, keyframe quote) without reading the keyframes again."""
+    d, sh = schema.detection, schema.shot
+    shot_index = {
+        sid: i
+        for i, sid in enumerate(
+            conn.execute(
+                select(sh.c.id)
+                .join(schema.episode, schema.episode.c.id == sh.c.episode_id)
+                .join(schema.show, schema.show.c.id == schema.episode.c.show_id)
+                .where(schema.show.c.slug == show, schema.episode.c.ref == tl.episode)
+                .order_by(func.lower(sh.c.frames), sh.c.id)
+            ).scalars()
+        )
+    }
+    found: dict[tuple[int, int], tuple[list[str], list[str]]] = {}
+    for r in conn.execute(
+        select(d.c.shot_id, d.c.keyframe_n, d.c.label, d.c.text)
+        .where(d.c.shot_id.in_(list(shot_index)), d.c.channel == "ocr")
+        .order_by(d.c.id)
+    ):
+        if r.label == "text" or r.label.startswith("clr."):
+            lines, cands = found.setdefault((shot_index[r.shot_id], r.keyframe_n), ([], []))
+            (lines if r.label == "text" else cands).append(r.text)
+    occs = episode_occurrences(conn, show, tl, pipeline_config()["clearance"])
+    return with_text_and_occurrences(tl, {k: keyframe_text(*v) for k, v in found.items()}, occs)
 
 
 # ---- the checks ------------------------------------------------------------------------------

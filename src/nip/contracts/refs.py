@@ -34,6 +34,22 @@ def cue(ep: str, lang: str, idx: int) -> str:
     return f"{ep}/{lang}/{idx}"
 
 
+OCC = "occ-"  # id prefix of an occurrence ref
+
+
+def occurrence(key: str) -> str:
+    """`clr/occ-{key}`: one on-screen clearance occurrence of an episode (a frame range). It is a
+    clearance-item ref by kind (the contract has no occurrence kind) with an `occ-` id, so it
+    never collides with a numeric `clr/{id}`. `key` is the hash the clearance stage derives from
+    the episode, check, item and first keyframe; `load_timeline` rebuilds the span from the
+    stored detections under the same ref."""
+    return f"clr/{OCC}{key}"
+
+
+def is_occurrence(ref: str) -> bool:
+    return ref.startswith(f"clr/{OCC}")
+
+
 class Ref(NamedTuple):
     kind: EvidenceKind
     episode: str | None  # None for show-wide objects (fact, clearance item)

@@ -7,6 +7,9 @@ superseded facts `fact/{id}` (text = the source events' quotes, one per line; no
 superseded one so that an earlier episode's flag still resolves the fact a later consolidation
 closed) and clearance items
 `clr/{id}` (text = the item name; no frames), so `emit` and `verify` resolve those refs unchanged.
+An episode the OCR stage has read also gets the OCR text on its keyframe spans and one span
+`clr/occ-{hash}` per clearance occurrence (frames = its range), rebuilt from the stored `detection`
+rows exactly as the stage leaves them in the run's timeline (`refs.occurrence`).
 
 Display: objects with frames get SMPTE `tc_in`/`tc_out`; scenes keep the script-estimate label
 until alignment sets `episode.timeline_source = 'picture'` (B-061). Shot ref id = index (B-062).
@@ -136,7 +139,7 @@ def load_timeline(conn: Connection, show: str, episode: str) -> Timeline:
     ):
         spans.append(Span(kind=K.CLEARANCE_ITEM, ref=f"clr/{cid}", text=name))
 
-    return Timeline(
+    tl = Timeline(
         episode=episode,
         fps=(fps.numerator, fps.denominator),
         duration_frames=end,
@@ -145,3 +148,12 @@ def load_timeline(conn: Connection, show: str, episode: str) -> Timeline:
         source="script_estimate" if estimate else "picture",
         spans=tuple(spans),
     )
+    d = schema.detection
+    if conn.execute(
+        select(d.c.id).where(d.c.episode_id == ep.id, d.c.channel == "ocr").limit(1)
+    ).first():
+        # lazy: the clearance package reads the store, not the other way round at import time
+        from nip.agents.clearance.checks import with_stored_ocr
+
+        tl = with_stored_ocr(conn, show, tl)
+    return tl

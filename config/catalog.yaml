@@ -266,9 +266,9 @@ variants:
 
   - id: pp-ocrv6-medium
     serves: [ocr]
-    family: paddleocr
+    family: rapidocr  # PP-OCRv6 medium weights as ONNX on ONNX Runtime (PaddlePaddle could not share the env, 2.6)
     engine: actor
-    vram_gb: 1.0
+    vram_gb: 1.6  # measured: 1.53 GiB on the Windows host (2.6), 1.11 GiB in the nip image (2.close); both include torch's CUDA context
     quality_rank: 50
     license: Apache-2.0
 
@@ -322,7 +322,7 @@ variants:
     family: gliner
     engine: actor
     base_model: knowledgator/gliner-x-base
-    vram_gb: 2.3
+    vram_gb: 1.4  # measured 2026-10-18 (RTX 4060 Laptop, torch imported first, 12 OCR lines x 5 labels): 1,347 MiB peak over idle, 36 ms/call, load 22-36 s (2.6: 22 s, 24 ms/call)
     quality_rank: 50
     license: Apache-2.0
 
@@ -331,7 +331,7 @@ variants:
     family: gliner
     engine: actor
     base_model: knowledgator/gliner-x-large
-    vram_gb: 3.7
+    vram_gb: 2.6  # measured 2026-10-18, same harness: 2,577 MiB peak over idle (2,505 after load), 58-65 ms/call, load 34-46 s; was an hf-mem estimate of 3.7
     quality_rank: 60
     license: Apache-2.0
 

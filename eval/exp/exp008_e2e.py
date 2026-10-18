@@ -14,6 +14,8 @@ Needs the dev stack (`docker compose -f compose.yaml -f compose.dev.yaml up -d p
 objectstore`) and the environment of data/wint/env.sh.
 """
 
+import contextlib
+import functools
 import json
 import os
 import shutil
@@ -124,10 +126,9 @@ def run_cluster(
     seeds: str = "1", films: str = "sintel", tag: str = "b", container: str = "netflixlm-ray-head-1"
 ) -> None:
     """The shipped GPU path once: `nip run --in-cluster` inside ray-head (OCR and GLiNER in-process;
-    Plan's llm group staged around its stages), under data/gpu.lock. `NIP_PIN_NER=gliner-x-base`
-    because the planner prefers the unmeasured large model on the laptop (no code pin)."""
-    env = ["-e", "NIP_OCR_MODELS=/models/rapidocr", "-e", "NIP_PIN_NER=gliner-x-base",
-           "-e", "NIP_VRAM_MARGIN_GB=0.25"]  # fmt: skip
+    Plan's llm group staged around its stages), under data/gpu.lock. The ner slot is the
+    planner's choice (gliner-x-large on the laptop since 2.close measured it)."""
+    env = ["-e", "NIP_OCR_MODELS=/models/rapidocr", "-e", "NIP_VRAM_MARGIN_GB=0.25"]  # fmt: skip
     with bench.gpu_lock("2.7 nip run --in-cluster on a film (OCR + GLiNER + llm group)"):
         for seed in map(int, seeds.split(",")):
             for name in films.split(","):
@@ -195,6 +196,110 @@ def run_cpu(seeds: str = "1,2,3", films: str = "sintel,tears-of-steel", tag: str
             stages = {x["stage"]: x["wall_s"] for x in ep["stages"] if x["wall_s"] > 0.5}
             print(show, summary["status"], f"{wall:.0f} s", ep["flags_kept"], "flags", ep["units"],
                   stages, flush=True)  # fmt: skip
+
+
+@app.command("ocr-lines")
+def ocr_lines(seeds: str = "1,2,3", films: str = "sintel,tears-of-steel", tag: str = "b") -> None:
+    """Snapshot each show's stored OCR text lines (`detection`, channel ocr, label text) to
+    `ocr-lines/<show>.json`, so `run-ner` can replay one fixed OCR input through any NER variant."""
+    from sqlalchemy import create_engine, func, select
+
+    from nip.store import schema
+    from nip.store.db import database_url
+
+    d, sh, ep, shw = schema.detection, schema.shot, schema.episode, schema.show
+    (ROOT / "ocr-lines").mkdir(parents=True, exist_ok=True)
+    engine = create_engine(database_url())
+    with engine.connect() as conn:
+        for seed in map(int, seeds.split(",")):
+            for name in films.split(","):
+                show = show_of(name, seed, tag)
+                eid = conn.execute(
+                    select(ep.c.id).join(shw, shw.c.id == ep.c.show_id).where(shw.c.slug == show)
+                ).scalar_one()
+                index = {
+                    sid: i
+                    for i, sid in enumerate(
+                        conn.execute(
+                            select(sh.c.id)
+                            .where(sh.c.episode_id == eid)
+                            .order_by(func.lower(sh.c.frames), sh.c.id)
+                        ).scalars()
+                    )
+                }
+                rows = conn.execute(
+                    select(d.c.shot_id, d.c.keyframe_n, d.c.text, d.c.box, d.c.confidence)
+                    .where(d.c.episode_id == eid, d.c.channel == "ocr", d.c.label == "text")
+                    .order_by(d.c.id)
+                ).all()
+                lines = [
+                    [index[r.shot_id], r.keyframe_n, r.text, list(r.box), r.confidence]
+                    for r in rows
+                ]
+                (ROOT / "ocr-lines" / f"{show}.json").write_text(json.dumps(lines), "utf-8")
+                print(show, len(lines), "lines", flush=True)
+    engine.dispose()
+
+
+@app.command("run-ner")
+def run_ner(
+    ner: str = "gliner-x-large", seeds: str = "1,2,3", films: str = "sintel,tears-of-steel",
+    tag: str = "b", cpu: bool = False,
+) -> None:  # fmt: skip
+    """The pipeline's `run_store` with the OCR of `ocr-lines` replayed (same text for every NER
+    variant) and the real GLiNER `ner` on the GPU (under data/gpu.lock; `--cpu`: on the CPU, no
+    lock, same output); output mode `ner-<ner>`.
+    Score with `score --mode ner-<ner> --variant e2e-<ner>`. NIP_PROFILE=cpu keeps the other
+    slots stubbed, like `run-cpu`."""
+    os.environ["NIP_PROFILE"] = "cpu"
+    if cpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    from sqlalchemy import create_engine
+
+    from nip import pipeline
+    from nip.agents.clearance import stage
+    from nip.contracts import Slot, SlotDecision
+    from nip.contracts.flag import Agent
+    from nip.runtime.clients.ocr import OcrLine, StubOCR, fingerprint
+    from nip.store import objects
+    from nip.store.db import database_url
+
+    pipeline.wire()
+    plan, inv = pipeline.current_plan({s: 1 for s in pipeline.MODEL_SLOTS})
+    decisions = {Slot.OCR: SlotDecision(variant="pp-ocrv6-medium"),
+                 Slot.NER: SlotDecision(variant=ner)}  # fmt: skip
+    plan = plan.model_copy(update={"decisions": {**plan.decisions, **decisions}})
+    engine = create_engine(database_url())
+    s3 = objects.client()
+    mode = f"ner-{ner}"
+    with contextlib.nullcontext() if cpu else bench.gpu_lock(f"EXP-008 NER {ner} on replayed OCR"):
+        for seed in map(int, seeds.split(",")):
+            for name in films.split(","):
+                show = show_of(name, seed, tag)
+                saved = json.loads((ROOT / "ocr-lines" / f"{show}.json").read_text("utf-8"))
+                with engine.connect() as conn:
+                    keys = stage._keyframe_keys(conn, pipeline.episode_row(conn, show, "S01E01").id)
+                recorded = {}
+                for (shot, n), key in keys.items():
+                    image = s3.get_object(Bucket=objects.media_bucket(), Key=key)["Body"].read()
+                    recorded[fingerprint(image)] = [
+                        OcrLine(text=t, box=tuple(b), confidence=c)
+                        for sh, k, t, b, c in saved if (sh, k) == (shot, n)
+                    ]  # fmt: skip
+                reader = StubOCR(recorded)
+                stage.ocr_reader = functools.cache(lambda variant, r=reader: r)
+                t = time.perf_counter()
+                summary = pipeline.run_store(
+                    engine, s3, show=show, episodes=["S01E01"], plan=plan, inventory=inv,
+                    agents={Agent.CLEARANCE_SCANNER}, out_dir=files(show, mode)[0],
+                )  # fmt: skip
+                wall = time.perf_counter() - t
+                files(show, mode)[1].write_text(json.dumps(summary), encoding="utf-8")
+                ep = summary["episodes"]["S01E01"]
+                print(show, ner, summary["status"], f"{wall:.0f} s", ep["flags_kept"], "flags",
+                      flush=True)  # fmt: skip
+                stage.release_models()
+    engine.dispose()
 
 
 def collected(

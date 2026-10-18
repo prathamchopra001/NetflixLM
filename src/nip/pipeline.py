@@ -558,9 +558,8 @@ def current_plan(workload: dict[Slot, int]) -> tuple[Plan, HardwareInventory]:
     """The Plan for this hardware (`nip plan`'s inputs); NIP_PROFILE=cpu gives the stub Plan.
 
     The asr slot is pinned to `timeline.asr.variant` of pipeline.yaml (EXP-003 picked turbo over
-    the planner's quality-ranked large-v3); NIP_PIN_<SLOT> pins any slot (the laptop runs the
-    ner slot as `NIP_PIN_NER=gliner-x-base` until the catalog or planner stops choosing the
-    unmeasured gliner-x-large there)."""
+    the planner's quality-ranked large-v3); NIP_PIN_<SLOT> pins any slot (e.g. NIP_PIN_NER=
+    gliner-x-base)."""
     from nip.runtime import planner
     from nip.runtime.catalog import load_catalog, validate
     from nip.runtime.probe import probe as probe_hardware

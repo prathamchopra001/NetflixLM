@@ -37,7 +37,7 @@ from nip.runtime.clients.ocr import OcrLine, StubOCR, fingerprint
 from nip.store import objects, schema
 from nip.store.ingest import ingest_files
 from nip.store.load import load_timeline
-from nip.verification.verify import verify
+from nip.verification.verify import evidence_problem, verify
 
 pytestmark = pytest.mark.integration
 
@@ -229,6 +229,36 @@ def test_a_stored_flag_reverifies_from_the_store_without_reading_the_keyframes(
         assert not [
             s for s in load_timeline(conn, "demo", "S01E01").spans if refs.is_occurrence(s.ref)
         ]
+
+
+def test_a_stored_claim_still_resolves_after_the_item_is_logged(
+    pg: Engine, s3: Any, wired: None
+) -> None:
+    """The ref hashes the detections, not the registry: logging the unknown number after the run
+    does not move the claim, so the stored flag's evidence still resolves. Its status changed
+    (unknown -> pending), so the rule re-check drops it: the finding it states is stale."""
+    run(pg, s3)
+    with pg.begin() as conn:
+        checks = [c(conn, "demo") for c in clearance.CHECKS]
+        tl = load_timeline(conn, "demo", "S01E01")
+        flags = [
+            f
+            for c in checks
+            for f in run_check(c, tl, "run_9", ProducedBy(model_variant=None, plan_id="p"))
+        ]
+        (unknown,) = [f for f in flags if "617" in f.title]
+        show_id = conn.execute(
+            select(schema.show.c.id).where(schema.show.c.slug == "demo")
+        ).scalar_one()
+        conn.execute(
+            schema.clearance_item.insert().values(
+                show_id=show_id, name="(617) 482-9154", kind="phone", status="pending"
+            )
+        )
+        tl = load_timeline(conn, "demo", "S01E01")
+        assert all(evidence_problem(f, tl) is None for f in flags)
+        kept, dropped = verify(flags, tl, checks)
+        assert [f.title for f, _ in dropped] == [unknown.title] and len(kept) == len(flags) - 1
 
 
 def test_an_unreadable_keyframe_is_a_gap_and_the_others_still_count(

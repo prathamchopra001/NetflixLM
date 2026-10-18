@@ -82,11 +82,16 @@ class Occurrence:
     @property
     def ref(self) -> str:
         """Stable evidence ref of the occurrence, `clr/occ-<hash>` (the contract has no occurrence
-        kind: it parses as a clearance-item ref). The hash is of episode, check, the item or its
-        normalized text, and the first keyframe that saw it, so two distinct unknown items never
-        share a ref and a re-run with the same keyframes reproduces it (R13 fingerprint)."""
-        first = min((h.shot, h.n) for h in self.hits)
-        raw = f"{self.episode}|{self.check}|{self.who}|{first[0]}.{first[1]}"
+        kind: it parses as a clearance-item ref). The hash covers only what the stored detections
+        decide: episode, check, the normalized text of the first keyframe that saw it, and that
+        keyframe. The registry is NOT in it, so a stored flag's claim still resolves after the
+        item is logged, cleared or denied (the matched item is separate `context` evidence). Two
+        distinct unknown items never share a ref and a re-run with the same keyframes reproduces
+        it (R13 fingerprint). Known limit: logging an item that merges two differently spelled
+        reads into one occurrence can move its first keyframe."""
+        first = min(self.hits, key=lambda h: (h.shot, h.n))
+        text = normalize(self.check, first.text)
+        raw = f"{self.episode}|{self.check}|{text}|{first.shot}.{first.n}"
         return refs.occurrence(hashlib.sha1(raw.encode()).hexdigest()[:12])
 
 

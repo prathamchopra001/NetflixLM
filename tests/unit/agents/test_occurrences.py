@@ -166,3 +166,13 @@ def test_occurrence_refs_are_stable_and_separate_distinct_items() -> None:
     assert one[0].ref == analyze([hit(0, text="orange.blender.org", check="clr.url")],
                                  Registry(), tl, CFG)[0].ref  # fmt: skip
     assert one[0].ref.startswith("clr/occ-") and refs.parse(one[0].ref).id.startswith("occ-")
+
+
+@pytest.mark.parametrize("status", ["pending", "denied", "cleared"])
+def test_the_ref_does_not_change_when_the_registry_logs_the_item(status: str) -> None:
+    """A stored flag's claim must still resolve after the clearance log learns the item."""
+    tl = timeline([(0, 96)], [(0, 0, 48)])
+    unknown = analyze([hit(0)], Registry(), tl, CFG)[0]
+    logged = Registry((Item(7, "(617) 482-9154", "phone", status, None),))
+    (known,) = analyze([hit(0)], logged, tl, CFG)
+    assert known.match.item is not None and known.ref == unknown.ref

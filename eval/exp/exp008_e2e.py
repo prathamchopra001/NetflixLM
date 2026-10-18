@@ -263,6 +263,7 @@ def run_ner(
     from nip.runtime.clients.ocr import OcrLine, StubOCR, fingerprint
     from nip.store import objects
     from nip.store.db import database_url
+    from nip.store.load import episode_row
 
     pipeline.wire()
     plan, inv = pipeline.current_plan({s: 1 for s in pipeline.MODEL_SLOTS})
@@ -278,7 +279,7 @@ def run_ner(
                 show = show_of(name, seed, tag)
                 saved = json.loads((ROOT / "ocr-lines" / f"{show}.json").read_text("utf-8"))
                 with engine.connect() as conn:
-                    keys = stage._keyframe_keys(conn, pipeline.episode_row(conn, show, "S01E01").id)
+                    keys = stage._keyframe_keys(conn, episode_row(conn, show, "S01E01").id)
                 recorded = {}
                 for (shot, n), key in keys.items():
                     image = s3.get_object(Bucket=objects.media_bucket(), Key=key)["Body"].read()

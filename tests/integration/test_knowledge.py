@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 from pydantic import BaseModel
-from sqlalchemy import Engine, func, select
+from sqlalchemy import Engine, func, select, update
 
 from eval.synthetic import build, write_show
 from nip import pipeline
@@ -189,3 +189,33 @@ def test_fabricated_quotes_are_dropped_and_unknown_names_become_candidates(
             .where(fe.c.predicate == "present_at", fe.c.confidence.between(0.899, 0.901))
         ).all()
     assert derived and all(q == t and sp == sub for q, t, sp, sub in derived)
+
+
+def test_derived_presence_skips_voices_that_are_not_in_the_room(pg: Engine, tmp_path: Path) -> None:
+    """Re-review N3: a phone voice gets no derived present_at; an intercut (SAME TIME) scene does,
+    because plot.two_places checks exactly those scenes."""
+    s3 = FakeS3()
+    write_show(build(1), tmp_path)
+    (tmp_path / "S01E01.fountain").write_text(
+        "INT. PIER NINE - NIGHT\n\nMAYA\n(on phone)\nWhere are you?\n\nDOV\nRight here.\n\n"
+        "MAYA\nStay there.\n\nINT. TIDEWATER DINER - NIGHT\n\nLEO\nIntercut.\n",
+        encoding="utf-8",
+    )
+    with pg.begin() as conn:
+        ingest_files(conn, s3, show=SHOW, episode=None, files=[(None, tmp_path / "bible.yaml")])
+        ingest_files(conn, s3, show=SHOW, episode="S01E01",
+                     files=[(None, tmp_path / "S01E01.fountain")])  # fmt: skip
+        sc = schema.scene
+        ep_id = conn.execute(select(schema.episode.c.id)).scalar_one()
+        scenes = extract.load_scenes(conn, "S01E01", ep_id)
+        conn.execute(update(sc).where(sc.c.id == scenes[1].id).values(markers=["intercut"]))
+        show_id = conn.execute(select(schema.show.c.id)).scalar_one()
+        got = [extract.save_speakers(conn, show_id, s) for s in scenes]
+        names = {r.id: r.canonical_name for r in conn.execute(select(schema.entity))}
+        lines = {r.id: r.text for r in conn.execute(select(schema.script_line))}
+    # Dov is in the room; Maya on the phone only gets presence on her later in-room line
+    assert [(names[r["subject_id"]], lines[r["line_id"]]) for r in got[0]] == [
+        ("Dov Lindqvist", "Right here."),
+        ("Maya Reyes", "Stay there."),
+    ]
+    assert [names[r["subject_id"]] for r in got[1]] == ["Leo Park"]  # intercut still counts

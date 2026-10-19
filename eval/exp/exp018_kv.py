@@ -168,13 +168,31 @@ def acquire(purpose: str, poll_s: int = 60) -> None:
             LOCK.mkdir()
             break
         except FileExistsError:
-            typer.echo(f"gpu.lock held: {(LOCK / 'owner.txt').read_text(errors='replace')[:200]!r}")
+            typer.echo(f"gpu.lock held: {owner()[:200]!r}")
             time.sleep(poll_s)
-    (LOCK / "owner.txt").write_text(f"2.1B {purpose} {time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+    (LOCK / "owner.txt").write_text(f"2.1B {purpose} {stamp} {TOKEN}\n")
+
+
+TOKEN = f"pid {os.getpid()}"  # ends owner.txt: which process holds the lock (re-review N1)
+
+
+def owner() -> str:
+    try:
+        return (LOCK / "owner.txt").read_text(errors="replace")
+    except OSError:  # no lock, or another holder between its mkdir and its owner.txt
+        return ""
+
+
+def holds_lock() -> bool:
+    """Does this process hold data/gpu.lock (its token at the end of owner.txt)?"""
+    return owner().rstrip().endswith(TOKEN)
 
 
 def release() -> None:
-    shutil.rmtree(LOCK, ignore_errors=True)
+    """Remove the lock only if this process holds it, never another agent's (re-review N1)."""
+    if holds_lock():
+        shutil.rmtree(LOCK, ignore_errors=True)
 
 
 def ray_head(*args: str, env: dict[str, str] | None = None) -> str:
@@ -217,12 +235,13 @@ def gpu_session(purpose: str, arm: str | None = None) -> Iterator[None]:
             typer.echo(out[-1500:])
         yield
     finally:
-        try:  # safety net: no Serve app may outlive the session (2.2B's `down` finding)
-            typer.echo(ray_head("python3", "-m", "eval.exp.exp018_kv", "down")[-300:])
-            if (used := host_used_mib()) > BUSY_MIB:  # released anyway; say so (review M2)
-                typer.echo(f"lock released with {used} MiB used on the device", err=True)
-        finally:
-            release()
+        if holds_lock():  # interrupted while waiting: another holder's apps and lock stay (N1)
+            try:  # safety net: no Serve app may outlive the session (2.2B's `down` finding)
+                typer.echo(ray_head("python3", "-m", "eval.exp.exp018_kv", "down")[-300:])
+                if (used := host_used_mib()) > BUSY_MIB:  # released anyway; say so (review M2)
+                    typer.echo(f"lock released with {used} MiB used on the device", err=True)
+            finally:
+                release()
 
 
 MARGIN = {"NIP_VRAM_MARGIN_GB": os.environ.get("NIP_VRAM_MARGIN_GB", "0.25")}

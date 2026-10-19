@@ -13,6 +13,7 @@ from nip.knowledge.extract import (
     SceneText,
     event_schema,
     extract_scene,
+    holds_verb,
     render,
     request,
     value_json,
@@ -125,10 +126,14 @@ def test_value_text_maps_to_the_fact_value_shape() -> None:
         "detail": "left hand cut",
     }
     assert value_json("holds", "obtain") == {"event": "obtain"}
-    # the line's verb instead of the prompt's vocabulary (fix round 1): a check is a use
+    # the line's verb mapped to the prompt's vocabulary (fix round 1, re-review N2)
     assert value_json("holds", "check") == {"event": "use", "detail": "check"}
     assert value_json("holds", "picks up") == {"event": "obtain", "detail": "picks up"}
     assert value_json("owns", "lose") == {"event": "lose"}
+    assert value_json("holds", "removes") == {"event": "remove", "detail": "removes"}  # ends it
+    assert value_json("holds", "gives: to Ada") == {"event": "give", "detail": "to Ada"}
+    for verb in ("share", "receives", "steals", "take"):  # not defined: dropped, never a use
+        assert holds_verb(verb) is None
     assert value_json("setup", "3") == {"importance": 3}
     assert value_json("relationship", "partners") == {"kind": "partners"}
     assert value_json("decision", "leave the city") == {"detail": "leave the city"}

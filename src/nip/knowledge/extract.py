@@ -54,6 +54,12 @@ UNKNOWN = "UNKNOWN"
 EVENTS_PER_LINE = 4
 # A speaker's `present_at` at the heading's location is derived, not stated by a quote (2.1B).
 SPEAKER_PRESENCE_CONFIDENCE = 0.9
+# A cue extension or parenthetical that puts the voice outside the scene's location (re-review N3).
+OFFSCREEN = re.compile(
+    r"(?<!\w)(v\.?\s?o\.?|o\.?\s?[sc]\.?|filtered|pre-?lap|phone|radio|intercom|voice[- ]?over)"
+    r"(?!\w)",
+    re.IGNORECASE,
+)
 IDS_RULE = {
     True: "`subject` and `object` are registry keys (the first word of a registry line). For"
     " someone or something that is not in the registry, use `UNKNOWN` and write its name as the"
@@ -63,18 +69,22 @@ IDS_RULE = {
     " speaker's name). Leave `object` out when the predicate has none, and leave `subject_name`"
     " and `object_name` out.",
 }
-HOLDS_EVENTS = {"obtain", "use", "give", "lose", "lost", "drop", "sell"}  # consolidate.END + obtain
-OBTAIN_VERBS = {
-    "take",
-    "takes",
-    "pick up",
-    "picks up",
-    "grab",
-    "grabs",
-    "get",
-    "gets",
-    "find",
-    "finds",
+# holds/owns value verbs -> the prompt's vocabulary (obtain / use / give / lose for picks up,
+# carries, uses, checks) plus consolidation's ending values (consolidate.END); nothing else is
+# mapped (re-review N2): an event with another verb ("share", "take") is dropped and counted.
+HOLDS_VERBS = {
+    v: head
+    for head, verbs in {
+        "obtain": ("obtain", "obtains", "obtained", "pick up", "picks up", "picked up"),
+        "use": ("use", "uses", "used", "carry", "carries", "carried", "check", "checks", "checked"),
+        "give": ("give", "gives", "gave", "given"),
+        "lose": ("lose", "loses"),
+        "lost": ("lost",),
+        "drop": ("drop", "drops", "dropped"),
+        "sell": ("sell", "sells", "sold"),
+        "remove": ("remove", "removes", "removed"),
+    }.items()
+    for v in verbs
 }
 # value text -> fact_event.value: the head goes under this key, "head: detail" adds "detail"
 VALUE_KEY = {"state": "state", "holds": "event", "owns": "event", "wearing": "event",
@@ -199,20 +209,23 @@ def extract_scene(
     return [{"scene": scene.ref, **e.model_dump(mode="json")} for e in out.events]  # type: ignore[attr-defined]
 
 
+def holds_verb(value: str) -> str | None:
+    """A holds/owns value's head in the prompt's vocabulary, or None when it is not defined."""
+    return HOLDS_VERBS.get(value.partition(":")[0].strip().lower())
+
+
 def value_json(predicate: str, value: str | None) -> dict[str, Any] | None:
     """`"injured: left hand cut"` -> {"state": "injured", "detail": "left hand cut"}; the head of
     a setup's value is its importance (int); other predicates keep the text under "detail".
 
-    holds/owns events use the prompt's vocabulary (obtain, use, give, lose, ...): the model also
-    writes the line's verb ("check", "share": 357 of 417 kept free-text holds in fix round 1), which
-    by the prompt's own definition is a use, so any other verb becomes `use` and keeps the verb as
-    `detail`; take/pick up/grab/get/find become `obtain`."""
+    holds/owns values are mapped to the prompt's vocabulary (`HOLDS_VERBS`): the model also writes
+    the line's verb ("check": a use by the prompt's own definition), kept as `detail`. A verb
+    outside the table is not guessed: `save_events` drops that event (`holds_verb` is None)."""
     if not value or not value.strip():
         return None
     head, _, detail = (s.strip() for s in value.partition(":"))
-    if predicate in ("holds", "owns") and head.lower() not in HOLDS_EVENTS:
-        verb = head.lower()
-        head, detail = ("obtain" if verb in OBTAIN_VERBS else "use"), detail or verb
+    if predicate in ("holds", "owns") and (verb := head.lower()) != holds_verb(value):
+        head, detail = holds_verb(value) or head, detail or verb
     key = VALUE_KEY.get(predicate, "detail")
     out: dict[str, Any] = {key: int(head) if key == "importance" and head.isdigit() else head}
     return out | ({"detail": detail} if detail else {})
@@ -304,6 +317,8 @@ def save_events(
             if ev["confidence"] <= 0
             else "no subject"
             if s is None
+            else "unknown holds value"  # re-review N2: not guessed into a use
+            if pred in ("holds", "owns") and ev.get("value") and holds_verb(ev["value"]) is None
             else "duplicate"
             if same in seen
             else None
@@ -346,8 +361,13 @@ def save_speakers(conn: Connection, show_id: int, scene: SceneText) -> list[dict
 
     Speakers are present where they speak (2.1B, review I1): when the heading names a location
     entity, each resolved speaker without a `present_at` event for it in the scene gets one on
-    their first line (quote = the whole line, confidence SPEAKER_PRESENCE_CONFIDENCE). Returns the
-    added fact_event rows."""
+    their first line (quote = the whole line, confidence SPEAKER_PRESENCE_CONFIDENCE). Not for a
+    voice that is not in the room (re-review N3): none for a line whose speaker or preceding
+    parenthetical reads V.O., O.S., O.C., filtered, pre-lap, phone, radio or intercom. Scenes marked
+    `intercut` are not skipped: the marker also covers SAME TIME / MEANWHILE (story.py), the very
+    scenes plot.two_places checks (evaluation.md). ponytail: the cue extension (`MAYA (V.O.)`) is
+    dropped at ingest (`script.speaker_name`), so it is seen only when a parenthetical repeats it;
+    keeping it in `script_line` would close that gap. Returns the added fact_event rows."""
     resolver = Resolver(conn, show_id)
     ln, fe = schema.script_line, schema.fact_event
     where = scene_location(resolver, scene.heading)
@@ -359,15 +379,22 @@ def save_speakers(conn: Connection, show_id: int, scene: SceneText) -> list[dict
         ).scalars()
     )
     rows = []
+    offscreen: set[str] = set()  # speakers whose last parenthetical says they are not in the room
     for line in scene.lines:
-        if line.speaker and (eid := resolver.match(line.speaker)) is not None:
-            conn.execute(update(ln).where(ln.c.id == line.id).values(speaker_entity_id=eid))
-            if where is not None and eid not in have and resolver.kinds.get(eid) == "character":
-                have.add(eid)
-                rows.append({"scene_id": scene.id, "line_id": line.id, "predicate": "present_at",
-                             "subject_id": eid, "object_id": where, "value": None,
-                             "quote": line.text,
-                             "confidence": SPEAKER_PRESENCE_CONFIDENCE})  # fmt: skip
+        if not line.speaker or (eid := resolver.match(line.speaker)) is None:
+            continue
+        conn.execute(update(ln).where(ln.c.id == line.id).values(speaker_entity_id=eid))
+        if line.kind == "parenthetical":
+            (offscreen.add if OFFSCREEN.search(line.text) else offscreen.discard)(line.speaker)
+            continue
+        away = line.speaker in offscreen or OFFSCREEN.search(line.speaker) is not None
+        offscreen.discard(line.speaker)  # a parenthetical covers the next speech only
+        if where is None or away or eid in have or resolver.kinds.get(eid) != "character":
+            continue
+        have.add(eid)
+        rows.append({"scene_id": scene.id, "line_id": line.id, "predicate": "present_at",
+                     "subject_id": eid, "object_id": where, "value": None, "quote": line.text,
+                     "confidence": SPEAKER_PRESENCE_CONFIDENCE})  # fmt: skip
     if rows:
         conn.execute(insert(fe), rows)
     return rows

@@ -35,7 +35,7 @@ from sqlalchemy import Connection, delete, insert, select, update
 from nip.config import config_dir, pipeline_config
 from nip.contracts.fact import Predicate
 from nip.contracts.plan import Slot
-from nip.ingest.script import HEADING_RE
+from nip.ingest.script import HEADING_RE, speaker_name
 from nip.knowledge.entities import Resolver
 from nip.knowledge.grounding import THRESHOLD, grounded
 from nip.runtime.clients import LLMClient, StubLLM
@@ -362,12 +362,11 @@ def save_speakers(conn: Connection, show_id: int, scene: SceneText) -> list[dict
     Speakers are present where they speak (2.1B, review I1): when the heading names a location
     entity, each resolved speaker without a `present_at` event for it in the scene gets one on
     their first line (quote = the whole line, confidence SPEAKER_PRESENCE_CONFIDENCE). Not for a
-    voice that is not in the room (re-review N3): none for a line whose speaker or preceding
-    parenthetical reads V.O., O.S., O.C., filtered, pre-lap, phone, radio or intercom. Scenes marked
-    `intercut` are not skipped: the marker also covers SAME TIME / MEANWHILE (story.py), the very
-    scenes plot.two_places checks (evaluation.md). ponytail: the cue extension (`MAYA (V.O.)`) is
-    dropped at ingest (`script.speaker_name`), so it is seen only when a parenthetical repeats it;
-    keeping it in `script_line` would close that gap. Returns the added fact_event rows."""
+    voice that is not in the room (re-review N3): none for a line whose cue extension (the
+    speaker as written, `MAYA (V.O.)`) or preceding parenthetical reads V.O., O.S., O.C., filtered,
+    pre-lap, phone, radio or intercom; `(CONT'D)` is not off-screen. Scenes marked `intercut` are
+    not skipped: the marker also covers SAME TIME / MEANWHILE (story.py), the very scenes
+    plot.two_places checks (evaluation.md). Returns the added fact_event rows."""
     resolver = Resolver(conn, show_id)
     ln, fe = schema.script_line, schema.fact_event
     where = scene_location(resolver, scene.heading)
@@ -381,7 +380,7 @@ def save_speakers(conn: Connection, show_id: int, scene: SceneText) -> list[dict
     rows = []
     offscreen: set[str] = set()  # speakers whose last parenthetical says they are not in the room
     for line in scene.lines:
-        if not line.speaker or (eid := resolver.match(line.speaker)) is None:
+        if not line.speaker or (eid := resolver.match(speaker_name(line.speaker))) is None:
             continue
         conn.execute(update(ln).where(ln.c.id == line.id).values(speaker_entity_id=eid))
         if line.kind == "parenthetical":

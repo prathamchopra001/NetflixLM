@@ -40,3 +40,25 @@ def test_the_holder_tears_down_and_releases(
     with kv.gpu_session("test"):
         assert kv.holds_lock()
     assert not lock.exists() and calls[-1][-1] == "down"
+
+
+def test_the_lock_never_exists_without_its_owner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Re-review 2 m5: the lock directory appears with owner.txt already in it; waiting for another
+    holder leaves no private directory behind when interrupted."""
+    lock = tmp_path / "gpu.lock"
+    monkeypatch.setattr(kv, "LOCK", lock)
+    kv.acquire("first")
+    assert kv.holds_lock() and (lock / "owner.txt").read_text().startswith("2.1B first")
+    assert [p.name for p in tmp_path.iterdir()] == ["gpu.lock"]
+
+    def interrupted(_: float) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(kv.time, "sleep", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        kv.acquire("second")  # held (by us): waits, then Ctrl-C
+    assert [p.name for p in tmp_path.iterdir()] == ["gpu.lock"]
+    kv.release()
+    assert not lock.exists()

@@ -162,16 +162,25 @@ def trial(arm: Annotated[str, typer.Option()], trial: Annotated[int, typer.Optio
 
 # ---- host --------------------------------------------------------------------------------------
 def acquire(purpose: str, poll_s: int = 60) -> None:
-    """data/gpu.lock (phase2-plan.md › GPU contention): atomic mkdir + owner.txt; polls."""
-    while True:
-        try:
-            LOCK.mkdir()
-            break
-        except FileExistsError:
-            typer.echo(f"gpu.lock held: {owner()[:200]!r}")
-            time.sleep(poll_s)
+    """data/gpu.lock (phase2-plan.md › GPU contention): the lock directory appears with its
+    owner.txt already inside (written to a private directory, then one atomic rename), so there is
+    no ownerless window between mkdir and the owner write (re-review 2 m5); polls."""
     stamp = time.strftime("%Y-%m-%dT%H:%M:%S")
-    (LOCK / "owner.txt").write_text(f"2.1B {purpose} {stamp} {TOKEN}\n")
+    tmp = LOCK.with_name(f"{LOCK.name}.{os.getpid()}")
+    tmp.mkdir(exist_ok=True)
+    (tmp / "owner.txt").write_text(f"2.1B {purpose} {stamp} {TOKEN}\n")
+    try:
+        while True:
+            try:
+                tmp.rename(LOCK)  # fails while any holder's lock directory exists
+                return
+            except OSError:  # FileExistsError / PermissionError on Windows
+                if not LOCK.exists():
+                    raise
+                typer.echo(f"gpu.lock held: {owner()[:200]!r}")
+                time.sleep(poll_s)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)  # gone after the rename; leftovers on interrupt
 
 
 TOKEN = f"pid {os.getpid()}"  # ends owner.txt: which process holds the lock (re-review N1)

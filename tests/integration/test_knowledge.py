@@ -198,7 +198,8 @@ def test_derived_presence_skips_voices_that_are_not_in_the_room(pg: Engine, tmp_
     write_show(build(1), tmp_path)
     (tmp_path / "S01E01.fountain").write_text(
         "INT. PIER NINE - NIGHT\n\nMAYA\n(on phone)\nWhere are you?\n\nDOV\nRight here.\n\n"
-        "MAYA\nStay there.\n\nINT. TIDEWATER DINER - NIGHT\n\nLEO\nIntercut.\n",
+        "MAYA\nStay there.\n\nADA (V.O.)\nThey never knew.\n\nTOMAS (O.S.)\nOpen up.\n\n"
+        "RUI (CONT'D)\nComing.\n\nINT. TIDEWATER DINER - NIGHT\n\nLEO\nIntercut.\n",
         encoding="utf-8",
     )
     with pg.begin() as conn:
@@ -213,9 +214,12 @@ def test_derived_presence_skips_voices_that_are_not_in_the_room(pg: Engine, tmp_
         got = [extract.save_speakers(conn, show_id, s) for s in scenes]
         names = {r.id: r.canonical_name for r in conn.execute(select(schema.entity))}
         lines = {r.id: r.text for r in conn.execute(select(schema.script_line))}
-    # Dov is in the room; Maya on the phone only gets presence on her later in-room line
+    # Dov and Rui (CONT'D) are in the room; Maya on the phone only gets presence
+    # on her later in-room line; Ada (V.O.) and Tomas (O.S.) get none: the cue extension now
+    # survives ingest (re-review 2)
     assert [(names[r["subject_id"]], lines[r["line_id"]]) for r in got[0]] == [
         ("Dov Lindqvist", "Right here."),
         ("Maya Reyes", "Stay there."),
+        ("Rui Marlow", "Coming."),  # (CONT'D) is not off-screen
     ]
     assert [names[r["subject_id"]] for r in got[1]] == ["Leo Park"]  # intercut still counts

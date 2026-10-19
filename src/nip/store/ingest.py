@@ -381,7 +381,9 @@ def _write_script(conn: Connection, ep_id: int, script: Script, fps: Fraction) -
                         "scene_id": sc_id,
                         "seq": i,
                         "kind": e.kind,
-                        "speaker": e.speaker,
+                        # the cue as written ("MAYA (V.O.)"): 2.1B's derived presence reads
+                        # the extension; entity resolution strips it (script.speaker_name)
+                        "speaker": " ".join(filter(None, (e.speaker, e.extension))) or None,
                         "text": e.text,
                     }
                     for i, e in enumerate(s.elements, 1)

@@ -7,7 +7,7 @@ from typing import Any
 import pdfplumber
 
 from nip.ingest.common import Parsed, fail
-from nip.ingest.script import HEADING_RE, Raw, Script, build_script, speaker_name
+from nip.ingest.script import HEADING_RE, Raw, Script, build_script
 
 _SKIP_RE = re.compile(
     r"^(\d+\.?|\(?(CONTINUED|MORE)\)?:?)$", re.IGNORECASE
@@ -61,7 +61,7 @@ def parse_pdf(data: bytes) -> Parsed[Script]:
         elif off < _CHARACTER:
             kind, tag, text = "parenthetical", speaker, text.removeprefix("(").removesuffix(")")
         elif off < _TRANSITION and not _TRANSITION_RE.match(text):
-            speaker, prev = speaker_name(text), None
+            speaker, prev = text, None  # the whole cue: build_script splits off the extension
             continue
         else:
             kind = "transition"

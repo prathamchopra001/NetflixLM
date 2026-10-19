@@ -25,6 +25,7 @@ class Element:
     kind: Kind
     text: str
     speaker: str | None = None  # dialogue / parenthetical only
+    extension: str | None = None  # the cue's extension as written: "(V.O.)", "(O.S.) (CONT'D)"
 
 
 @dataclass
@@ -52,7 +53,8 @@ class Script:
     scenes: list[Scene]
 
 
-# (kind, text, tag): "heading" (tag = explicit scene no.) or an Element kind (tag = speaker)
+# (kind, text, tag): "heading" (tag = explicit scene no.) or an Element kind (tag = the character
+# cue as written, e.g. "MAYA (V.O.)": build_script splits it into speaker and extension)
 Raw = tuple[str, str, str | None]
 
 
@@ -67,7 +69,8 @@ def build_script(items: list[Raw], title: str | None = None) -> Parsed[Script]:
         elif not text:
             continue
         elif scenes:
-            scenes[-1].elements.append(Element(kind, text, tag))  # type: ignore[arg-type]
+            who = (speaker_name(tag), cue_extension(tag)) if tag else (None, None)
+            scenes[-1].elements.append(Element(kind, text, *who))  # type: ignore[arg-type]
         else:
             dropped += 1
     if not scenes:
@@ -96,8 +99,8 @@ def parse_fountain(data: bytes | str) -> Parsed[Script]:
                 items.append(("heading", e.text, e.scene_number))
             else:  # the lib calls "FADE IN:" a heading
                 items.append(("transition", e.text, None))
-        elif t == ElementType.CHARACTER:
-            speaker = e.name
+        elif t == ElementType.CHARACTER:  # the lib splits the cue; keep its extension
+            speaker = f"{e.name} ({e.extension})" if e.extension else e.name
         elif t in (ElementType.DIALOGUE, ElementType.LYRIC):
             items.append(("dialogue", e.text, speaker))
         elif t == ElementType.PARENTHETICAL:
@@ -110,9 +113,18 @@ def parse_fountain(data: bytes | str) -> Parsed[Script]:
     return build_script(items, title)
 
 
+_EXTENSION_RE = re.compile(r"(?:\s*\([^)]*\))+\s*$")
+
+
 def speaker_name(character_line: str) -> str:
-    """'MAYA (V.O.)' -> 'MAYA'."""
-    return re.sub(r"\s*\([^)]*\)\s*$", "", character_line.strip())
+    """'MAYA (V.O.)' -> 'MAYA'; 'MAYA (V.O.) (CONT'D)' -> 'MAYA'."""
+    return _EXTENSION_RE.sub("", character_line.strip())
+
+
+def cue_extension(character_line: str) -> str | None:
+    """'MAYA (V.O.)' -> '(V.O.)'; None without one (2.1B: off-screen voices get no presence)."""
+    m = _EXTENSION_RE.search(character_line.strip())
+    return m.group().strip() if m else None
 
 
 _FDX_KINDS: dict[str, str] = {
@@ -141,7 +153,7 @@ def parse_fdx(data: bytes | str) -> Parsed[Script]:
         if ptype.startswith("Scene Heading") or ptype == "Shot":
             items.append(("heading", text, p.get("Number") or None))
         elif ptype == "Character":
-            speaker = speaker_name(text)
+            speaker = text.strip()  # the whole cue: build_script splits off the extension
         elif ptype == "Parenthetical":
             items.append(
                 ("parenthetical", text.strip().removeprefix("(").removesuffix(")"), speaker)

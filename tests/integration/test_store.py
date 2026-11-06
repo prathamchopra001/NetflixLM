@@ -215,10 +215,7 @@ def test_rejections_write_nothing(pg: Engine, s3: Any, tmp_path: Path) -> None:
     with pytest.raises(InputRejected, match=r"duplicate scene numbers \['1'\]"):
         ingest(pg, s3, [files[1], (None, dup)])
     assert sum(counts(pg).values()) == 0 and s3.objects == {}
-    ingest(pg, s3, files)
-    other = write(tmp_path, {"v2.fountain": SCRIPT + "\nINT. HALL - DAY #3#\n\nWalk.\n"})
-    with pytest.raises(InputRejected, match="already has a script"):
-        ingest(pg, s3, [(None, other["v2.fountain"])])
+    ingest(pg, s3, files)  # a new script draft is accepted since 2.9B (test_rerun.py)
     with pytest.raises(InputRejected, match="already has es subtitles"):
         ingest(pg, s3, [("es", write(tmp_path, {"es2.srt": EN.replace("Bye", "Chao")})["es2.srt"])])
     with pytest.raises(InputRejected, match="--episode SxxEyy"):
@@ -488,7 +485,9 @@ def test_failed_run_publishes_no_artifacts(
         pipeline.run_store(
             pg, s3, show="demo", episodes=["S01E01"], plan=plan, inventory=inv, out_dir=out
         )
-    assert s3.objects == before and not out.exists()
+    # only stage-cache entries outlive the failed run (2.9B: units already paid for)
+    after = {k: v for k, v in s3.objects.items() if not k[1].startswith("cache/")}
+    assert after == before and not out.exists()
     with pg.connect() as conn:
         assert conn.execute(select(func.count()).select_from(schema.flag)).scalar_one() == 0
         assert conn.execute(select(schema.run.c.status)).scalar_one() == "failed"

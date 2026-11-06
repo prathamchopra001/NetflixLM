@@ -16,8 +16,10 @@ Rows per kind (data-model.md › Content and timeline, Knowledge layer, Registri
   `clearance_item`. Show-level rows are upserted, so a revised file updates them.
 
 Frames are placed at the picture's frame rate, or 24 fps while the episode has no picture.
-Replacing an episode's script, picture or a language's subtitles is refused (incremental re-runs
-are 2.9B), and so is a picture whose rate differs from the 24 fps already used for its rows.
+A new script for an episode replaces the old one scene by scene (2.9B, `_write_script`): an
+unchanged scene keeps its rows, so only edited scenes re-run. Replacing a picture or a language's
+subtitles is still refused, and so is a picture whose rate differs from the 24 fps already used
+for its rows.
 """
 
 import json
@@ -219,7 +221,17 @@ def ingest_files(
         )
     for s in srcs:
         s.sha = objects.sha256_file(s.path)
-    new = [s for s in srcs if s.sha not in known]
+    script_sha: str | None = (  # a script is current only as the episode's latest one:
+        conn.execute(  # re-ingesting an earlier draft brings that draft back
+            select(sf.c.sha256)
+            .where(sf.c.episode_id == ep_id, sf.c.kind == "script")
+            .order_by(sf.c.id.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        if ep_id is not None
+        else None
+    )
+    new = [s for s in srcs if s.sha not in known or (s.kind == "script" and s.sha != script_sha)]
     if picture is not None and not any(s.kind == "picture" for s in new):
         log.warning("%s ignored: its video is already ingested", picture.name)
     for s in new:
@@ -248,7 +260,7 @@ def ingest_files(
                     f"{s.path.name} is {s.data.fps} fps; ingest the picture first"
                 )
             fps = s.data.fps
-        elif not s.show_level and (s.kind, s.lang or "") in have:
+        elif not s.show_level and s.kind != "script" and (s.kind, s.lang or "") in have:
             what = f"{s.lang} subtitles" if s.lang else f"a {s.kind}"
             raise InputRejected(f"{episode} already has {what}; replacing it is not supported")
 
@@ -322,7 +334,7 @@ def ingest_files(
         "show": show,
         "episode": episode,
         "stored": stored,
-        "unchanged": [s.path.name for s in srcs if s.sha in known],
+        "unchanged": [s.path.name for s in srcs if s not in new],
     }
 
 
@@ -358,35 +370,91 @@ def _write_picture(
         )
 
 
+def _drop_scene_rows(conn: Connection, scene_ids: list[int], delete_scenes: bool) -> None:
+    """Remove what hangs off scenes whose text changed (or that are gone): their lines, the fact
+    events extracted from them, their index chunks (2.8 note: before the scene) and the ASR
+    links to their lines. Facts built from those events are superseded by the next run's
+    consolidation; shots keep their frames and lose only the scene link."""
+    ln, ts = schema.script_line, schema.transcript_segment
+    lines = select(ln.c.id).where(ln.c.scene_id.in_(scene_ids)).scalar_subquery()
+    conn.execute(update(ts).where(ts.c.aligned_line_id.in_(lines)).values(aligned_line_id=None))
+    conn.execute(delete(schema.fact_event).where(schema.fact_event.c.scene_id.in_(scene_ids)))
+    conn.execute(delete(schema.scene_chunk).where(schema.scene_chunk.c.scene_id.in_(scene_ids)))
+    conn.execute(delete(ln).where(ln.c.scene_id.in_(scene_ids)))
+    if delete_scenes:
+        sh = schema.shot
+        conn.execute(update(sh).where(sh.c.scene_id.in_(scene_ids)).values(scene_id=None))
+        conn.execute(delete(schema.scene).where(schema.scene.c.id.in_(scene_ids)))
+
+
+def _cue(e: Any) -> str | None:
+    # the cue as written ("MAYA (V.O.)"): 2.1B's derived presence reads the extension; entity
+    # resolution strips it (script.speaker_name)
+    return " ".join(filter(None, (e.speaker, e.extension))) or None
+
+
 def _write_script(conn: Connection, ep_id: int, script: Script, fps: Fraction) -> None:
+    """Scenes + lines. Over an earlier script (2.9B): a scene with the same number, heading and
+    lines keeps its row and id, and so its fact events, index chunk, story position and every
+    stage-cache key that reads it; it only gets its new estimated frames. An edited scene is
+    rewritten in place (its derived rows dropped), a scene no longer in the script is deleted.
+    Scenes load in id order, so when the new script inserts a scene before a kept one or moves
+    one, every scene is replaced (ponytail: correct, but nothing of the episode is reused)."""
+    sc, ln = schema.scene, schema.script_line
+    old = {
+        r.script_scene_no: (r.id, r.heading)
+        for r in conn.execute(
+            select(sc.c.id, sc.c.script_scene_no, sc.c.heading)
+            .where(sc.c.episode_id == ep_id)
+            .order_by(sc.c.id)
+        )
+    }
+    have: dict[int, list[tuple[str, str | None, str]]] = {}
+    for sid, kind, speaker, text in conn.execute(
+        select(ln.c.scene_id, ln.c.kind, ln.c.speaker, ln.c.text)
+        .where(ln.c.scene_id.in_([i for i, _ in old.values()]))
+        .order_by(ln.c.scene_id, ln.c.seq)
+    ):
+        have.setdefault(sid, []).append((kind, speaker, text))
+    nos = [s.number for s in script.scenes]
+    kept = [n for n in nos if n in old]
+    first_new = next((i for i, n in enumerate(nos) if n not in old), len(nos))
+    in_order = kept == [n for n in old if n in kept] and all(n not in old for n in nos[first_new:])
+    gone = [i for n, (i, _) in old.items() if not in_order or n not in kept]
+    if gone:
+        _drop_scene_rows(conn, gone, delete_scenes=True)
+    if not in_order:
+        old = {}
     bounds = scene_bounds(script, fps)
     for s, a, b in zip(script.scenes, bounds, bounds[1:], strict=False):
-        sc_id = conn.execute(
-            insert(schema.scene)
-            .values(
-                episode_id=ep_id,
-                script_scene_no=s.number,
-                heading=s.heading,
-                time_of_day=s.time_of_day,
-                frames=Range(a, b) if b > a else None,  # an empty scene has no frames
-                text_hash=s.text_hash,
-            )
-            .returning(schema.scene.c.id)
-        ).scalar_one()
-        if s.elements:
+        values = {
+            "heading": s.heading,
+            "time_of_day": s.time_of_day,
+            "frames": Range(a, b) if b > a else None,  # an empty scene has no frames
+            "text_hash": s.text_hash,
+        }
+        lines = [(e.kind, _cue(e), e.text) for e in s.elements]
+        if s.number in old:
+            sc_id, heading = old[s.number]
+            if heading == s.heading and have.get(sc_id, []) == lines:
+                conn.execute(update(sc).where(sc.c.id == sc_id).values(frames=values["frames"]))
+                continue
+            _drop_scene_rows(conn, [sc_id], delete_scenes=False)
+            reset: dict[str, Any] = dict(markers=[], story_day=None, story_seq=None,
+                                         story_inferred=False, location_entity_id=None)  # fmt: skip
+            conn.execute(update(sc).where(sc.c.id == sc_id).values(**values, **reset))
+        else:
+            sc_id = conn.execute(
+                insert(sc)
+                .values(episode_id=ep_id, script_scene_no=s.number, **values)
+                .returning(sc.c.id)
+            ).scalar_one()
+        if lines:
             conn.execute(
-                insert(schema.script_line),
+                insert(ln),
                 [
-                    {
-                        "scene_id": sc_id,
-                        "seq": i,
-                        "kind": e.kind,
-                        # the cue as written ("MAYA (V.O.)"): 2.1B's derived presence reads
-                        # the extension; entity resolution strips it (script.speaker_name)
-                        "speaker": " ".join(filter(None, (e.speaker, e.extension))) or None,
-                        "text": e.text,
-                    }
-                    for i, e in enumerate(s.elements, 1)
+                    {"scene_id": sc_id, "seq": i, "kind": k, "speaker": who, "text": t}
+                    for i, (k, who, t) in enumerate(lines, 1)
                 ],
             )
 

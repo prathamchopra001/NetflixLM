@@ -174,7 +174,7 @@ def extract(
             row: dict[str, Any] = {"key": key, "scene": sc.ref, "arm": arm, "mode": mode}
             try:
                 ctx = {"lines": {ln.seq for ln in sc.lines}}
-                out = llm.complete(prompt, schema, max_tokens=MAX_TOKENS, context=ctx)
+                out: Any = llm.complete(prompt, schema, max_tokens=MAX_TOKENS, context=ctx)
                 row["events"] = [e.model_dump(mode="json") for e in out.events]
                 row["capped"] = (
                     len(row["events"]) >= EVENTS_PER_LINE * len(sc.lines)

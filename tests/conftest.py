@@ -2,12 +2,17 @@
 
 Locally a missing ffmpeg/TorchCodec or test database skips its tests; in CI that would turn
 "green" into "never ran", so every skip of a selected test is reported as a failure there.
+
+Typer forces Rich colour when GITHUB_ACTIONS is set, which splits "--show" etc. in captured help
+text; tests read plain text, so the terminal is forced off before any test imports typer.
 """
 
 import os
 from collections.abc import Generator
 
 import pytest
+
+os.environ["_TYPER_FORCE_DISABLE_TERMINAL"] = "1"
 
 
 @pytest.hookimpl(wrapper=True)

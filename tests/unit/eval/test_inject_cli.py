@@ -128,6 +128,7 @@ def test_unknown_set_is_a_usage_error(tmp_path: Path) -> None:
 REAL = Path(__file__).parents[3] / "data"
 
 
+@pytest.mark.integration  # local data/ files, never on the CI runner (NIP_CI fails a skip)
 @pytest.mark.skipif(
     not (REAL / "corpus" / "sintel" / "es_sintel_es.srt").exists()
     or not (REAL / "exp002" / "runs" / "picture" / "sintel" / "picture.json").exists(),

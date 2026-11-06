@@ -9,7 +9,7 @@ from botocore.config import Config
 from fastapi import APIRouter, Depends, FastAPI
 from sqlalchemy import create_engine, text
 
-from nip.api import errors
+from nip.api import errors, runs
 from nip.api.auth import current_user
 from nip.api.errors import ApiError
 from nip.store.db import database_url
@@ -77,4 +77,5 @@ def create_app() -> FastAPI:
     app.include_router(system)
     app.include_router(system, prefix="/api/v1")  # reachable behind the UI's /api proxy too
     app.include_router(v1)
+    app.include_router(runs.router, prefix="/api/v1")
     return app

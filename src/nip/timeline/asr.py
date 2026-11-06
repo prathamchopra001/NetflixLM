@@ -36,7 +36,7 @@ class StageEpisode(Protocol):
 
     def unit(
         self, stage: str, key: str, model_variant: str | None = None
-    ) -> AbstractContextManager[None]: ...
+    ) -> AbstractContextManager[Any]: ...
 
 
 STAGE = "timeline.asr"

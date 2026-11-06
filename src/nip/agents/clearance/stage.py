@@ -8,7 +8,9 @@ row label `sharpness` whose `confidence` column holds the Laplacian variance of 
 `{show}/{ep}/crops/{detection_id}.jpg` (data-model.md > Object Storage Layout).
 
 One work unit per keyframe, so a keyframe that fails is a coverage gap and the run says
-`completed_with_gaps`; the others go on. Re-running replaces the episode's `ocr` rows.
+`completed_with_gaps`; the others go on. Re-running replaces the episode's `ocr` rows. A
+keyframe's scan is stage-cached (2.9B) under the image's sha256, the OCR and NER variants, the
+scanner's names and language and the recognizer config: an unchanged keyframe is not read again.
 
 The stage also puts the OCR text on the timeline's keyframe spans (`ep.tl`), so a flag's quote is
 resolved against the stored text by the evidence resolver.
@@ -18,9 +20,10 @@ slots `ocr` and `ner` are in `MODEL_SLOTS`. Both models run in-process, like asr
 """
 
 import gc
+import hashlib
 import logging
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from functools import cache
 from typing import Any, Protocol
 
@@ -34,11 +37,12 @@ from nip.agents.clearance.checks import (
 )
 from nip.agents.clearance.occurrences import Occurrence, crop, decode, sharpness
 from nip.agents.clearance.ocr_text import Candidate, Detection, TextScanner
-from nip.config import pipeline_config
+from nip.config import config_dir, pipeline_config
 from nip.contracts import refs
 from nip.contracts.flag import EvidenceKind
 from nip.contracts.plan import Slot
 from nip.contracts.timeline import Timeline
+from nip.runtime import cache as stage_cache
 from nip.runtime.clients.ner import StubNER
 from nip.runtime.clients.ocr import StubOCR
 from nip.store import objects, schema
@@ -49,6 +53,7 @@ STAGE = "clearance.ocr"
 SHARPNESS = "sharpness"
 LANGS = ("en", "de", "es", "fr")  # what the TextScanner is set up for
 STUB = "stub"
+STAGE_VERSION = 1  # stage-cache key: bump when scan_image / TextScanner change behaviour
 
 
 class StageEpisode(Protocol):
@@ -84,6 +89,23 @@ class Scan:
             out.append(Detection(c.shot, c.n, c.text, c.box, conf, c.model_variant, "ocr", c.check))
             out.append(Detection(c.shot, c.n, "", c.box, s, c.model_variant, "ocr", SHARPNESS))
         return out
+
+
+def scan_json(scan: Scan) -> dict[str, Any]:
+    return asdict(scan)
+
+
+def scan_from(d: dict[str, Any], shot: int, n: int) -> Scan:
+    """A cached scan placed at (shot, n): an identical image elsewhere has the same key."""
+
+    def at(x: dict[str, Any]) -> dict[str, Any]:
+        return x | {"shot": shot, "n": n, "box": tuple(x["box"])}
+
+    return Scan(
+        [Detection(**at(x)) for x in d["lines"]],
+        [Candidate(**at(x)) for x in d["candidates"]],
+        list(d["sharpness"]),
+    )
 
 
 def confidence(c: Candidate, cfg: dict[str, Any]) -> float:
@@ -277,10 +299,22 @@ def stage(ep: StageEpisode) -> None:
     lang = _source_lang(ep.conn, ep.episode_id)
     scans: dict[tuple[int, int], Scan] = {}
     bucket = objects.media_bucket()
+    rules = sorted((f.name, f.read_text("utf-8")) for f in (config_dir() / "clearance").glob("*"))
+    params = {"ner": ner.variant if ner else None, "brands": brands, "addresses": addresses,
+              "fictional": fictional, "lang": lang, "rules": stage_cache.digest(rules)}  # fmt: skip
     for (shot, n), key in sorted(keys.items()):
-        with ep.unit(STAGE, refs.keyframe(ep.episode, shot, n), model_variant=decision.variant):
+        with ep.unit(
+            STAGE, refs.keyframe(ep.episode, shot, n), model_variant=decision.variant
+        ) as u:
             image = ep.s3.get_object(Bucket=bucket, Key=key)["Body"].read()
-            scans[shot, n] = scan_image(shot, n, image, reader, scanner, lang)
+            ck = stage_cache.key(STAGE, STAGE_VERSION, decision.variant, None, params,
+                           [hashlib.sha256(image).hexdigest()])  # fmt: skip
+            hit = u.lookup(ck)
+            if hit is not None:
+                scans[shot, n] = scan_from(hit, shot, n)
+            else:
+                scans[shot, n] = scan_image(shot, n, image, reader, scanner, lang)
+                u.value = scan_json(scans[shot, n])
     cfg = pipeline_config()["clearance"]
     found = persist(ep.conn, ep.s3, ep.show, ep.episode, ep.episode_id, scans, cfg)
     occs = episode_occurrences(ep.conn, ep.show, ep.timeline, cfg)  # what the checks will see

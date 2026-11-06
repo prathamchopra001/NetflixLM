@@ -576,7 +576,7 @@ def stage_story(ep: "EpisodeRun") -> None:
     variant = d.variant if d else None
     llm = make_llm(variant) if variant else None
 
-    def unit(key: str) -> AbstractContextManager[None]:
+    def unit(key: str) -> AbstractContextManager[Any]:
         return ep.unit(STAGE, key, model_variant=variant)
 
     story = derive(

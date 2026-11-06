@@ -15,6 +15,7 @@ confidence; cleared is `suppressed` (hidden by default, kept for the audit); unk
 confidence. Severity: `occurrences.severity`.
 """
 
+import hashlib
 import logging
 from collections.abc import Sequence
 from fractions import Fraction
@@ -277,6 +278,12 @@ class ClearanceText(Check):
     def run(self, unit: WorkUnit, tl: Timeline) -> list[Finding]:
         o = self._by_key[unit.key.removeprefix(f"{tl.episode}/")]
         return [finding(o, tl)]
+
+    def inputs(self, unit: WorkUnit, tl: Timeline) -> list[str]:
+        """The occurrence the finding is made of: its registry match (a newly logged status),
+        hits, boxes and prominence come from the store, not from the unit's spans."""
+        o = self._by_key[unit.key.removeprefix(f"{tl.episode}/")]
+        return [hashlib.sha256(repr(o).encode()).hexdigest()]
 
     def recheck(self, flag: Flag, tl: Timeline) -> bool:
         """The occurrence is still there: its ref (episode, check, item or text, first keyframe)

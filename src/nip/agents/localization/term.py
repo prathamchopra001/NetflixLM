@@ -24,6 +24,7 @@ a run are checked in order: the first sees only episodes aligned by earlier runs
 converge.
 """
 
+import hashlib
 import logging
 import re
 import unicodedata
@@ -329,6 +330,12 @@ class Term(Check):
     def _words(tl: Timeline, cue_refs: Iterable[str]) -> list[str]:
         """Words of the cues in order (duplicates kept: phrases are matched by position)."""
         return [w for ref in cue_refs if (s := tl.resolve(ref)) for w in words(s.text)]
+
+    def inputs(self, unit: WorkUnit, tl: Timeline) -> list[str]:
+        """The observed standards of the unit's language: they count mentions over the whole show
+        (other episodes' aligned cues, read from the store)."""
+        _, standards = self._context(tl, unit.key.split("/")[1])
+        return [hashlib.sha256(repr(sorted(standards.items())).encode()).hexdigest()]
 
     def units(self, tl: Timeline) -> list[WorkUnit]:
         """Cue windows of each target track; a group belongs to the window of its first target

@@ -38,12 +38,14 @@ from nip.contracts.plan import Slot
 from nip.ingest.script import HEADING_RE, speaker_name
 from nip.knowledge.entities import Resolver
 from nip.knowledge.grounding import THRESHOLD, grounded
+from nip.runtime import cache
 from nip.runtime.clients import LLMClient, StubLLM
 from nip.store import schema
 
 log = logging.getLogger(__name__)
 
 STAGE = "knowledge.extract"
+STAGE_VERSION = 1  # stage-cache key: bump when the cached part (the model call) changes behaviour
 _CFG = pipeline_config()["knowledge"]["extract"]
 PROMPT_VERSION: str = _CFG["prompt_version"]
 MAX_TOKENS = int(_CFG["max_tokens"])
@@ -176,7 +178,13 @@ def render(scene: SceneText, registry: Sequence[Entry], enum: bool = True) -> st
     def line(ln: Line) -> str:
         # One printed line per script_line: the Fountain reader joins consecutive action paragraphs
         # with blank lines, and an unnumbered second paragraph was cited as the next line (2.1B I1).
-        who = f"{ln.speaker}: " if ln.kind == "dialogue" and ln.speaker else f"({ln.kind}) "
+        # The name only: script_line.speaker keeps the cue as written ("MAYA (V.O.)", 2.1B N3),
+        # and an extension in the prompt invites a second, candidate "MAYA (V.O.)" entity.
+        who = (
+            f"{speaker_name(ln.speaker)}: "
+            if ln.kind == "dialogue" and ln.speaker
+            else f"({ln.kind}) "
+        )
         return f"[{ln.seq}] {who}{' '.join(ln.text.split())}"
 
     tpl = Template((config_dir() / "prompts" / f"{PROMPT_VERSION}.md").read_text(encoding="utf-8"))
@@ -195,6 +203,16 @@ def request(
     keys = [e.key for e in registry] if enum else None
     seqs = [ln.seq for ln in scene.lines]
     return render(scene, registry, enum), event_schema(keys, EVENTS_PER_LINE * len(seqs), seqs)
+
+
+def scene_key(variant: str, scene: SceneText, registry: Sequence[Entry], enum: bool = True) -> str:
+    """Stage-cache key of a scene's model call: what the model reads, i.e. the rendered prompt
+    (the scene's lines, the registry, the bible entries of the characters present) and the schema
+    (registry keys, the scene's line numbers, the events cap)."""
+    prompt, schema_ = request(scene, registry, enum)
+    inputs = [cache.digest([prompt, schema_.model_json_schema()])]
+    return cache.key(STAGE, STAGE_VERSION, variant, PROMPT_VERSION, {"max_tokens": MAX_TOKENS},
+                     inputs)  # fmt: skip
 
 
 def extract_scene(
@@ -418,8 +436,16 @@ def stage_extract(ep: Any) -> None:
     raw_all: list[dict[str, Any]] = []
     kept = dropped = 0
     for sc in scenes:
-        with ep.unit(STAGE, sc.ref, model_variant=client.variant):
-            raw = extract_scene(client, sc, registry)
+        with ep.unit(
+            STAGE, sc.ref, model_variant=client.variant, prompt_version=PROMPT_VERSION
+        ) as u:
+            # the model call is cached (2.9B); grounding, resolution and the rows always rerun
+            raw = u.lookup(scene_key(client.variant, sc, registry))
+            if raw is not None:  # an identical scene elsewhere has the same key: cite this one
+                raw = [e | {"scene": sc.ref} for e in raw]
+            else:
+                raw = extract_scene(client, sc, registry)
+                u.value = [dict(e) for e in raw]  # before save_events annotates them in place
             k, d = save_events(ep.conn, show_id, sc, raw)
             save_speakers(ep.conn, show_id, sc)
             raw_all += raw

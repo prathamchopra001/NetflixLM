@@ -90,6 +90,12 @@ class Check(ABC):
         """Configuration the findings depend on (rule packs, thresholds): stage-cache key input."""
         return {}
 
+    def inputs(self, unit: WorkUnit, tl: Timeline) -> list[str]:
+        """Hashes of what `run(unit)` reads besides the unit's spans, context and `params()` (the
+        store, other episodes): stage-cache key inputs (2.9B). A check that reads anything else
+        must say so here, or a cached unit replays findings computed from stale data."""
+        return []
+
     def recheck(self, flag: Flag, tl: Timeline) -> bool | None:
         """Rule re-check: does `flag` still reproduce on `tl`? None: this check has none."""
         return None

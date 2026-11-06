@@ -35,6 +35,41 @@ def rows(conn: Connection, check: str, show: str, episode: str) -> list[Row]:
     return list(first.values())
 
 
+# What a rule reads, for its stage-cache key (2.9B): the show's active facts of the rule's
+# predicates with their source lines and scenes (story order, markers), and for dead_acts the
+# lines with a resolved speaker. Ids are kept: findings cite `fact/{id}`.
+FACTS_READ = text("""
+SELECT f.id, f.predicate, f.value::text, f.story::text, f.screen::text, f.confidence,
+       subj.canonical_name, obj.canonical_name, e.quote, e.confidence, l.seq, l.text,
+       s.script_scene_no, s.story_seq, s.story_inferred, s.markers::text, ep.ref
+FROM fact f
+JOIN fact_event e ON e.id = ANY(f.source_event_ids)
+JOIN script_line l ON l.id = e.line_id
+JOIN scene s ON s.id = e.scene_id
+JOIN episode ep ON ep.id = s.episode_id
+JOIN entity subj ON subj.id = f.subject_id
+LEFT JOIN entity obj ON obj.id = f.object_id
+WHERE f.show_id = (SELECT id FROM show WHERE slug = :show) AND f.status = 'active'
+  AND f.predicate = ANY(:predicates)
+ORDER BY f.id, ep.episode_seq, s.id, l.seq, e.quote, e.confidence""")
+SPEAKERS_READ = text("""
+SELECT ep.ref, s.script_scene_no, l.seq, l.text, l.speaker_entity_id, en.canonical_name,
+       s.story_seq, s.story_inferred, s.markers::text
+FROM script_line l
+JOIN scene s ON s.id = l.scene_id
+JOIN episode ep ON ep.id = s.episode_id
+JOIN show sh ON sh.id = ep.show_id
+JOIN entity en ON en.id = l.speaker_entity_id
+WHERE sh.slug = :show
+ORDER BY ep.episode_seq, s.id, l.seq""")
+
+
+def inferred_factor() -> float:
+    """Confidence factor of a finding on an inferred story position (read per run: a stage-cache
+    key input via `params`)."""
+    return float(os.environ.get("NIP_INFERRED_STORY_CONFIDENCE_FACTOR", "0.85"))
+
+
 def claim_ref(r: Row) -> str:
     return f"{r['episode']}/line/{r['scene_no']}.{r['line_seq']}"
 
@@ -53,6 +88,8 @@ class SqlRule(Check):
     version = "1"
     severity: ClassVar[int]
     other_role: ClassVar[EvidenceRole] = EvidenceRole.CONTRADICTION
+    reads: ClassVar[tuple[str, ...]]  # fact predicates the SQL reads (stage-cache key)
+    reads_speakers: ClassVar[bool] = False  # also script lines by speaker (dead_acts)
 
     def __init__(self, conn: Connection | None = None, show: str | None = None):
         # file mode has no store (conn None): no facts, no findings
@@ -67,14 +104,27 @@ class SqlRule(Check):
 
     def params(self) -> dict[str, Any]:
         sql = (config_dir() / "rules" / f"{self.check}.sql").read_bytes()
-        return {"sql": hashlib.sha256(sql).hexdigest()}
+        return {"sql": hashlib.sha256(sql).hexdigest(), "inferred_factor": inferred_factor()}
 
     def units(self, tl: Timeline) -> list[WorkUnit]:
         return [WorkUnit(f"{tl.episode}/{self.check}", ())] if self.conn is not None else []
 
+    def inputs(self, unit: WorkUnit, tl: Timeline) -> list[str]:
+        """Hashes of the facts (and speaker lines) the rule reads over the whole show: a rule
+        unit of one episode compares with facts of every episode (a death in E3, a scene in E5).
+        ponytail: `reads` restates the SQL's predicates by hand; a rule that reads a new
+        predicate must add it here, or its cached units go stale."""
+        assert self.conn is not None and self.show is not None
+        args = {"show": self.show, "predicates": list(self.reads)}
+        out = [hashlib.sha256(repr(self.conn.execute(FACTS_READ, args).all()).encode())]
+        if self.reads_speakers:
+            rows = self.conn.execute(SPEAKERS_READ, {"show": self.show}).all()
+            out.append(hashlib.sha256(repr(rows).encode()))
+        return [h.hexdigest() for h in out]
+
     def run(self, unit: WorkUnit, tl: Timeline) -> list[Finding]:
         assert self.conn is not None and self.show is not None
-        factor = float(os.environ.get("NIP_INFERRED_STORY_CONFIDENCE_FACTOR", "0.85"))
+        factor = inferred_factor()
         out = []
         for r in rows(self.conn, str(self.check), self.show, tl.episode):
             line = tl.resolve(claim_ref(r))
@@ -124,6 +174,7 @@ class SqlRule(Check):
 
 
 class KnowledgeOrder(SqlRule):
+    reads = ("references", "learns")
     check = CheckId.PLOT_KNOWLEDGE_ORDER
     severity = 3  # should fix: the story logic breaks but nothing blocks release by itself
     other_role = EvidenceRole.SETUP
@@ -144,6 +195,8 @@ class KnowledgeOrder(SqlRule):
 
 
 class DeadActs(SqlRule):
+    reads = ("state", "present_at")
+    reads_speakers = True
     check = CheckId.PLOT_DEAD_ACTS
     severity = 4  # must fix: a dead character on screen is a glaring error
     other_role = EvidenceRole.CONTRADICTION
@@ -159,6 +212,7 @@ class DeadActs(SqlRule):
 
 
 class TwoPlaces(SqlRule):
+    reads = ("present_at",)
     check = CheckId.PLOT_TWO_PLACES
     severity = 3
     other_role = EvidenceRole.CONTRADICTION
@@ -173,6 +227,7 @@ class TwoPlaces(SqlRule):
 
 
 class PropProvenance(SqlRule):
+    reads = ("holds", "owns", "state")
     check = CheckId.PLOT_PROP_PROVENANCE
     severity = 2  # minor: a prop slip is easy to miss and to fix
 

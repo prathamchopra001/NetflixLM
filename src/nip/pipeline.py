@@ -18,10 +18,16 @@ loc.observed and clearance.ocr after `timeline`, clearance.csv after `flags`) an
 script_critic and clearance packages. A stage
 - reads and fills `ep` and writes rows through `ep.conn` (the run's transaction);
 - reads the Plan as `ep.plan` (e.g. `ep.plan.decisions[Slot.TEXT_LLM].variant`, `ep.plan.plan_id`);
-- does each unit of work inside `with ep.unit(stage, key, model_variant=...):`. A unit that
+- does each unit of work inside `with ep.unit(stage, key, model_variant=...) as u:`. A unit that
   raises is logged and recorded `failed`, a coverage gap (the run ends `completed_with_gaps`),
   and the stage goes on. Work units are inserted once, after the episode's last stage (stages
   never insert work_unit rows);
+- may cache a unit's expensive part (2.9B, `nip.runtime.cache`): `u.lookup(cache_key)` before
+  the work returns the stored output (the unit is recorded `cached`), else None: the body does
+  the work and sets `u.value` (JSON), stored when the unit succeeds. The key hashes what the
+  unit read; cheap deterministic writes after the cached part (saving the events) still run.
+  Check units are cached by `stage_checks`: their key is the check's version and `params()`,
+  the hashes of the unit's spans and context, and `Check.inputs` (what `run` reads elsewhere);
 - raises only for bugs or lost infrastructure, which fails the whole run.
 Report coverage per agent counts units whose stage is a check id; content-stage units only decide
 `completed_with_gaps`. Wall time is recorded per stage.
@@ -59,15 +65,16 @@ import typer
 from sqlalchemy import Connection, Engine, create_engine, or_, select
 
 from nip.agents import localization
-from nip.agents.base import Check, Input, emit, run_check
+from nip.agents.base import Check, Finding, Input, WorkUnit, emit, run_check
 from nip.config import vram_margin_gb
-from nip.contracts.flag import CHECK_OWNER, Agent, CheckId, Flag, ProducedBy
+from nip.contracts.flag import CHECK_OWNER, Agent, CheckId, Evidence, Flag, ProducedBy, Tier
 from nip.contracts.inventory import HardwareInventory
 from nip.contracts.plan import Mode, Objective, Plan, Slot, StageGroup
 from nip.contracts.report import Report, ReportPlan, build_report
 from nip.contracts.timeline import Timeline
 from nip.ingest import Script, SubtitleTrack
 from nip.ingest.media import MediaRejected, probe
+from nip.runtime import cache as stage_cache
 from nip.runtime.serving import ServingError
 from nip.store import objects, runs, schema
 from nip.store.db import database_url
@@ -124,6 +131,23 @@ def _jsonl(rows: list[Any]) -> str:
 
 # ---- store mode ------------------------------------------------------------------------------
 @dataclass
+class Unit:
+    """A work unit in progress. `lookup(key)` reads the stage cache before the unit's work: the
+    cached output, or None (no cache, `--force`, a miss); on a miss the body sets `value` (JSON),
+    which is cached when the unit succeeds."""
+
+    cache: stage_cache.StageCache | None
+    key: str | None = None
+    hit: Any = None
+    value: Any = None
+
+    def lookup(self, key: str) -> Any:
+        self.key = key
+        self.hit = self.cache.get(key) if self.cache is not None else None
+        return self.hit
+
+
+@dataclass
 class EpisodeRun:
     """One episode's state, threaded through STAGES."""
 
@@ -148,6 +172,7 @@ class EpisodeRun:
     # stage -> why it was not run (or ran rules-only): its Plan slot was skipped (W-serve)
     skipped_stages: dict[str, str] = field(default_factory=dict)
     lost: list[str] = field(default_factory=list)  # check ids skipped with them: a coverage gap
+    cache: stage_cache.StageCache | None = None  # None: no stage cache (every unit runs)
 
     @property
     def timeline(self) -> Timeline:
@@ -155,11 +180,20 @@ class EpisodeRun:
         return self.tl
 
     @contextmanager
-    def unit(self, stage: str, key: str, model_variant: str | None = None) -> Iterator[None]:
-        """One work unit: recorded `done`, or `failed` (logged, swallowed: a coverage gap).
+    def unit(
+        self,
+        stage: str,
+        key: str,
+        model_variant: str | None = None,
+        prompt_version: str | None = None,
+    ) -> Iterator[Unit]:
+        """One work unit: recorded `done`, `cached` (its output came from the stage cache, see
+        `Unit`), or `failed` (logged, swallowed: a coverage gap).
 
         The body runs in a savepoint: a failed unit's rows are rolled back, and a database error
-        in it does not poison the run's transaction for the units after it."""
+        in it does not poison the run's transaction for the units after it. A computed output is
+        stored in the cache in its own transaction as soon as the unit succeeds, so it outlives
+        a later crash of the run."""
         row: dict[str, Any] = {  # every row has the same keys: one executemany inserts them all
             "stage": stage,
             "unit_key": key,
@@ -167,17 +201,23 @@ class EpisodeRun:
             "error": None,
             "started_at": datetime.now(UTC),
         }
+        u = Unit(self.cache)
         savepoint = self.conn.begin_nested()
         try:
-            yield
+            yield u
         except Exception as e:  # ponytail: one attempt; retries with backoff come with models
             savepoint.rollback()
             log.exception("%s unit %s failed", stage, key)
             row |= {"status": "failed", "error": f"{type(e).__name__}: {e}"}
         else:
             savepoint.commit()
-            row["status"] = "done"
-        self.units.append(row | {"finished_at": datetime.now(UTC)})
+            row["status"] = "done" if u.hit is None else "cached"
+            if u.key and u.hit is None and u.value is not None and self.cache is not None:
+                try:
+                    self.cache.put(u.key, stage, u.value, model_variant, prompt_version)
+                except Exception:  # the unit's work is done; only the next run pays for it again
+                    log.exception("%s unit %s: stage cache write failed", stage, key)
+        self.units.append(row | {"cache_key": u.key, "finished_at": datetime.now(UTC)})
 
 
 def report_plan(plan: Plan, notes: Collection[str] = ()) -> ReportPlan:
@@ -250,14 +290,42 @@ def stage_timeline(ep: EpisodeRun) -> None:
     ep.tl = load_timeline(ep.conn, ep.show, ep.episode)
 
 
+def finding_json(f: Finding) -> dict[str, Any]:
+    return {**vars(f), "evidence": [e.model_dump(mode="json") for e in f.evidence]}
+
+
+def finding_from(d: dict[str, Any]) -> Finding:
+    evidence = [Evidence.model_validate(e) for e in d["evidence"]]
+    return Finding(**d | {"evidence": evidence, "tier": Tier(d["tier"]) if d["tier"] else None})
+
+
+def check_key(check: Check, params: Any, unit: WorkUnit, tl: Timeline) -> str:
+    """Cache key of a check unit: version, params, the unit's key, spans + context and what the
+    check says `run` reads elsewhere (`Check.inputs`: the facts of a SQL rule, the show-wide
+    observed standards of loc.term, the clearance occurrence). The unit key is in it because
+    findings cite episode-scoped refs: a plot rule's S01E02 unit reads the same show-wide facts
+    as its S01E01 unit but must not replay S01E01's findings."""
+    spans = [stage_cache.digest(s.model_dump(mode="json")) for s in (*unit.spans, *unit.context)]
+    inputs = [stage_cache.digest(unit.key), *spans, *check.inputs(unit, tl)]
+    return stage_cache.key(str(check.check), check.version, None, None, params, inputs)
+
+
 def stage_checks(ep: EpisodeRun) -> None:
-    """Every work unit of every active check; a unit that raises is a coverage gap (failed)."""
+    """Every work unit of every active check; a unit that raises is a coverage gap (failed).
+    A unit whose key is in the stage cache replays its findings; they are emitted against the
+    current timeline like fresh ones."""
     tl = ep.timeline
     pb = ProducedBy(model_variant=None, plan_id=ep.plan.plan_id or PLAN_ID)
     for check in ep.checks:
+        params = check.params()
         for unit in check.units(tl):
-            with ep.unit(str(check.check), unit.key):
-                flags = [emit(f, check.check, tl, ep.run_id, pb) for f in check.run(unit, tl)]
+            with ep.unit(str(check.check), unit.key) as u:
+                hit = u.lookup(k := check_key(check, params, unit, tl))
+                found = check.run(unit, tl) if hit is None else [finding_from(d) for d in hit]
+                if hit is None:
+                    u.value = [finding_json(f) for f in found]
+                upb = pb.model_copy(update={"cache_key": k})
+                flags = [emit(f, check.check, tl, ep.run_id, upb) for f in found]
                 ep.flags += [f for f in flags if f is not None]
 
 
@@ -283,7 +351,8 @@ def coverage(
     for a in {owner(c.check) for c in checks} | {owner(s) for s in skipped}:
         mine = [u for u in units if u["stage"] in CHECK_IDS and owner(u["stage"]) == a]
         active = any(owner(c.check) == a for c in checks)
-        out[a] = sum(u["status"] == "done" for u in mine) / len(mine) if mine else float(active)
+        done = sum(u["status"] in ("done", "cached") for u in mine)
+        out[a] = done / len(mine) if mine else float(active)
     return out
 
 
@@ -431,6 +500,7 @@ def run_store(
     requested_by: str = "cli",
     deploy: Callable[[StageGroup], AbstractContextManager[dict[str, Any]]] | None = None,
     served: Collection[Slot] = (),
+    force: bool = False,
 ) -> dict[str, Any]:
     """Run every stage over `episodes` of `show` from the store; returns the run summary.
 
@@ -442,6 +512,8 @@ def run_store(
     that call them, so a model loads once per run. A group that fails to deploy is not a failed
     run: its slots leave the episodes' Plan (`no Serve for …`), their stages are recorded skips
     and the checks they feed are coverage gaps (`completed_with_gaps`).
+    Stage cache (`nip.runtime.cache`): units whose inputs are unchanged since an earlier run are
+    `cached`; `force` recomputes every unit (and refreshes the cache).
     """
     if not episodes:
         raise InputRejected("no episodes given")
@@ -476,7 +548,9 @@ def run_store(
             EpisodeRun(conn, s3, show, row.ref, row.id, run_id, plan, checks, skipped)
             for row, checks, skipped in prepared
         ]
+        shared = stage_cache.StageCache(engine, s3, force)
         for ep in eps:
+            ep.cache = shared
             degrade(ep, plan)
         group_of = {s: g for g in plan.groups for s in g.slots if s in served} if deploy else {}
         loads: list[dict[str, Any]] = []
@@ -518,6 +592,11 @@ def run_store(
             conn.commit()
             raise
     publish(s3, plan, eps, out_dir)  # only a committed run has artifacts
+    units = [u for ep in eps for u in ep.units]
+    keyed = [u for u in units if u["cache_key"]]
+    cached = sum(u["status"] == "cached" for u in units)
+    log.info("run %s: stage cache %d of %d keyed units hit (%d units in all)%s", run_id, cached,
+             len(keyed), len(units), " [force]" if force else "")  # fmt: skip
 
     summary = {
         "run_id": run_id,
@@ -531,6 +610,13 @@ def run_store(
             "warnings": plan.warnings,
         },
         "serving": loads,  # per deployed group: load/unload seconds, VRAM idle/up/after (MiB)
+        # hit rate = cached / units that have a cache key (asr, story, index... have none)
+        "cache": {
+            "units_rerun": len(units) - cached,
+            "units_cached": cached,
+            "hit_rate": round(cached / len(keyed), 4) if keyed else None,
+            "force": force,
+        },  # fmt: skip
         "episodes": {
             ep.episode: {
                 "stages": ep.stages,
@@ -687,7 +773,7 @@ def run(
     show: Annotated[str, typer.Option(help="Show slug, as given to `nip ingest`")],
     episodes: Annotated[list[str], typer.Option(help="Episode refs; repeat or comma-separate")],
     agents: Annotated[str, typer.Option(help="auto, or comma-separated agent names")] = "auto",
-    force: Annotated[bool, typer.Option(help="Ignore the stage cache (none until 2.9B)")] = False,
+    force: Annotated[bool, typer.Option(help="Recompute every unit (no stage cache hits)")] = False,
     out_dir: Annotated[Path | None, typer.Option(help="Also write per-episode JSON here")] = None,
     dry_run: Annotated[bool, typer.Option(help="Print the stages and checks, run nothing")] = False,
     in_cluster: Annotated[
@@ -726,13 +812,13 @@ def run(
     try:
         summary = run_store(engine, objects.client(), show=show, episodes=eps, plan=plan,
                             inventory=inv, agents=wanted, out_dir=out_dir, deploy=deploy,
-                            served=served)  # fmt: skip
+                            served=served, force=force)  # fmt: skip
     except InputRejected as e:
         typer.echo(f"INPUT_REJECTED: {e}", err=True)
         raise typer.Exit(1) from e
     finally:
         engine.dispose()
-    typer.echo(json.dumps(summary | {"force": force}, indent=2))
+    typer.echo(json.dumps(summary, indent=2))
 
 
 # ---- file mode (Phase 1 walking skeleton) ----------------------------------------------------

@@ -60,6 +60,7 @@ Related: [decisions.md](decisions.md) (the decision behind each deviation) · [j
 | Subtitle conversion / source_file (not an error) | Declared TTML rate compared to the picture | The parser only records the declared rate (`Fraction \| None`); the "declared frameRate differs from picture" warning needs the probed rate and belongs to the timeline stage | 1.3 notes (P-2); B-018 | Open (later stage) |
 | Evidence Refs | Refs for scenes, shots, cues | Keyframes are one-frame spans `{ep}/kf/{shot}.{n}` on the timeline (shot = list index, as for shot refs), added by `build_timeline(..., keyframes=...)`; nothing cites them yet | 1.10 notes (decision 11); B-105 | Implemented |
 | Plan / SlotDecision | (no KV field) | `SlotDecision.kv_cache_bytes` (optional, `gt=0`, additive; the ledger's wording "Plan.kv_cache_bytes" is the same field) carries the exact vLLM KV budget for single-GPU engines | 1.7 fix round; closeout; B-086, B-116 | Implemented (controller-accepted) |
+| Object Storage, stage cache objects | `cache/.../{key}.json.zst` (zstd) | gzip JSON at `cache/{key[0:2]}/{key}.json.gz`; `zstandard` is not installed and adding it needs an image rebuild | 2.9B notes (DP-2.9B-2); [B-122](decisions.md#b-122--cache-objects-are-gzip-json-not-zstd) | Implemented |
 
 ## docs/hardware-adaptation.md
 
@@ -100,6 +101,7 @@ Related: [decisions.md](decisions.md) (the decision behind each deviation) · [j
 | Plan `groups` (doc vs doc) | api-contracts shows `groups` as a list of strings | `Plan.groups` is `list[StageGroup]` objects (hardware-adaptation.md wins) | 1.1 review minor 4 | Open |
 | Errors | `{"error": {"code","message","details"}}` with `UNAUTHORIZED` and `CLUSTER_UNAVAILABLE` | Correct, and the first API skeleton violated it (returned `{"detail": ...}`); fixed after review. 500s outside handled errors still return Starlette's plain body | 1.5 review; 1.5 rereview minor 2 | Open (500s) |
 | Report, flag summaries | Flag summaries in the report | Summaries carry `id: null`, no evidence and no frame refs by design; the full flags (with evidence) are served by `GET /flags/{id}` and, for the Phase 1 CLI, written to `flags.jsonl` next to `report.json`. `id` stays null until the store (2.0) assigns ids | 1.10 notes; phase1-exit F-1; B-103 | Implemented |
+| `GET /runs/{run_id}` | Live stage states (running / pending) | The response also has `previous_run_id` and `finished_at`; stages are reported after the fact (`status` done\|failed, `units`, `cached`, `failed`), with no live stage state, because runs are synchronous | 2.9B notes (doc corrections) | Implemented |
 
 ## docs/project-structure.md
 
@@ -168,6 +170,7 @@ Related: [decisions.md](decisions.md) (the decision behind each deviation) · [j
 | `.env.example` | no `NIP_FFMPEG_DIR` | Add `NIP_FFMPEG_DIR=` (directory with the FFmpeg shared libs; blank means `models/ffmpeg/`) | 1.8 notes |
 | `.env.example` | no `POSTGRES_PASSWORD`, `KEYCLOAK_ADMIN_PASSWORD`; `NIP_RAY_ADDRESS` comment | Add both (compose defaults them to `change_me`, which `NIP_DATABASE_URL` embeds, so a change must be made in several places); `NIP_RAY_ADDRESS` is "auto on the Ray head, `ray-head:6379` elsewhere" (compose overrides it per service); `NIP_OIDC_ISSUER_BASE` (new in compose) is not listed and can drift from `NIP_OIDC_ISSUER`, which gives every token a 401 | 1.5 notes; 1.5 review minors 4 and 5 |
 | `.env.example` line 63 | `NIP_KEYCLOAK_DEV_REALM=true` shipped | Copying the template to a cloud host's `.env` would enable the dev realm; ship it commented out before Phase 4 | 1.5 rereview minor 1 |
+| `compose.dev.yaml` / `.env.example` | Postgres published on `127.0.0.1:55432` | On this Windows host 55432 is inside a dynamic excluded port range (55378–55477); the container runs on 54432 via an override outside the repo; the files are unchanged | 2.9B notes; [journal](journal.md#2026-11-06--environment-postgress-dev-port-55432-fell-inside-a-windows-excluded-port-range) |
 
 ## Counts
 

@@ -129,6 +129,14 @@ Every entry names the deliverable (from [docs/phased-plan.md](../docs/phased-pla
 | [B-119](#b-119--phase-1-is-closed-with-caveats-after-an-exit-criteria-check-run-against-the-commit) | closeout | Phase 1 closed with caveats |
 | [B-120](#b-120--phase-2-plan-rulings-r1-to-r15-adopted) | process | Phase 2 plan rulings R1 to R15 adopted |
 | [B-121](#b-121--commit-by-explicit-file-paths-not-directory-pathspecs) | process | Commit by explicit file paths |
+| [B-122](#b-122--cache-objects-are-gzip-json-not-zstd) | 2.9B-1 | Stage-cache objects are gzip JSON, not zstd |
+| [B-123](#b-123--every-check-units-cache-key-includes-the-unit-key) | 2.9B-1 | Check cache keys include the unit key |
+| [B-124](#b-124--a-clearance-status-change-shows-in-the-run-diff-as-resolved--new) | 2.9B-1 | Clearance status change = resolved + new in the run diff |
+| [B-125](#b-125--changed_inputs-labels-a-source-by-version-label-else-src_id) | 2.9B-1 | `changed_inputs` source labels |
+| [B-126](#b-126--reading-a-run-is-open-to-every-authenticated-role) | 2.9B-1 | Run reads open to every authenticated role |
+| [B-127](#b-127--phase-2s-commit-messages-were-rewritten-once-before-the-first-push-to-drop-claude-co-author-trailers) | process | phase-2 messages rewritten once to drop Claude trailers before the first push |
+| [B-128](#b-128--tests-force-typers-plain-non-rich-terminal-output) | CI | Tests force Typer's plain output |
+| [B-129](#b-129--tests-that-need-local-data-files-are-marked-integration-ci-is-replayed-locally-before-a-push) | CI | Local-data tests are integration; replay CI locally before a push |
 
 ---
 
@@ -899,3 +907,53 @@ Every entry names the deliverable (from [docs/phased-plan.md](../docs/phased-pla
 - **Date:** 2026-10-16 · process, after the 1.8B incident · extends [B-070](#b-070--parallel-agents-on-disjoint-paths-with-path-scoped-commits)
 - **Context:** B-070's pathspec commit stops cross-agent sweeping of *staged* files, but a pathspec naming a directory (`eval/exp`) also commits every untracked file in it. 1.8B's commit `6854081` therefore included 1.7's untracked `eval/exp/exp001.compose.yaml` and `eval/exp/exp001_vllm_headroom.py`; the committed blobs are 1.7's final versions (verified clean against HEAD), so no separate 1.7 commit holds them.
 - **Choice:** 1.8B's fix round (`be9daac`) listed its five files explicitly. History was not rewritten (nothing is pushed, and the blobs are correct); owners were told to expect the files already in HEAD.
+
+## 2.9B-1 Stage cache, incremental re-runs, run diff
+
+### B-122 · Cache objects are gzip JSON, not zstd
+
+- **Date:** 2026-11-06 · 2.9B-1 · commit `e2bab95` · DP-2.9B-2 in the 2.9B notes
+- **Context:** the data model names cache objects `.json.zst`. `zstandard` is not installed, and adding it needs an image rebuild, which the C: drive rule (no new Docker pulls or builds) ruled out.
+- **Choice:** gzip (stdlib) at `cache/{key[0:2]}/{key}.json.gz`. **Consequence:** larger objects than zstd; switching later only changes the object suffix and codec, since keys are content hashes. Doc correction recorded.
+
+### B-123 · Every check unit's cache key includes the unit key
+
+- **Date:** 2026-11-06 · 2.9B-1 · commit `e2bab95` · DP-2.9B-3
+- **Context:** without it, a SQL plot rule's unit in S01E02 had the same key as in S01E01 (no spans, show-wide facts) and replayed S01E01's findings ([journal](journal.md#2026-11-06--29b-1-stage-cache-incremental-re-runs-and-get-runsiddiff)).
+- **Choice:** the unit key (which names the episode) is an input of every check key. **Consequence:** an identical subtitle window in another episode is a miss, not a hit, because findings cite episode-scoped refs; the cost is a few extra check runs, not wrong evidence.
+
+### B-124 · A clearance status change shows in the run diff as resolved + new
+
+- **Date:** 2026-11-06 · 2.9B-1 · commit `cca0f1c` · DP-2.9B-1 (controller addition iii)
+- **Context:** when an `unknown` clearance occurrence gets logged (`pending`, `denied`, ...), its flag cites the logged item `clr/{id}`, so its fingerprint changes.
+- **Options:** (a) show the old flag resolved and a new one; (b) a fourth "changed" class keyed on the occurrence. **Choice:** (a): the finding's statement changed and needs a fresh review, a disposition of the old statement must not carry over, and the spec's diff has three classes. Documented in the `api/runs.py` docstring. **Consequence:** logging N items shows N resolved + N new in the next diff.
+
+### B-125 · `changed_inputs` labels a source by version label, else `src_{id}`
+
+- **Date:** 2026-11-06 · 2.9B-1 · commit `cca0f1c` · DP-2.9B-4
+- **Choice:** a source file is labelled by its `version_label`, else `src_{id}` (`nip ingest` has no version-label option yet), e.g. "S01E01 script src_68 → src_74 (scenes 3 changed)". "Changed scenes" are the extraction units whose cache key differs from the previous run's.
+
+### B-126 · Reading a run is open to every authenticated role
+
+- **Date:** 2026-11-06 · 2.9B-1 · commit `cca0f1c` · DP-2.9B-5
+- **Context:** the API contract's Roles table lists no rule for reading runs; starting and cancelling are operator-only. **Choice:** any authenticated role may read a run and its diff.
+
+## Process and CI (Phase 2)
+
+### B-127 · phase-2's commit messages were rewritten once, before the first push, to drop Claude co-author trailers
+
+- **Date:** 2026-11-06 · **User instruction** ("push ... as me and not you")
+- **Context:** 96 of the 97 unpushed commits ended with `Co-Authored-By: Claude`; GitHub shows that as a co-author.
+- **Choice:** strip only those trailer lines with `git filter-branch --msg-filter` over `origin/main..phase-2`, keep a backup branch (`backup/phase-2-before-trailer-strip`), verify the tree is unchanged, then push. Future commits in this project carry no Claude trailer. **Consequence:** every Phase 2 SHA changed ([journal](journal.md#2026-11-06--first-push-of-phase-2-claude-co-author-trailers-removed-from-96-commit-messages)); `phase-2` is now public, so it is not rewritten again (that would need a force push).
+
+### B-128 · Tests force Typer's plain (non-Rich-terminal) output
+
+- **Date:** 2026-11-06 · CI on PR #1 · commit `36e9305`
+- **Context:** Typer forces a Rich terminal when `GITHUB_ACTIONS` is set, which styles captured help text and broke 5 CLI tests on the runner only ([journal](journal.md#2026-11-06--ci-on-pr-1-three-failures-that-only-appeared-on-the-github-runner)).
+- **Options:** (a) strip ANSI in each test; (b) set `_TYPER_FORCE_DISABLE_TERMINAL` in the CI workflow; (c) set it in `tests/conftest.py`. **Choice:** (c): one line, covers every test and anyone running tests with `FORCE_COLOR` / `PY_COLORS` set, and needs no change per test.
+
+### B-129 · Tests that need local `data/` files are marked integration; CI is replayed locally before a push
+
+- **Date:** 2026-11-06 · CI on PR #1 · commit `36e9305` · extends the NIP_CI rule in `tests/conftest.py`
+- **Context:** a test with a `skipif` on local `data/` files passes on the laptop and fails on the runner, where `NIP_CI=1` turns its skip into a failure.
+- **Choice:** such tests carry `@pytest.mark.integration` (`test_real_sintel_labels_describe_the_written_tracks` is the one found; a search of `skipif` / `pytest.skip` in the CPU selection found only ffmpeg checks, which CI installs). Before pushing, the CI steps are replayed locally with `GITHUB_ACTIONS=true NIP_CI=1 NIP_PROFILE=cpu`.

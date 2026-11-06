@@ -27,7 +27,7 @@ The point of the record is that every detail can be told credibly later (for exa
 - `docs/` is never edited, moved or deleted. Corrections are collected here instead.
 - Numbers are exactly as measured, with their source (a notes file, a report, a review or a commit). Nothing is estimated and presented as measured; where a figure is an extrapolation or a hypothesis, the text says so.
 - Dates in journal headings are the dates in the implementing agents' notes; the commit date in `git log` can be a day later.
-- Commit SHAs refer to branch `phase-1` (base `a679f9a`, the design-doc baseline). Nothing has been pushed.
+- Commit SHAs for Phase 1 refer to the local branch `phase-1` (base `a679f9a`, the design-doc baseline), which is not pushed; the same commits carry other SHAs on `origin/phase-2`. Phase 2 SHAs refer to `phase-2`, pushed to origin on 2026-11-06 after its commit messages were rewritten once ([B-127](decisions.md#b-127--phase-2s-commit-messages-were-rewritten-once-before-the-first-push-to-drop-claude-co-author-trailers)).
 - Source material is the agents' notes, reports, reviews and the controller ledger in the git-ignored workspace `.superpowers/sdd/phased-plan/` (kept, not deleted).
 
 ## Phase status

@@ -598,3 +598,17 @@ Each entry: what was compared, the numbers, what was chosen. Single runs unless 
 | 8x80GB both | qwen3.5-397b tp8 / tp4 | 32768 | None (gmu kept) | – | – |
 
 - **Takeaway:** no big-GPU case is starved (every engine gets at least KV(ctx x 2)); the only loss is about 2 % on 48 GB quality, from the cap; elsewhere the budget stays the same or grows. One caveat (N2): on a GPU shared with actors the exact budget absorbs the leftover (qwen 7.99 GiB instead of its own 5.0 on 1x48GB throughput), which the closeout checked and found the planner already reserves actor sizes first ([B-117](decisions.md#b-117--shared-gpu-exact-kv-the-premise-was-wrong-pinned-with-a-test-instead-of-changed)). Revisit with EXP-015.
+
+## C-020 · Stage cache: cold run vs a one-line scene edit
+
+- **Deliverable / source:** 2.9B-1 demo (`.superpowers/sdd/phased-plan/notes/2.9B.md`) and `tests/integration/test_rerun.py`. Host run, `NIP_PROFILE=cpu` stub Plan with replayed extraction; synthetic show seed 1, S01E01 + S01E02 scripts, bible, en/es subtitles, dev store (Postgres 127.0.0.1:54432, SeaweedFS 127.0.0.1:8333). Not a formal experiment.
+- **Change between the runs:** S01E01 scene 3, one dialogue line, "I counted gulls ..." → "I counted ships ..." (an edit, not an insert), re-ingested as a new script draft (`src_68` → `src_74`).
+
+| Run | Units | Cached | Keyed units | Hit rate | Re-run |
+|---|---:|---:|---:|---:|---:|
+| `run_51` cold | 74 | 0 | 66 | 0.0 | 74 |
+| `run_52` scene 3 edited | 74 | 61 | 66 | **0.9242** | 13 |
+
+- **What re-ran in `run_52`:** 5 keyed units: `knowledge.extract S01E01/sc/3` (1 of 50 scenes), and `plot.dead_acts` + `plot.two_places` for both episodes (they read `present_at` / `state` facts show-wide, which the edited scene's extraction changed). Plus the 8 unkeyed units (consolidate, index, cue_align, `loc.observed`, 2 each). Cached: the 49 other scenes, all 8 localization units, `plot.knowledge_order`, `plot.prop_provenance`.
+- **The integration test adds:** an unchanged re-run hits 1.0; `--force` hits 0; every `stage_cache` row has hits ≥ 1; a draft that drops a scene deletes it and its chunk.
+- **Takeaway:** a one-line edit reuses 92.4 % of keyed units. The misses are the edited scene and the show-wide rules that depend on its facts, which is the intended invalidation. With stubs this measures cache correctness, not GPU time saved; the time saved with real models is unmeasured, and `knowledge.story` (uncached) would re-run in full.

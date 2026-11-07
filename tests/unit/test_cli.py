@@ -11,7 +11,7 @@ def test_root_help() -> None:
     assert result.exit_code == 0
     assert "Netflix LM pre-release QA pipeline" in result.output
     for cmd in ("ingest", "run", "run-files", "eval", "timeline", "plan"):
-        assert f"│ {cmd} " in result.output or f"| {cmd} " in result.output, cmd
+        assert f"\n  {cmd} " in result.output, cmd  # plain Click layout (Rich off: conftest)
 
 
 def test_eval_nests_corpus_and_labels() -> None:

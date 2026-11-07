@@ -5,6 +5,8 @@ Locally a missing ffmpeg/TorchCodec or test database skips its tests; in CI that
 
 Typer forces Rich colour when GITHUB_ACTIONS is set, which splits "--show" etc. in captured help
 text; tests read plain text, so the terminal is forced off before any test imports typer.
+Rich is off too: its 80-column error box wraps long paths (tmp_path), splitting the message a
+test looks for ("is a directory") across box lines; plain Click errors do not wrap.
 """
 
 import os
@@ -13,6 +15,7 @@ from collections.abc import Generator
 import pytest
 
 os.environ["_TYPER_FORCE_DISABLE_TERMINAL"] = "1"
+os.environ["TYPER_USE_RICH"] = "0"
 
 
 @pytest.hookimpl(wrapper=True)

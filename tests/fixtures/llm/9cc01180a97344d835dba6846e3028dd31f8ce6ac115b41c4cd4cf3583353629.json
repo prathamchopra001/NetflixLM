@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ines and Tomas argue quietly at Marrow Street Garage\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Marrow Street Garage\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Tomas argue quietly at Marrow Street Garage\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Marrow Street Garage\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines and Tomas argue quietly at Marrow Street Garage\", \"predicate\": \"relationship\", \"subject\": \"ines\", \"object\": \"tomas\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Did you sleep at all, Tomas?\", \"predicate\": \"learns\", \"subject\": \"ines\", \"object\": \"tomas\", \"confidence\": 0.9}, {\"line\": 3, \"quote\": \"It held through the night, mostly.\", \"predicate\": \"state\", \"subject\": \"tomas\", \"value\": \"injured: <detail>\", \"confidence\": 0.7}]}"
+}

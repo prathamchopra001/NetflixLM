@@ -1,0 +1,11 @@
+WEBVTT
+
+NOTE a comment
+
+intro
+00:01.000 --> 00:02.500 align:start
+<v Maya>Hello <i>there</i>
+second line
+
+00:00:03.000 --> 00:00:04.000
+Goodbye

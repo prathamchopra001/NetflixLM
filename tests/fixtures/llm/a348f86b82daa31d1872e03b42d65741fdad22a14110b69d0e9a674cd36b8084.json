@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Tomas, Rui and Ada crowd into Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas, Rui and Ada crowd into Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas, Rui and Ada crowd into Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Rui, have you seen the tide tables?\", \"predicate\": \"references\", \"subject\": \"tomas\", \"object\": \"secret_3\", \"confidence\": 0.8}, {\"line\": 3, \"quote\": \"Not a minute. The harbor never goes quiet.\", \"predicate\": \"learns\", \"subject\": \"rui\", \"object\": \"secret_3\", \"confidence\": 0.8}, {\"line\": 4, \"quote\": \"Good. Stay close.\", \"predicate\": \"decision\", \"subject\": \"tomas\", \"value\": \"stay close\", \"confidence\": 1.0}]}"
+}

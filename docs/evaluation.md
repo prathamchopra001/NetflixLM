@@ -44,7 +44,7 @@ Titles without a freely available script or subtitles (the episodic and feature 
 
 | Asset | How it's made |
 |-------|---------------|
-| As-broadcast script (Fountain) | Speech-to-text with word timestamps → scene breaks from shot detection → speaker attribution → human cleanup |
+| As-broadcast script (Fountain) | Speech-to-text with word timestamps → scene breaks from shot detection → speaker attribution → human correction in Label Studio |
 | Source subtitles | Generated from the corrected transcript following the en rule pack |
 | Target subtitles (es/fr/de) where none exist | Translated locally with an open-weight model, then native-speaker spot-checked. Only cues that pass review are eligible for injection |
 
@@ -155,7 +155,7 @@ A flag matches a label when **all** hold:
 - Same `lang` where applicable;
 - Evidence overlaps the label target: temporal IoU ≥ 0.3 for timed targets, or a shared scene/line ref for script targets.
 
-Matching is one-to-one (highest confidence first). Then:
+Matching is optimal one-to-one (scipy's `linear_sum_assignment` on overlap scores). Then:
 
 - **True positive:** matched flag.
 - **False negative:** unmatched label.
@@ -170,6 +170,8 @@ Matching is one-to-one (highest confidence first). Then:
 | Noise | Shown false positives per hour of content, per agent (clean runs) |
 | Cost | GPU-seconds and wall time per content-hour, per agent and per slot; vision-model calls per episode; cache hit rate on re-runs |
 | Coverage | Share of work units completed; every gap listed |
+
+Every benchmark run uses at least 3 injector seeds, and every metric is reported as **mean ± standard deviation across seeds**, so a difference between two configurations can be told apart from noise.
 
 ### Clean-run triage
 
@@ -207,25 +209,31 @@ Targets apply to the **reference cloud Plan** (8× 80 GB, `quality` objective) o
 
 ---
 
-## Per-Plan Report
+## Reports and MLflow
 
-`nip eval run` writes `eval/<benchmark_run_id>/report.md` and `report.json`:
+`nip eval run` writes `eval/<benchmark_run_id>/report.md` and `report.json`, and logs the same run to MLflow (one MLflow experiment per benchmark set):
+
+| MLflow field | Contents |
+|--------------|----------|
+| Tags | commit, Plan fingerprint, objective, experiment ID and variant (when run for [experiments.md](experiments.md)), seed, `baseline` flag |
+| Params | Variant per slot, prompt version per check, thresholds, rule-pack versions, benchmark set version |
+| Metrics | Precision, recall, F1 per check and per language; verification effect; noise; GPU-seconds and wall time per content-hour; coverage |
+| Artifacts | `report.md`, `report.json`, `plan.json`, `flags.jsonl`, LLM call traces |
+
+`nip eval compare --exp EXP-0XX --md` (or `--runs <id> <id> …`) prints a comparison table, mean ± std across seeds with the MLflow run IDs behind every number; that output is what goes into [experiments.md](experiments.md). The per-Plan report shows each Plan side by side in this shape:
 
 ```
-Benchmark mvp · commit 3f9c2e1 · 2026-11-20
-                                  laptop (1× 8 GB)       cloud (8× 80 GB)        cloud (8× 80 GB)
-Objective                         quality                quality                 throughput
-Mode                              staged, 5 groups       staged, 2 groups        resident, 9 replicas
-text_llm + vlm                    qwen3.5-4b-awq         qwen3.5-397b-a17b-fp8   qwen3.5-122b-a10b-int4
-Judge                             ministral-3-3b-fp8     gemma-4-31b-qat         gemma-4-31b-qat
-loc.gender      P / R / F1        0.74 / 0.58 / 0.65     0.86 / 0.77 / 0.81      0.84 / 0.75 / 0.79
-cont.visual     P / R / F1        0.61 / 0.34 / 0.44     0.78 / 0.57 / 0.66      0.76 / 0.55 / 0.64
-…
-GPU-s per content-hour            41,200                 30,500                  18,900
-Wall time per 45-min episode      5 h 10 min             41 min                  24 min
+Benchmark mvp · commit <sha> · <date>
+                                  <Plan A>               <Plan B>
+Objective                         …                      …
+Mode                              …                      …
+text_llm + vlm                    …                      …
+Judge                             …                      …
+<check>         P / R / F1        … ± …                  … ± …
+GPU-s per content-hour            …                      …
+Wall time per 45-min episode      …                      …
+MLflow runs                       <ids>                  <ids>
 ```
-
-*(Numbers above illustrate the format only.)*
 
 ---
 
@@ -238,7 +246,7 @@ Wall time per 45-min episode      5 h 10 min             41 min                 
 | Change to a prompt, a catalog variant, or a rule pack | `mvp` benchmark for the affected check IDs; merge blocked if F1 drops more than 0.03, or if any check falls below its MVP precision target |
 | Weekly | Full `mvp` benchmark on the laptop Plan; from week 7 also on the cloud Plan |
 
-Baselines are stored per Plan fingerprint (catalog hash + chosen variants), because a laptop baseline says nothing about a cloud run.
+Baselines are MLflow runs tagged `baseline`, kept per Plan fingerprint (catalog hash + chosen variants), because a laptop baseline says nothing about a cloud run. Promoting a new baseline is a deliberate step recorded in [journal.md](journal.md).
 
 ---
 
@@ -251,3 +259,4 @@ Baselines are stored per Plan fingerprint (catalog hash + chosen variants), beca
 | Integration | The fixture episode through the whole pipeline with `NIP_PROFILE=cpu` (stub models return recorded outputs) | CI |
 | Integration (GPU) | Same fixture with real models on the runner's Plan | Nightly |
 | Benchmark | `smoke` nightly, `mvp` weekly and on gated changes | GPU runner / cloud |
+| Oracles | Our timecode math vs OpenTimelineIO and `timecode`; our subtitle rules vs Subtitle Edit's `seconv lint`; our drift detection vs ffsubsync, in its own environment ([D-030](decisions.md#d-030--test-oracles-and-copyleft-tools)) | CI (timecode, seconv) / nightly (ffsubsync) |

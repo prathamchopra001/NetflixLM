@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Tomas and Sasha share a thermos at Station House.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas and Sasha share a thermos at Station House.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Grab me a Kappa Cola on your way back, Sasha.\", \"predicate\": \"mentions\", \"subject\": \"tomas\", \"object\": \"Kappa Cola\", \"confidence\": 1.0}, {\"line\": 4, \"quote\": \"But I am not carrying the crates.\", \"predicate\": \"decision\", \"subject\": \"tomas\", \"value\": \"not carrying the crates\", \"confidence\": 1.0}]}"
+}

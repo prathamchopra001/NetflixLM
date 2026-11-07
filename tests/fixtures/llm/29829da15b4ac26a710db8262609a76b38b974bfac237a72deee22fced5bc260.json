@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Maya and Ines argue quietly at Tidewater Diner.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Maya and Ines argue quietly at Tidewater Diner.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Ada Kovac is the informant.\", \"predicate\": \"learns\", \"subject\": \"maya\", \"object\": \"secret_1\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"I never suspected. Not once.\", \"predicate\": \"references\", \"subject\": \"ines\", \"object\": \"secret_1\", \"confidence\": 1.0}]}"
+}

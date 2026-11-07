@@ -1,0 +1,352 @@
+# Model catalog: for each slot, variants ranked by quality_rank (higher is better within a slot).
+# Spec: docs/hardware-adaptation.md › Model Catalog; defaults: docs/tech-stack.md › Model Catalog Defaults.
+#
+# Units: every *_gb is GiB (2**30 bytes), the unit the probe reports free VRAM in.
+# Sources of the numbers (2026-10-15):
+#   weights_gb           tech-stack.md checkpoint sizes (vllm variants)
+#   kv_mb_per_1k_tokens  hardware-adaptation.md where it gives one (qwen3.5-4b, qwen3.8-27b);
+#                        otherwise hf-mem 0.5.6 on the base model (bf16 KV, max_model_len=1024)
+#   vram_gb (actors)     tech-stack.md for whisper; otherwise hf-mem weights + 0.5 GiB
+#                        activations (estimate), or a plain estimate where hf-mem can't read the
+#                        repo (PaddleOCR, TransNetV2 are not safetensors repos)
+#   overhead_gb          starting estimates (qwen3.5-4b-awq: measured, EXP-001)
+#   startup_peak_gb      optional: per-GPU peak while the engine starts, before its KV cache exists
+# Estimates are replaced by measured peaks after a variant's first load (variant_calibration).
+# A new variant may omit weights_gb / kv_mb_per_1k_tokens / vram_gb: the loader asks hf-mem.
+
+variants:
+  # ── text_llm + vlm: Qwen, natively multimodal (one deployment serves both slots) ──
+  - id: qwen3.5-4b-awq
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.5-4B
+    checkpoint: cyankiwi/Qwen3.5-4B-AWQ-4bit  # compressed-tensors W4A16 g32, 3.78 GiB (no official AWQ)
+    quant: awq-int4
+    weights_gb: 4.0
+    # Measured, EXP-001 (RTX 4060 Laptop, vLLM 0.30, 8k, enforce-eager, 2 images x 589,824 px):
+    overhead_gb: 0.53        # steady non-KV 4.53 GiB = NVML peak - vLLM KV, max over gmu 0.80-0.86
+    kv_mb_per_1k_tokens: 45.8  # MiB per 1,024 tok: 1.56 GiB / 35,746 tok = 45.76 (gmu 0.75), 0.94 GiB / 21,597 = 45.64 (exact KV)
+    startup_peak_gb: 6.25    # NVML peak before KV allocation: 6,397-6,400 MiB at KV 0.94 and 1.56 GiB
+    context: {default: 32768, min: 8192}
+    tp_options: [1]
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 30
+    cost_hint: 1.0
+    license: Apache-2.0
+
+  - id: qwen3.5-9b-awq
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.5-9B
+    quant: awq-int4
+    weights_gb: 9.1
+    overhead_gb: 1.5
+    kv_mb_per_1k_tokens: 128
+    context: {default: 32768, min: 8192}
+    tp_options: [1]
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 40
+    cost_hint: 2.0
+    license: Apache-2.0
+
+  - id: qwen3.5-9b-fp8
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.5-9B
+    quant: fp8
+    weights_gb: 13.5
+    overhead_gb: 1.5
+    kv_mb_per_1k_tokens: 128
+    context: {default: 32768, min: 8192}
+    tp_options: [1]
+    min_compute_capability: "8.0"
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 45
+    cost_hint: 2.0
+    license: Apache-2.0
+
+  - id: qwen3.6-35b-a3b-awq
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.6-35B-A3B
+    quant: awq-int4
+    weights_gb: 24.0
+    overhead_gb: 2.5
+    kv_mb_per_1k_tokens: 80
+    context: {default: 32768, min: 8192}
+    tp_options: [1, 2]
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 55
+    cost_hint: 1.5
+    license: Apache-2.0
+
+  - id: qwen3.8-27b-int4
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.8-27B
+    checkpoint: RedHatAI/Qwen3.8-27B-INT4
+    quant: w4a16
+    weights_gb: 19.5
+    overhead_gb: 2.5
+    kv_mb_per_1k_tokens: 160
+    context: {default: 32768, min: 8192}
+    tp_options: [1, 2]
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000  # verify on first benchmark run
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 65
+    cost_hint: 4.0
+    license: Apache-2.0
+
+  - id: qwen3.8-27b-fp8
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.8-27B
+    quant: fp8
+    weights_gb: 30.0
+    overhead_gb: 2.5
+    kv_mb_per_1k_tokens: 160
+    context: {default: 32768, min: 8192}
+    tp_options: [1, 2]
+    min_compute_capability: "8.0"
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000  # verify on first benchmark run
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 70
+    cost_hint: 4.0
+    license: Apache-2.0
+
+  - id: qwen3.5-122b-a10b-int4
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.5-122B-A10B
+    quant: gptq-int4
+    weights_gb: 65.0
+    overhead_gb: 4.0
+    kv_mb_per_1k_tokens: 96
+    context: {default: 32768, min: 8192}
+    tp_options: [1, 2, 4]
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 80
+    cost_hint: 6.0
+    license: Apache-2.0
+
+  - id: qwen3.5-397b-a17b-int4
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.5-397B-A17B
+    quant: int4
+    weights_gb: 211.0
+    overhead_gb: 6.0
+    kv_mb_per_1k_tokens: 120
+    context: {default: 32768, min: 8192}
+    tp_options: [4, 8]
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 90
+    cost_hint: 10.0
+    license: Apache-2.0
+
+  - id: qwen3.5-397b-a17b-fp8
+    serves: [text_llm, vlm]
+    family: qwen
+    engine: vllm
+    base_model: Qwen/Qwen3.5-397B-A17B
+    quant: fp8
+    weights_gb: 403.0
+    overhead_gb: 6.0
+    kv_mb_per_1k_tokens: 120
+    context: {default: 32768, min: 8192}
+    tp_options: [8]
+    min_compute_capability: "8.0"
+    min_vllm: "0.30"
+    box_format: xyxy_0_1000
+    max_pixels: 589824     # ~1024x576; vlm defaults until Phase 3 tuning
+    images_per_prompt: 2
+    quality_rank: 95
+    cost_hint: 10.0
+    license: Apache-2.0
+
+  # ── judge_llm: families other than the agents' Qwen ──
+  - id: ministral-3-3b-fp8
+    serves: [judge_llm]
+    family: mistral
+    engine: vllm
+    base_model: mistralai/Ministral-3-3B-Instruct-2512
+    quant: fp8
+    weights_gb: 4.7
+    overhead_gb: 1.0
+    kv_mb_per_1k_tokens: 52
+    context: {default: 16384, min: 8192}
+    tp_options: [1]
+    min_compute_capability: "8.0"  # FP8 is native on 8.9+ (Ada, Hopper), weight-only on A100
+    min_vllm: "0.30"
+    quality_rank: 20
+    cost_hint: 1.0
+    license: Apache-2.0
+
+  - id: gemma-4-12b-qat
+    serves: [judge_llm]
+    family: gemma
+    engine: vllm
+    base_model: google/gemma-4-12B-it
+    quant: qat-w4a16
+    weights_gb: 10.3
+    overhead_gb: 1.5
+    kv_mb_per_1k_tokens: 384
+    context: {default: 16384, min: 8192}
+    tp_options: [1]
+    min_vllm: "0.30"
+    quality_rank: 40
+    cost_hint: 2.0
+    license: Apache-2.0
+
+  - id: gemma-4-31b-qat
+    serves: [judge_llm]
+    family: gemma
+    engine: vllm
+    base_model: google/gemma-4-31B-it
+    quant: qat-w4a16
+    weights_gb: 23.3
+    overhead_gb: 2.5
+    kv_mb_per_1k_tokens: 960
+    context: {default: 16384, min: 8192}
+    tp_options: [1, 2]
+    min_vllm: "0.30"
+    quality_rank: 60
+    cost_hint: 4.0
+    license: Apache-2.0
+
+  # ── Ray Serve actor slots ──
+  - id: faster-whisper-large-v3-int8
+    serves: [asr]
+    family: whisper
+    engine: actor
+    base_model: Systran/faster-whisper-large-v3
+    quant: int8
+    vram_gb: 3.0
+    quality_rank: 50
+    license: MIT
+
+  - id: faster-whisper-large-v3-turbo-int8
+    serves: [asr]
+    family: whisper
+    engine: actor
+    quant: int8
+    vram_gb: 1.5
+    quality_rank: 40
+    license: MIT
+
+  - id: pp-ocrv6-medium
+    serves: [ocr]
+    family: rapidocr  # PP-OCRv6 medium weights as ONNX on ONNX Runtime (PaddlePaddle could not share the env, 2.6)
+    engine: actor
+    vram_gb: 1.6  # measured: 1.53 GiB on the Windows host (2.6), 1.11 GiB in the nip image (2.close); both include torch's CUDA context
+    quality_rank: 50
+    license: Apache-2.0
+
+  - id: llmdet-base
+    serves: [detector]
+    family: llmdet
+    engine: actor
+    base_model: iSEE-Laboratory/llmdet_base
+    vram_gb: 1.4
+    quality_rank: 50
+    license: Apache-2.0
+
+  - id: llmdet-large
+    serves: [detector]
+    family: llmdet
+    engine: actor
+    base_model: iSEE-Laboratory/llmdet_large
+    vram_gb: 1.8
+    quality_rank: 60
+    license: Apache-2.0
+
+  - id: dinov2-large
+    serves: [image_embedder]
+    family: dinov2
+    engine: actor
+    base_model: facebook/dinov2-large
+    vram_gb: 1.6
+    quality_rank: 50
+    license: Apache-2.0
+
+  - id: qwen3-embedding-0.6b
+    serves: [text_embedder]
+    family: qwen
+    engine: actor
+    base_model: Qwen/Qwen3-Embedding-0.6B
+    vram_gb: 1.6
+    quality_rank: 50
+    license: Apache-2.0
+
+  - id: qwen3-embedding-8b
+    serves: [text_embedder]
+    family: qwen
+    engine: actor
+    base_model: Qwen/Qwen3-Embedding-8B
+    vram_gb: 15.1  # hf-mem bf16 weights 14.10 + 1.0
+    quality_rank: 60
+    license: Apache-2.0
+
+  - id: gliner-x-base
+    serves: [ner]
+    family: gliner
+    engine: actor
+    base_model: knowledgator/gliner-x-base
+    vram_gb: 1.4  # measured 2026-10-18 (RTX 4060 Laptop, torch imported first, 12 OCR lines x 5 labels): 1,347 MiB peak over idle, 36 ms/call, load 22-36 s (2.6: 22 s, 24 ms/call)
+    quality_rank: 50
+    license: Apache-2.0
+
+  - id: gliner-x-large
+    serves: [ner]
+    family: gliner
+    engine: actor
+    base_model: knowledgator/gliner-x-large
+    vram_gb: 2.6  # measured 2026-10-18, same harness: 2,577 MiB peak over idle (2,505 after load), 58-65 ms/call, load 34-46 s; was an hf-mem estimate of 3.7
+    quality_rank: 60
+    license: Apache-2.0
+
+  - id: transnetv2
+    serves: [shot_detector]
+    family: transnet
+    engine: actor
+    vram_gb: 0.5
+    quality_rank: 50
+    license: MIT
+
+  # Recorded outputs for tests and NIP_PROFILE=cpu.
+  - id: stub
+    serves: [text_llm, vlm, judge_llm, asr, ocr, detector, image_embedder, text_embedder, ner, shot_detector]
+    engine: stub
+    vram_gb: 0
+    quality_rank: 0
+    license: n/a

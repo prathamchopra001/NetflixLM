@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Tidewater Diner.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Tidewater Diner.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Tidewater Diner.\", \"predicate\": \"relationship\", \"subject\": \"dov\", \"object\": \"tomas\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Tell me Tidewater Diner is still standing, Tomas.\", \"predicate\": \"references\", \"subject\": \"dov\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Not a minute. The harbor never goes quiet.\", \"predicate\": \"state\", \"subject\": \"Tidewater Diner\", \"value\": \"destroyed\", \"confidence\": 1.0}]}"
+}

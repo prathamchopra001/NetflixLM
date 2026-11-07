@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Rui and Dov check their watches\", \"predicate\": \"holds\", \"subject\": \"rui\", \"object\": \"rui\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Rui and Dov check their watches\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"dov\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Pier Nine\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Pier Nine\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Hey the medic\", \"predicate\": \"references\", \"subject\": \"rui\", \"object\": \"dov\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"They said noon\", \"predicate\": \"learns\", \"subject\": \"dov\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 4, \"quote\": \"Then let's get moving\", \"predicate\": \"decision\", \"subject\": \"rui\", \"value\": \"get moving\", \"confidence\": 1.0}]}"
+}

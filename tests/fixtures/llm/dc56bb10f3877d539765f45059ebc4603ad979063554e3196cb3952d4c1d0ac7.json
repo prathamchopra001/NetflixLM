@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Ines check their watches\", \"predicate\": \"holds\", \"subject\": \"ada\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ines check their watches\", \"predicate\": \"holds\", \"subject\": \"ines\", \"object\": \"ines\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Saltworks Yard\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Saltworks Yard\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"we were meeting at Saltworks Yard\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"ada\", \"confidence\": 0.8}, {\"line\": 3, \"quote\": \"Somebody has to keep the lights on\", \"predicate\": \"mentions\", \"subject\": \"ines\", \"object\": \"Greywater Holdings\", \"confidence\": 0.5}]}"
+}

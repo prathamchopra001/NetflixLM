@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Maya, Ines and Sasha crowd into The Lantern Bar.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Maya, Ines and Sasha crowd into The Lantern Bar.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Maya, Ines and Sasha crowd into The Lantern Bar.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me The Lantern Bar is still standing, Ines.\", \"predicate\": \"references\", \"subject\": \"maya\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"It held through the night, mostly.\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"standing\", \"confidence\": 1.0}]}"
+}

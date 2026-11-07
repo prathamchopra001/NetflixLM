@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Ines argue quietly at Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Ines argue quietly at Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Ines argue quietly at Ferry Terminal.\", \"predicate\": \"relationship\", \"subject\": \"ada\", \"object\": \"ines\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Did you sleep at all, Ines?\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"ines\", \"confidence\": 0.9}, {\"line\": 3, \"quote\": \"Ask me after another cup.\", \"predicate\": \"references\", \"subject\": \"ines\", \"object\": \"ada\", \"confidence\": 0.9}]}"
+}

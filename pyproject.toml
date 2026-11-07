@@ -1,0 +1,179 @@
+[project]
+name = "nip"
+version = "0.1.0"
+description = "Pre-release QA pipeline for film and TV content"
+readme = "README.md"
+requires-python = "==3.12.*"
+dependencies = [
+    # contracts, CLI, API
+    "pydantic",
+    "typer",
+    "fastapi",
+    "uvicorn",
+    # store
+    "sqlalchemy",
+    "alembic",
+    "psycopg[binary]",
+    "pgvector",
+    "boto3",
+    # ingest
+    "pyyaml",
+    "charset-normalizer",
+    "pysubs2==1.9.0",
+    "ttconv==1.2.3",
+    "screenplay-tools==0.0.10",
+    "pdfplumber",
+    # runtime
+    "nvidia-ml-py==13.615.71",
+    "hf-mem",
+    "openai",  # model clients (vLLM's OpenAI API); unpinned so the vLLM image keeps its version
+    # timeline (shot detection, frame decoding); torch pinned to the vLLM 0.30.0 image's version
+    "torch==2.13.0",
+    "torchcodec==0.17.0",
+    "transnetv2-pytorch",
+    "scenedetect==0.7.1",
+    # eval
+    "mlflow-skinny",
+    "scipy",
+    "pillow>=12.3.0",
+    "pyjwt[crypto]>=2.15.1",
+    "faster-whisper>=1.2.1",
+    "rapidfuzz>=3.14.6",
+    "instructor>=1.17.0",
+    "rapidocr>=3.10.0",
+    "onnxruntime-gpu>=1.31.0",
+    "presidio-analyzer>=2.2.364",
+    "gliner>=0.2.29",
+    "urlextract>=1.10.0",
+    "phonenumbers>=9.0.41",
+    "en-core-web-sm",
+    "de-core-news-sm",
+    "sentence-transformers>=6.1.0",
+]
+
+[project.optional-dependencies]
+# Linux-only, installed in the nip image; never in the Windows dev venv.
+serve = [
+    "ray[serve]==2.58.0; sys_platform == 'linux'",
+    "vllm==0.30.0; sys_platform == 'linux'",
+    # CTranslate2 4.8 (faster-whisper) dlopens libcublas.so.12; the image's CUDA is 13. No cuDNN
+    # wheel: the Linux CTranslate2 build does not use cuDNN. The Dockerfile puts the dir on ldconfig.
+    "nvidia-cublas-cu12; sys_platform == 'linux'",
+]
+
+[project.scripts]
+nip = "nip.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "hypothesis",
+    "ruff",
+    "mypy",
+    "pre-commit",
+    "pre-commit-hooks",
+    "types-PyYAML",
+    "httpx",
+    # test oracles (D-030)
+    "opentimelineio",
+    "timecode",
+    "import-linter>=2.15",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nip", "eval"]
+
+[tool.uv]
+environments = ["sys_platform == 'win32'", "sys_platform == 'linux'"]
+# rapidocr requires the CPU onnxruntime; it shares its package directory with onnxruntime-gpu
+# and, when both are installed, replaces the GPU build (CUDA provider never registers).
+override-dependencies = ["onnxruntime; sys_platform == 'never'"]
+
+[tool.uv.sources]
+# CUDA build on the Windows laptop; Linux takes PyPI's torch (the vLLM image's).
+torch = { index = "pytorch-cu130", marker = "sys_platform == 'win32'" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+de-core-news-sm = { url = "https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.8.0/de_core_news_sm-3.8.0-py3-none-any.whl" }
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.mypy]
+files = ["src", "eval"]
+strict = true
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "--strict-markers", "-ra"]
+markers = [
+    "gpu: needs an NVIDIA GPU (skipped in the cpu profile)",
+    "integration: needs Docker services such as Postgres (skipped in the cpu profile)",
+]
+
+# docs/project-structure.md › Module Responsibilities ("Must not depend on"), checked in CI by
+# `lint-imports`. Modules that do not exist yet (knowledge, other agents) join when they land.
+[tool.importlinter]
+root_packages = ["nip"]
+
+[[tool.importlinter.contracts]]
+name = "contracts depend on nothing else in nip"
+type = "forbidden"
+source_modules = ["nip.contracts"]
+forbidden_modules = [
+    "nip.timecode", "nip.ingest", "nip.timeline", "nip.agents", "nip.verification",
+    "nip.runtime", "nip.store", "nip.api", "nip.config", "nip.pipeline", "nip.cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "timecode depends on nothing else"
+type = "forbidden"
+source_modules = ["nip.timecode"]
+forbidden_modules = [
+    "nip.contracts", "nip.ingest", "nip.timeline", "nip.agents", "nip.verification",
+    "nip.runtime", "nip.store", "nip.api", "nip.config", "nip.pipeline", "nip.cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "ingest, timeline and verification do not depend on agents"
+type = "forbidden"
+source_modules = ["nip.ingest", "nip.timeline", "nip.verification"]
+forbidden_modules = ["nip.agents"]
+
+[[tool.importlinter.contracts]]
+name = "agents do not depend on verification"
+type = "forbidden"
+source_modules = ["nip.agents"]
+forbidden_modules = ["nip.verification"]
+
+[[tool.importlinter.contracts]]
+name = "agents never import each other"
+type = "independence"
+modules = ["nip.agents.localization"]
+
+[[tool.importlinter.contracts]]
+name = "runtime sees only work units, not agents' internals"
+type = "forbidden"
+source_modules = ["nip.runtime"]
+forbidden_modules = ["nip.agents.localization"]
+
+[[tool.importlinter.contracts]]
+name = "api queues runs in Postgres, never calls runtime"
+type = "forbidden"
+source_modules = ["nip.api"]
+forbidden_modules = ["nip.runtime"]

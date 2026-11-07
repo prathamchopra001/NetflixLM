@@ -1,0 +1,47 @@
+# Presidio recognizer setup for on-screen text (decisions.md > D-026, tech-stack.md > Build notes).
+languages: [en, de, es, fr]          # every recognizer is registered for each (supported_languages)
+# Presidio's default regions plus ES (Spain was missing).
+phone_regions: [US, GB, DE, FR, IL, IN, CA, BR, ES]
+# RFC 2606 / 6761 reserved names: a URL or email on one of these is fiction-safe.
+reserved_domains: [example.com, example.net, example.org, example, test, invalid, localhost]
+min_score: {phone: 0.4, email: 0.5, url: 0.5, plate: 0.4, address: 0.5, brand: 0.5}
+# GLiNER label -> Presidio entity
+ner_labels: {address: ADDRESS, organization: BRAND, product: BRAND, person: PERSON, job title: ROLE}
+# A GLiNER person / job-title span at least this sure removes an address or brand span it overlaps.
+person_min_score: 0.6
+# OCR lines of one keyframe at which it counts as a credits / caption card.
+dense_frame_lines: 8
+# Plates arrive as a line of their own on screen: full-line patterns, matched case-sensitively
+# (upper case only), letters + digits. Caption shapes that look the same as a plate are excluded
+# by name in a lookahead: month abbreviations and words before "ABC 1234", units after "123 ABC",
+# function words before the German "B AB 1234" ("UP TO 500", "GO TO 500").
+plate_patterns:
+  - {name: US, regex: '^(?:\d[A-Z]{3}\d{3}|(?!(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|BOX|DAY|VOL|ACT|REF|FIG|EXT|INT|CAM)\b)[A-Z]{3}[ -]?\d{3,4}|\d{3}[ -]?(?!(?:MPH|KPH|BCE|KGS|LBS|FPS|MHZ|GHZ|KHZ|RPM|PSI|USD|EUR|GBP|MIN|SEC|HRS|DAY)\b)[A-Z]{3}|[A-Z]{2}\d[ -]?\d[A-Z]{2})$', score: 0.4}
+  - {name: GB, regex: '^[A-Z]{2}\d{2} ?[A-Z]{3}$', score: 0.5}
+  - {name: ES, regex: '^\d{4} ?-?[BCDFGHJKLMNPRSTVWXYZ]{3}$', score: 0.5}
+  - {name: FR, regex: '^[A-Z]{2}-\d{3}-[A-Z]{2}$', score: 0.5}
+  - {name: DE, regex: '^(?:[A-ZÄÖÜ]{1,3}-[A-Z]{1,2} ?\d{1,4}[EH]?|(?!(?:UP|GO|IN|ON|AT|TO|OF|NO|BY|IT|IS|AS|OR|IF|MY|WE|DO|SO|BE|AN|THE|AND|FOR|BOX)\b)[A-ZÄÖÜ]{1,3} [A-Z]{1,2} \d{3,4}[EH]?)$', score: 0.5}
+# Seed deny-list of real brands: always a brand_text candidate (the clearance log's own items are
+# added by 2.7 through `TextScanner(deny_brands=...)`).
+brand_deny_list: [Adidas, Amazon, Apple, BMW, Budweiser, Coca-Cola, Ford, Google, Heineken, McDonald's, Marlboro, Microsoft, Nike, Pepsi, Rolex, Samsung, Sony, Starbucks, Toyota, Volkswagen]
+# GLiNER address / brand guesses are only trusted on text OCR read at least this surely (the 0.8 line
+# is 2.6's own low-confidence set: 93 of 1,607 lines on Sintel). Deny-list and rule-based hits are not.
+ner_min_ocr_confidence: 0.8
+# Words of film credits (crew roles and credit lines). A brand or address guess made only of these (and
+# the joining words) is a credit line, not a brand: "SCREENPLAY BY", "MUSIC AND SOUND". A generic
+# vocabulary of the trade, not derived from one title.
+credit_joiners: [and, by, of, the, for, to, with, "&"]
+credit_words: [
+  directed, director, directors, produced, producer, producers, executive, written, writer, writers,
+  screenplay, story, music, composer, composed, sound, audio, design, designer, designers, animation,
+  animator, animators, rigging, modeling, modelling, texturing, sculpting, lighting, compositing,
+  rendering, render, farm, servers, effects, vfx, cg, cgi, foley, casting, cast, editor, editing,
+  mixing, mastering, recording, consultancy, software, support, development, developers, team,
+  artwork, additional, props, environment, concept, art, storyboard, production, assistant, coordinator,
+  manager, supervisor, crew, studio, location, film, camera, equipment, grip, key, set, costumer,
+  dresser, make, up, hair, tracking, motion, fixing, bug, original, thanks, special, credits,
+  cinematography, photography, violinist, session, performed, orchestra, vocals, voice, actor,
+  actress, characters, character, creature, scenes, textures, sponsors, gold, financial,
+  administration, printing, websites, projects, production, presents, presented, logo, titles,
+  title, sequence, editorial, post, postproduction, color, grading, dubbing, subtitles,
+]

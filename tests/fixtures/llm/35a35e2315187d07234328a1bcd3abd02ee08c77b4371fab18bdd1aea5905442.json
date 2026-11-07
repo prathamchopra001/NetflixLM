@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Ada argue quietly at Station House.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Ada argue quietly at Station House.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Ada argue quietly at Station House.\", \"predicate\": \"relationship\", \"subject\": \"dov\", \"object\": \"ada\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"the fog is worse than yesterday\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"injured: <fog>\", \"confidence\": 0.9}, {\"line\": 3, \"quote\": \"Ask me after another cup\", \"predicate\": \"decision\", \"subject\": \"ada\", \"value\": \"drink another cup\", \"confidence\": 1.0}]}"
+}

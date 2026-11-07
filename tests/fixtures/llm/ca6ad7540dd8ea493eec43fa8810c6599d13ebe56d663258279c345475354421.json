@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Maya and Sasha share a thermos at Pier Nine.\", \"predicate\": \"holds\", \"subject\": \"maya\", \"object\": \"ada\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Maya and Sasha share a thermos at Pier Nine.\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"maya\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Maya and Sasha share a thermos at Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Maya and Sasha share a thermos at Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Did you sleep at all, Sasha?\", \"predicate\": \"learns\", \"subject\": \"maya\", \"object\": \"sasha\", \"confidence\": 0.8}, {\"line\": 3, \"quote\": \"I counted gulls instead of sleeping.\", \"predicate\": \"learns\", \"subject\": \"sasha\", \"object\": \"maya\", \"confidence\": 0.8}]}"
+}

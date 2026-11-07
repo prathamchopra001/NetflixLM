@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha and Tomas wait at The Lantern Bar.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Tomas wait at The Lantern Bar.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Where is everyone, Tomas?\", \"predicate\": \"mentions\", \"subject\": \"sasha\", \"object\": \"Harbor City PD\", \"confidence\": 0.5}, {\"line\": 3, \"quote\": \"Ask me after another cup.\", \"predicate\": \"mentions\", \"subject\": \"tomas\", \"object\": \"Harbor City PD\", \"confidence\": 0.5}, {\"line\": 4, \"quote\": \"Then let's get moving.\", \"predicate\": \"decision\", \"subject\": \"sasha\", \"value\": \"get moving\", \"confidence\": 1.0}]}"
+}

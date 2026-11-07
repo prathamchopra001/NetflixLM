@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Maya wait at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Maya wait at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Did you sleep at all, Maya?\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"secret_1\", \"confidence\": 0.8}, {\"line\": 3, \"quote\": \"The coffee went cold again.\", \"predicate\": \"state\", \"subject\": \"Kappa Cola\", \"value\": \"cold\", \"confidence\": 1.0}, {\"line\": 4, \"quote\": \"Stay close.\", \"predicate\": \"decision\", \"subject\": \"ada\", \"value\": \"stay close\", \"confidence\": 1.0}]}"
+}

@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha and Tomas check their watches\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"sasha\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Tomas check their watches\", \"predicate\": \"holds\", \"subject\": \"tomas\", \"object\": \"tomas\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Pier Nine\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"at Pier Nine\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me Pier Nine is still standing\", \"predicate\": \"references\", \"subject\": \"sasha\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"It held through the night, mostly\", \"predicate\": \"state\", \"subject\": \"Pier Nine\", \"value\": \"standing\", \"confidence\": 1.0}]}"
+}

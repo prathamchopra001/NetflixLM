@@ -1,0 +1,20 @@
+# Benchmark mvp · commit e8a602d3 · 2026-10-17 · seed 1
+
+| Scope | shown P / R / F1 | shown TP / FP / FN | all P / R / F1 |
+|---|---|---|---|
+| overall | 0.16 / 1.00 / 0.28 | 10 / 51 / 0 | 0.09 / 1.00 / 0.17 |
+| check/clr.address | 1.00 / 1.00 / 1.00 | 2 / 0 / 0 | 0.33 / 1.00 / 0.50 |
+| check/clr.brand_text | 0.05 / 1.00 / 0.10 | 2 / 35 / 0 | 0.03 / 1.00 / 0.05 |
+| check/clr.email | 1.00 / 1.00 / 1.00 | 1 / 0 / 0 | 0.50 / 1.00 / 0.67 |
+| check/clr.phone | 1.00 / 1.00 / 1.00 | 1 / 0 / 0 | 0.50 / 1.00 / 0.67 |
+| check/clr.plate | 1.00 / 1.00 / 1.00 | 3 / 0 / 0 | 0.75 / 1.00 / 0.86 |
+| check/clr.url | 0.06 / 1.00 / 0.11 | 1 / 16 / 0 | 0.05 / 1.00 / 0.10 |
+| lang/n/a | 0.16 / 1.00 / 0.28 | 10 / 51 / 0 | 0.09 / 1.00 / 0.17 |
+
+| Metric | Value |
+|---|---|
+| cost/gpu_s_per_hour | 2356 |
+| noise/fp_per_hour | 113.2 |
+| noise/fp_per_hour/agent/clearance_scanner | 113.2 |
+| verification/fp_dropped_rate | 0 |
+| verification/tp_dropped_rate | 0 |

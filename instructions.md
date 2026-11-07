@@ -1,0 +1,1 @@
+i want each and every tiny detail of this project to be documented including the experimentation lets say we tried x and it didn't work as good as we thought they we try Y and it was much better than X i want the documentation to record that with number technique change and everything so that when i talk about it in an interview it gives them the feel i have worked on things

@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Tomas argue quietly at Quill Archive.\", \"predicate\": \"relationship\", \"subject\": \"dov\", \"object\": \"tomas\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Nobody told me we were meeting at Quill Archive, Tomas.\", \"predicate\": \"learns\", \"subject\": \"dov\", \"object\": \"secret_1\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"It held through the night, mostly.\", \"predicate\": \"state\", \"subject\": \"secret_1\", \"value\": \"present\", \"confidence\": 0.9}]}"
+}

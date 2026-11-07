@@ -1,0 +1,190 @@
+# Single-node deployment (docs/tech-stack.md "Single-Node Service Layout").
+# Not yet here: ui (4.1), prometheus + grafana (Phase 4), label-studio (profile, Phase 3).
+# Images are pinned tag@digest. The `nip` image is built locally: docker compose build
+
+x-nip-env: &nip-env
+  NIP_PROFILE: ${NIP_PROFILE:-auto}
+  NIP_DATABASE_URL: ${NIP_DATABASE_URL:-postgresql://nip:change_me@postgres:5432/nip}
+  NIP_S3_ENDPOINT: ${NIP_S3_ENDPOINT:-http://objectstore:8333}
+  NIP_S3_MEDIA_BUCKET: ${NIP_S3_MEDIA_BUCKET:-nip-media}
+  NIP_S3_ARTIFACT_BUCKET: ${NIP_S3_ARTIFACT_BUCKET:-nip-artifacts}
+  NIP_MODEL_CACHE: /models
+  NIP_MODEL_SOURCE: ${NIP_MODEL_SOURCE:-hf}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-nip}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-change_me}
+  AWS_DEFAULT_REGION: us-east-1
+  NIP_MLFLOW_TRACKING_URI: ${NIP_MLFLOW_TRACKING_URI:-http://mlflow:5000}
+  NIP_MLFLOW_TRACE: ${NIP_MLFLOW_TRACE:-benchmark}
+  MLFLOW_DISABLE_TELEMETRY: ${MLFLOW_DISABLE_TELEMETRY:-true}
+  NIP_RAY_DASHBOARD_URL: http://ray-head:8265
+  NIP_OIDC_ISSUER: ${NIP_OIDC_ISSUER:-http://localhost:8180/realms/nip}
+  NIP_OIDC_JWKS_URL: ${NIP_OIDC_JWKS_URL:-http://keycloak:8080/realms/nip/protocol/openid-connect/certs}
+  NIP_OIDC_AUDIENCE: ${NIP_OIDC_AUDIENCE:-nip-api}
+  NIP_OIDC_ROLES_CLAIM: ${NIP_OIDC_ROLES_CLAIM:-roles}
+  HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+  HF_HOME: /models/hf
+  RAY_USAGE_STATS_ENABLED: "0"
+
+x-nip-image: &nip-image
+  image: nip:${NIP_RELEASE:-dev}
+  build:
+    context: .
+    dockerfile: deploy/docker/nip.Dockerfile
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg18@sha256:42e7f6b4e1eceb02ff14e3e6bc6108bbe259abbe83879dc1845d0da1ddeb555d
+    mem_limit: 1g
+    environment:
+      POSTGRES_USER: nip
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: nip
+    volumes:
+      - pg-data:/var/lib/postgresql # PostgreSQL 18 images keep data under this path
+      - ./deploy/docker/postgres-init.sh:/docker-entrypoint-initdb.d/10-mlflow-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nip -d nip"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  objectstore:
+    image: chrislusf/seaweedfs:4.47@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
+    command: server -s3 -dir=/data
+    mem_limit: 1g
+    environment:
+      # SeaweedFS makes these the S3 admin identity; without them the S3 API is open.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-nip}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-change_me}
+    volumes:
+      - s3-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9333/cluster/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: creates the buckets (idempotent), then exits 0.
+  objectstore-init:
+    image: chrislusf/seaweedfs:4.47@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
+    depends_on:
+      objectstore: {condition: service_healthy}
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for b in ${NIP_S3_MEDIA_BUCKET:-nip-media} ${NIP_S3_ARTIFACT_BUCKET:-nip-artifacts} nip-mlflow nip-models; do
+          echo "s3.bucket.create -name $$b" | weed shell -master=objectstore:9333
+        done
+
+  ray-head:
+    <<: *nip-image
+    # `nip runtime head` (the runtime deliverable) replaces this raw `ray start` later.
+    command: ["ray", "start", "--head", "--block", "--port=6379", "--dashboard-host=0.0.0.0"]
+    shm_size: 8gb
+    # PID 1 reaps orphaned vLLM EngineCore children (otherwise zombies accumulate).
+    init: true
+    # The first start after an image pull took 49 s and Ray's client server timed out (exit 1).
+    restart: on-failure:3
+    environment:
+      <<: *nip-env
+      NIP_RAY_ADDRESS: auto
+      VLLM_WSL2_ENABLE_PIN_MEMORY: "1"
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+    volumes:
+      - models:/models
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: all, capabilities: [gpu]}]
+    ports: ["127.0.0.1:8265:8265"] # Ray dashboard: localhost only, never public
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://localhost:8265/api/gcs_healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+
+  api:
+    <<: *nip-image
+    # `nip api` arrives when the root CLI is wired; uvicorn is what it will call.
+    command: ["uvicorn", "nip.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+    mem_limit: 2g
+    environment:
+      <<: *nip-env
+      NIP_RAY_ADDRESS: ray-head:6379
+    volumes:
+      - models:/models # `nip models pull` fills the shared model cache
+    depends_on:
+      postgres: {condition: service_healthy}
+      objectstore-init: {condition: service_completed_successfully}
+      ray-head: {condition: service_healthy}
+      keycloak: {condition: service_healthy}
+    # 8000 until the ui service exists; it will own 8080 and reverse-proxy /api.
+    ports: ["127.0.0.1:8000:8000"]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6@sha256:0aae0de7fca85525f727d3354df17896092de8bb26ae4c12d89c77e5df8cbce4
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - exec /opt/keycloak/bin/kc.sh start-dev --http-port=8080 $$([ "$$NIP_KEYCLOAK_DEV_REALM" = true ] && echo --import-realm)
+    mem_limit: 1536m # the JVM idles near 770 MiB
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change_me}
+      # Tokens carry the URL browsers use (D-019); the API fetches keys from keycloak:8080.
+      KC_HOSTNAME: ${NIP_OIDC_ISSUER_BASE:-http://localhost:8180}
+      KC_HEALTH_ENABLED: "true"
+      # Dev realm (user dev/dev with every role, password grant, no TLS): laptop only. Off unless
+      # NIP_KEYCLOAK_DEV_REALM=true, so cloud VMs run this same file with environment values only.
+      NIP_KEYCLOAK_DEV_REALM: ${NIP_KEYCLOAK_DEV_REALM:-false}
+    volumes:
+      - ./deploy/keycloak/nip-realm.json:/opt/keycloak/data/import/nip-realm.json:ro
+    ports: ["127.0.0.1:8180:8080"]
+    healthcheck:
+      # no curl/wget in the image: raw HTTP on the management port (9000)
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/localhost/9000 &&
+          printf 'GET /health/ready HTTP/1.0\r\n\r\n' >&3 &&
+          head -n1 <&3 | grep -q 200
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  mlflow:
+    image: nip-mlflow:${NIP_RELEASE:-dev}
+    mem_limit: 768m # idled at 2.2 GiB with 4 workers + the job runner
+    build:
+      context: .
+      dockerfile: deploy/docker/mlflow.Dockerfile
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000 --workers 1
+      --backend-store-uri ${NIP_MLFLOW_BACKEND_URI:-postgresql://nip:change_me@postgres:5432/mlflow}
+      --artifacts-destination s3://nip-mlflow
+      --allowed-hosts mlflow:5000,localhost:5000,127.0.0.1:5000
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: ${NIP_S3_ENDPOINT:-http://objectstore:8333}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-nip}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-change_me}
+      AWS_DEFAULT_REGION: us-east-1
+      MLFLOW_DISABLE_TELEMETRY: ${MLFLOW_DISABLE_TELEMETRY:-true}
+      # MLflow 3's background job runner forks ~6 huey workers (~220 MiB each); nip uses no MLflow jobs.
+      MLFLOW_SERVER_ENABLE_JOB_EXECUTION: "false"
+    depends_on:
+      postgres: {condition: service_healthy}
+      objectstore-init: {condition: service_completed_successfully}
+    ports: ["127.0.0.1:5000:5000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:5000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes: {pg-data: {}, s3-data: {}, models: {}}

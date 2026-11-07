@@ -1,0 +1,33 @@
+"""Grounding validator (D-005, architecture.md › Timed facts): an event's quote must be in the
+line it cites. Both are normalized (NFKC, typographic quote marks and dashes, whitespace), then
+rapidfuzz `partial_ratio` (best-matching substring of the line) must reach the threshold
+(EXP-006). A quote needs two words unless it is the whole line (review M-4). A quote longer than
+its line is scored with plain `ratio`, so a fabricated quote that merely contains the whole line
+does not pass. Events that fail are dropped and counted.
+"""
+
+import re
+import unicodedata
+
+from rapidfuzz import fuzz
+
+from nip.config import pipeline_config
+
+THRESHOLD = float(pipeline_config()["knowledge"]["grounding"]["threshold"])  # EXP-006
+_MARKS = str.maketrans({"‘": "'", "’": "'", "‚": "'", "‛": "'", "“": '"', "”": '"',
+                        "„": '"', "‟": '"', "«": '"', "»": '"', "–": "-", "—": "-"})  # fmt: skip
+
+
+def normalize(s: str) -> str:
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", s).translate(_MARKS)).strip()
+
+
+def score(quote: str, line: str) -> float:
+    q, t = normalize(quote), normalize(line)
+    if len(q.split()) < 2 and q != t:  # one word grounds nearly anything (review M-4)
+        return 0.0
+    return fuzz.partial_ratio(q, t) if len(q) <= len(t) else fuzz.ratio(q, t)
+
+
+def grounded(quote: str, line: str, threshold: float = THRESHOLD) -> bool:
+    return score(quote, line) >= threshold

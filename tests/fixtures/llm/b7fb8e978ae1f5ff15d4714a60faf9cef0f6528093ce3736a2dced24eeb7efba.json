@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Tomas, Sasha and Ada crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas, Sasha and Ada crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas, Sasha and Ada crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"the fog is worse than yesterday.\", \"predicate\": \"state\", \"subject\": \"UNKNOWN\", \"object\": \"UNKNOWN\", \"value\": \"injured: <detail>\", \"confidence\": 0.8}, {\"line\": 4, \"quote\": \"I will find you at the dock.\", \"predicate\": \"decision\", \"subject\": \"tomas\", \"value\": \"find you at the dock\", \"confidence\": 1.0}]}"
+}

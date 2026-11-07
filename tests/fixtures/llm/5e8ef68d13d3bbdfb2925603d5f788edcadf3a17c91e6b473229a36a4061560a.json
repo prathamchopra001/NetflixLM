@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Rui and Sasha share a thermos at Station House.\", \"predicate\": \"holds\", \"subject\": \"rui\", \"object\": \"ada\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Rui and Sasha share a thermos at Station House.\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"rui\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Rui and Sasha share a thermos at Station House.\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Rui and Sasha share a thermos at Station House.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 4, \"quote\": \"But I am not carrying the crates.\", \"predicate\": \"decision\", \"subject\": \"rui\", \"value\": \"not carrying the crates\", \"confidence\": 1.0}]}"
+}

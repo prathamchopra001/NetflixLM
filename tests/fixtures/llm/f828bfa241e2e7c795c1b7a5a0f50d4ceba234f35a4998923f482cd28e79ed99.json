@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha, Leo and Ada crowd into Station House.\", \"predicate\": \"present_at\", \"subject\": \"Saltworks Yard\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Grab me a Kappa Cola on your way back, Leo.\", \"predicate\": \"mentions\", \"subject\": \"Saltworks Yard\", \"object\": \"Kappa Cola\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Not a minute. The harbor never goes quiet.\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"injured: <detail>\", \"confidence\": 0.8}]}"
+}

@@ -1,0 +1,27 @@
+# Sidecar bible for the Tears of Steel corpus title (2.9A).
+show: tears-of-steel
+characters:
+  - id: thom
+    name: Thom
+    aliases: []
+    gender: male
+    pronouns: {en: he/him}
+  - id: celia
+    name: Celia
+    aliases: []
+    gender: female
+    pronouns: {en: she/her}
+  - id: barley
+    name: Barley
+    aliases: []
+    gender: male
+    pronouns: {en: he/him}
+  - id: captain
+    name: The Captain
+    aliases: ["Captain"]
+    gender: male
+    pronouns: {en: he/him}
+fictional:
+  brands: [Brightwave Energy, Kappa Cola]
+  orgs: [Hacksaw Robotics]
+  places: [Amsterdam Memory Vault]

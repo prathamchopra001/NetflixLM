@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Rui argue quietly at Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Rui argue quietly at Ferry Terminal.\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Ferry Terminal\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Rui argue quietly at Ferry Terminal.\", \"predicate\": \"relationship\", \"subject\": \"ada\", \"object\": \"rui\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Nobody told me we were meeting at Ferry Terminal, Rui.\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"secret_1\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Ask me after another cup.\", \"predicate\": \"mentions\", \"subject\": \"rui\", \"object\": \"Kappa Cola\", \"confidence\": 0.5}]}"
+}

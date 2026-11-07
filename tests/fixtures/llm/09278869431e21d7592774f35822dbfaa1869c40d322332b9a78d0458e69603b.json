@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha and Ada share a thermos at Tidewater Diner.\", \"predicate\": \"holds\", \"subject\": \"Saltworks Yard\", \"object\": \"ada\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Ada share a thermos at Tidewater Diner.\", \"predicate\": \"holds\", \"subject\": \"Saltworks Yard\", \"object\": \"sasha\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Ada share a thermos at Tidewater Diner.\", \"predicate\": \"wearing\", \"subject\": \"Saltworks Yard\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Where is everyone, Ada?\", \"predicate\": \"mentions\", \"subject\": \"Saltworks Yard\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"I counted gulls instead of sleeping.\", \"predicate\": \"learns\", \"subject\": \"Saltworks Yard\", \"object\": \"Tidewater Diner\", \"confidence\": 1.0}]}"
+}

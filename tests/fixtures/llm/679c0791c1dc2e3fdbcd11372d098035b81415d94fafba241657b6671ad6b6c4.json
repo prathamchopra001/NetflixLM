@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha picks up the brass ledger.\", \"predicate\": \"holds\", \"subject\": \"sasha\", \"object\": \"ada\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Rui wait at Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Rui wait at Greywater Dock.\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Is that what I think it is?\", \"predicate\": \"references\", \"subject\": \"rui\", \"object\": \"secret_3\", \"confidence\": 0.8}]}"
+}

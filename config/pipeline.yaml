@@ -1,0 +1,90 @@
+# Pipeline thresholds and policies. Only keys that code reads live here.
+timeline:
+  shots:
+    # TransNetV2 transition probability above this marks a cut.
+    threshold: 0.5
+  keyframes:
+    # Middle frame of every shot, plus one every `interval_s` for shots longer than `long_shot_s`.
+    # EXP-008 (injected Sintel + Tears of Steel, 3 seeds, shown recall of the six text checks):
+    # 1 per shot 0.50 at 11.2 keyframes/min; this policy (4 s / 2 s) 1.00 at 26.7 (+139%); one every
+    # 1 s in shots over 1 s 1.00 at 53.9 (+102%, +0 points). The bar (a denser policy is kept only
+    # if recall rises >= 5 points for <= 50% more keyframes) rejects both denser arms, so by its
+    # text 1 per shot wins. OVERRIDDEN here (controller ruling): 1 per shot's recall of 0.50 fails
+    # the 0.85 MVP target of evaluation.md. See notes/2.7.md DP-2.7-9.
+    long_shot_s: 4.0
+    interval_s: 2.0
+    jpeg_quality: 90
+  asr:
+    # EXP-003 (3 runs per arm, Sintel + Tears of Steel vs the official SRT): turbo-int8 is the
+    # default. Under the shipped decoding below its WER is 0.606 vs 0.604 for large-v3-int8 (bar:
+    # within +1.0 point) at RTF 0.0161 vs 0.0372 (2.3x faster).
+    variant: faster-whisper-large-v3-turbo-int8
+    lang: en
+    # faster-whisper 1.2.1's VAD pass dropped short lines and mis-timed segments by up to 234 s.
+    vad: false
+    # Segments whose mean word probability is below this are dropped (0 = keep all).
+    min_prob: 0.0
+    # Controller ruling (W-int, after the 2.5 re-review): the deterministic `novad-hst` arm,
+    # temperature 0 only plus faster-whisper's hallucination_silence_threshold 2 s. Turbo:
+    # substitutions+deletions 0.115 (fb-p50 0.124), Tears of Steel insertions 38 (fb-p50 37),
+    # RTF 0.0161 (fb-p50 0.0219), WER SD 0 over 3 runs, so a transcript is the same every run
+    # (cacheable, reproducible re-runs). fb-p50 (temperature fallback + min_prob 0.5) has the
+    # lower WER (0.543) but samples retried segments (WER SD up to 0.018). Cost: a confident
+    # repetition loop is not retried. `decode_by_variant: {<variant>: {...}}` adds to `decode`
+    # per variant (e.g. the fallback tuple `temperature: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]`).
+    decode:
+      temperature: 0.0
+      hallucination_silence_threshold: 2.0
+  align:
+    # EXP-004: token-level monotonic alignment beats rapidfuzz line matching.
+    variant: token
+    # Share of a line's tokens that must match inside one cluster of the transcript.
+    min_match: 0.5
+    # rapidfuzz variant only: minimum partial_ratio.
+    min_score: 75
+    # A line's first word never starts earlier than this long before it ends (Whisper's first
+    # word after silence starts early and runs long).
+    first_word_cap_s: 0.3
+
+# Knowledge layer (2.1 extraction/grounding/resolution, 2.2 story order). Defaults as shipped.
+knowledge:
+  extract:
+    prompt_version: knowledge.extract.v1
+    max_tokens: 2048
+  grounding:
+    # rapidfuzz partial_ratio of the normalized quote vs its line (EXP-006: 85/90/95 tie).
+    threshold: 90
+  resolve:
+    # Name score an extracted name needs to resolve to a known entity.
+    threshold: 90
+  story:
+    # One transition verdict; the scene excerpts shown to the model are cut at excerpt_chars.
+    llm_max_tokens: 300
+    excerpt_chars: 600
+    # "N WEEKS LATER" and friends, in story days.
+    days_per_unit: {WEEK: 7, MONTH: 30, YEAR: 365}
+
+# Clearance scanner (2.7): matching, occurrences, prominence, routing.
+clearance:
+  # Detections of one item whose keyframe cells are at most this far apart are one occurrence.
+  occurrence_gap_s: 2.0
+  # A keyframe proves its text on screen at that frame only; its cell (the stretch of the shot
+  # nearer to it than to any other keyframe) is capped at this length, centred on the frame.
+  cell_cap_s: 4.0
+  # rapidfuzz ratio (0-100) for names (address, brand). Phones, plates, emails, URLs match exactly:
+  # a one-character difference is a different number, and a wrong "cleared" would hide it.
+  match_threshold: 90
+  prominence:
+    # Each term is scaled to 0-1 by its reference value, then weighted (weights sum to 1).
+    area_ref: 0.03        # box area as a fraction of the frame at which a text counts as large
+    sharpness_ref: 300.0  # variance of the Laplacian of the text crop at which it counts as sharp
+    duration_ref_s: 4.0   # screen time at which an occurrence counts as long
+    weights: {area: 0.30, centrality: 0.15, sharpness: 0.15, duration: 0.40}
+    featured_min: 0.5     # at or above: featured, below: background
+  # Severity (data-model.md > Flag): pending / denied are high whatever the prominence; an item
+  # that is not in the log is rated by prominence.
+  severity: {denied: 5, pending: 4, featured: 4, background: 2}
+  # Confidence of a candidate is its OCR confidence x max(recognizer score, this floor). A
+  # recognizer whose rule validates the value (libphonenumber, the e-mail and URL grammars) is as
+  # sure as the validation; its pattern score (phone: 0.4) only says how loose its regex is.
+  certainty_floor: {phone: 0.9, email: 0.9, url: 0.85}

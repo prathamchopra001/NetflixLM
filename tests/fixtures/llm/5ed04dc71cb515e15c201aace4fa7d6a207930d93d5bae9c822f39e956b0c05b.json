@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Maya and Tomas wait at Saltworks Yard.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Maya and Tomas wait at Saltworks Yard.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Dov Lindqvist forged the customs ledger.\", \"predicate\": \"references\", \"subject\": \"maya\", \"object\": \"secret_3\", \"confidence\": 1.0}]}"
+}

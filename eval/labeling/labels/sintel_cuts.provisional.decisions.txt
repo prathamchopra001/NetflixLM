@@ -1,0 +1,236 @@
+# Per-event decisions made while viewing the contact sheets (event ids index the merged
+# candidate events; '<id> 0 cut' = cut at the event frame, 'G a b ...' = masked window).
+# GENUINE VIEWS ONLY. Provenance: sheets 23, 25-53 and s2 sheets 0-16 viewed; sheets 0-22 and 24 re-viewed below.
+# sheet23 (viewed)
+282 0 cut
+# sheet25-26 (viewed; #304 zoomed -> hard cut; #252, #270, #303, #244 zoomed -> same shot; #305 pan)
+301 0 cut
+304 0 cut
+306 0 cut
+310 0 cut
+311 0 cut
+314 0 cut
+315 0 cut
+321 0 cut
+# sheet27-28 (viewed; #339 and #341 zoomed -> hard cuts; #344 same shot)
+339 0 cut
+341 0 cut
+G 8505 8790 chained dissolves: desert -> girl portrait (ghost ~8510-8700) -> moon (~8720-8790); events 322-335 are ghosting inside it, no cut labelled
+G 9040 9125 dissolve: desert + ghost of girl -> bamboo (9046-9102 ghosting)
+G 9240 9275 dissolve: bamboo -> canyon (9254)
+G 9425 9460 dissolve: canyon girl -> mountain + man (9429-9446)
+# sheet29-30 (viewed; #352-354 dissolve, #359 fade, #363/#365 same shot)
+348 0 cut
+355 0 cut
+360 0 cut
+362 0 cut
+364 0 cut
+369 0 cut
+370 0 cut
+G 9730 9770 dissolve: staff man -> snow mountain/hand (ghosting 9737-9761)
+G 10060 10135 fade through lilac haze: crawling man -> blank haze (10088-10110) -> snowfield shot
+G 10443 10466 fade to white (10443-10447, ghost of the girl) then white -> black (10449-10462); no hard cut inside
+# sheet31-32 (viewed; #385 cloak passes in front: same shot)
+377 0 cut
+378 0 cut
+381 0 cut
+382 0 cut
+383 0 cut
+386 0 cut
+387 0 cut
+390 0 cut
+G 11305 11350 dissolve coin -> tree (ghost rings 11315-11345)
+G 11103 11113 black cloak sweeps across and fills the frame (11106-11110); girl re-emerges at a different position/zoom: likely a cut hidden by occlusion; AMBIGUOUS, excluded from scoring
+# sheet33-34 (viewed; #403, #406, #407, #409, #411 same shot)
+398 0 cut
+399 0 cut
+402 0 cut
+404 0 cut
+405 0 cut
+408 0 cut
+410 0 cut
+412 0 cut
+413 0 cut
+# sheet35-36 (viewed; #421-422, #424, #442 continuous)
+423 0 cut
+426 0 cut
+428 0 cut
+431 0 cut
+433 0 cut
+435 0 cut
+436 0 cut
+437 0 cut
+441 0 cut
+# sheet37-38 (viewed; #460 zoomed -> continuous; #446-448, #453, #456, #458, #464-466 same shot)
+444 0 cut
+445 0 cut
+449 0 cut
+450 0 cut
+451 0 cut
+452 0 cut
+454 0 cut
+455 0 cut
+457 0 cut
+459 0 cut
+461 0 cut
+462 0 cut
+463 0 cut
+467 0 cut
+# sheet39-40 (viewed; #476 and #488 zoomed -> cuts; #477 zoomed -> AMBIGUOUS fast motion-blur, excluded; #471,#473,#480,#481,#485,#489,#490 same shot)
+468 0 cut
+469 0 cut
+470 0 cut
+472 0 cut
+474 0 cut
+475 0 cut
+476 0 cut
+478 0 cut
+479 0 cut
+482 0 cut
+483 0 cut
+484 0 cut
+486 0 cut
+487 0 cut
+488 0 cut
+491 0 cut
+G 14111 14115 extreme motion blur (shoulder -> arm): cut or fast whip? AMBIGUOUS, excluded from scoring
+# sheet41-42 (viewed; #492 leg enters frame, same shot)
+493 0 cut
+494 0 cut
+495 0 cut
+496 0 cut
+497 0 cut
+502 0 cut
+510 0 cut
+512 0 cut
+# sheet43-44 (viewed; #516-520, #523-525 same shot)
+521 0 cut
+522 0 cut
+533 0 cut
+534 0 cut
+G 15040 15383 dragon shot dissolves into red tint (15042-15126), a girl fades up out of the red (15126-15174) and stays while the background dissolves through several scenes (15282, 15294-15318, 15366-15378): one continuous overlay montage; no cut labelled inside
+# sheet45-46 (viewed; #548 ice shards cross frame, same shot; #553 event member 15867 is the cut, found in the second-pass rows and confirmed by a 24-frame strip; #540-546 same shot)
+547 0 cut
+549 0 cut
+557 0 cut
+C 15867
+# sheet47-48 (viewed; #567-569, #572, #573, #575-580 same shot)
+566 0 cut
+570 0 cut
+571 0 cut
+574 0 cut
+G 16164 16168 arm sweeps across the lens and a different dark face (16167) appears before the clear cut at 16169: probable hidden cut, AMBIGUOUS, excluded from scoring
+G 16222 16227 fur streaks and a black frame (16224) between two views of the same cave: same shot or hidden cut, AMBIGUOUS, excluded from scoring
+G 16238 16425 fur wipes frame to black (16240-16248), black to ~16332, very slow brightening fade-in of the root-world shot (16332-16425): no cut labelled inside
+# sheet49-50 (viewed; #588-590 slow fade-in tail, #593 same view, #595-598, #602-606 same shot, #600-601 object enters frame, same shot; #608-611 credits cards)
+591 0 cut
+592 0 cut
+594 0 cut
+599 0 cut
+607 0 cut
+# sheet51-53 (viewed): end credits. Title cards fade out to dark then the next card appears bright at once; the scrolling credits sit on a wooden table that changes only by dissolves. No picture shots. Region masked.
+X 17858 21312 end credits (cards and scrolling text over still-life background)
+# s2 pass sheets 0-1 (viewed; 1139-1141 body flying in = motion within the shot, 1136 cut re-verified with a 16-frame strip): no additional cuts
+# s2 pass sheets 2-4 (viewed): no additional cuts
+# sheet0 (viewed): title sequence over snow, no cuts (events 0-11 are lighting/logo changes inside one flythrough)
+# sheet1 (viewed; #12, #14-16, #18, #23 same shot)
+13 0 cut
+17 0 cut
+19 0 cut
+20 0 cut
+21 0 cut
+22 0 cut
+# sheet2-3 (viewed; #25 same shot, 41 zoomed 1291-1298 -> cut at 1295; #43 zoomed 1330-1337 -> framing jump at 1334 inside fog, AMBIGUOUS)
+28 0 cut
+41 0 cut
+42 0 cut
+44 0 cut
+47 0 cut
+G 1334 1334 framing jump inside the fight between two close views; cut vs very fast camera move: AMBIGUOUS, excluded from scoring
+# sheet4-5 (viewed; #48-52, #54, #56-58 same shot, #60-63, #65, #67-70 same shot)
+53 0 cut
+55 0 cut
+59 0 cut
+64 0 cut
+66 0 cut
+71 0 cut
+# sheet6-7 (viewed; #73-79, #81-84, #87-90, #92-95 same shot; #90 staff slides out, fade to snow texture)
+72 0 cut
+80 0 cut
+85 0 cut
+86 0 cut
+91 0 cut
+G 2305 2420 SINTEL title card dissolves in over the mountain shot; not a cut
+# sheet8-9 (viewed; #96,#97 same shot; #99-109 slow fade-in from black; #111,#112,#117,#119 same shot)
+98 0 cut
+110 0 cut
+113 0 cut
+114 0 cut
+115 0 cut
+116 0 cut
+118 0 cut
+G 2430 2590 slow fade-in from black after the cut to black at 2429: no cut labelled inside
+# sheet10-11 (viewed; #120-123, #125-127, #130-133, #135-136, #143 same shot)
+124 0 cut
+128 0 cut
+129 0 cut
+134 0 cut
+142 0 cut
+G 3495 3650 fade-out to black (#137-139, 3507-3539), black, fade-in of the city shot (#140-141, 3612-3649): no cut labelled
+# sheet12-13 (viewed; #144-149, #151-157, #159, #161, #163-164, #167 same shot)
+150 0 cut
+158 0 cut
+160 0 cut
+162 0 cut
+165 0 cut
+166 0 cut
+# sheet14-15 (viewed; #168, #170 same shot; #180-183 same shot (static room); #185-187, #189-191 same shot)
+169 0 cut
+171 0 cut
+172 0 cut
+173 0 cut
+174 0 cut
+175 0 cut
+176 0 cut
+177 0 cut
+178 0 cut
+179 0 cut
+184 0 cut
+188 0 cut
+# sheet16-17 (viewed; #207, #208, #210 zoomed 8-frame strips -> same shot (motion blur); #209 zoomed -> cut at 6021; #211 6071, #212 6112 zoomed -> cuts; #193-197, #199-204, #215 same shot)
+192 0 cut
+198 0 cut
+206 0 cut
+209 0 cut
+211 0 cut
+212 0 cut
+213 0 cut
+214 0 cut
+G 5660 5710 dissolve: dark blue bed scene -> orange scene (#201-203), no cut labelled
+# sheet18-19 (viewed; #216-217, #219-221, #223-229, #232-234, #237 same shot; #227 bird crosses frame, same shot)
+218 0 cut
+222 0 cut
+230 0 cut
+231 0 cut
+235 0 cut
+236 0 cut
+238 0 cut
+239 0 cut
+# sheet20-21 (viewed; #240, #242-244, #246-249, #251, #252, #254, #255, #257, #258, #260, #262, #263 same shot)
+241 0 cut
+245 0 cut
+250 0 cut
+253 0 cut
+256 0 cut
+259 0 cut
+261 0 cut
+# sheet22-24 (viewed; #266-270, #272-273, #275-281, #283-287, #289-292, #294-295, #297-298 same shot)
+264 0 cut
+265 0 cut
+271 0 cut
+274 0 cut
+282 0 cut
+288 0 cut
+293 0 cut
+296 0 cut
+299 0 cut

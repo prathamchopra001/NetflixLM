@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xml:lang="es-419" ttp:timeBase="smpte" ttp:frameRate="24" ttp:frameRateMultiplier="1000 1001" ttp:dropMode="nonDrop">
+  <head><layout><region xml:id="r1"/></layout></head>
+  <body region="r1"><div>
+    <p begin="00:00:01:00" end="00:00:03:12">Hola<br/>mundo <span tts:fontStyle="italic">cursiva</span></p>
+    <p begin="00:00:06:00" end="00:00:08:00">Adios</p>
+  </div></body>
+</tt>

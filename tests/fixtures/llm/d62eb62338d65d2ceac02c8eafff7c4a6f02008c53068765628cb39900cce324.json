@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Ada share a thermos at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Ada share a thermos at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Ada share a thermos at Quill Archive.\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"ada\", \"value\": \"share\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Grab me a Kappa Cola on your way back, Ada.\", \"predicate\": \"mentions\", \"subject\": \"dov\", \"object\": \"Kappa Cola\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"It held through the night, mostly.\", \"predicate\": \"state\", \"subject\": \"ada\", \"value\": \"healed\", \"confidence\": 0.8}, {\"line\": 4, \"quote\": \"I will find you at the dock.\", \"predicate\": \"decision\", \"subject\": \"dov\", \"value\": \"find you at the dock\", \"confidence\": 1.0}]}"
+}

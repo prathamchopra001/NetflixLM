@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Tomas sits alone at Marrow Street Garage\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Marrow Street Garage\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"a stack of old papers on the table\", \"predicate\": \"setup\", \"subject\": \"ada\", \"object\": \"Quill Archive\", \"value\": \"}\", \"confidence\": 0.5}, {\"line\": 2, \"quote\": \"Dov Lindqvist forged the customs ledger\", \"predicate\": \"references\", \"subject\": \"tomas\", \"object\": \"secret_3\", \"confidence\": 1.0}]}"
+}

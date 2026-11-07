@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha, Maya and Tomas crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha, Maya and Tomas crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"maya\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha, Maya and Tomas crowd into Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me Quill Archive is still standing, Maya.\", \"predicate\": \"references\", \"subject\": \"sasha\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Barely. The coffee went cold again.\", \"predicate\": \"state\", \"subject\": \"The Lantern Bar\", \"value\": \"cold\", \"confidence\": 0.8}, {\"line\": 4, \"quote\": \"I will find you at the dock.\", \"predicate\": \"decision\", \"subject\": \"sasha\", \"value\": \"find you at the dock\", \"confidence\": 1.0}]}"
+}

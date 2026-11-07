@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Tomas and Rui check their watches\", \"predicate\": \"holds\", \"subject\": \"tomas\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas and Rui check their watches\", \"predicate\": \"holds\", \"subject\": \"rui\", \"object\": \"tomas\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas and Rui check their watches\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas and Rui check their watches\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Tell me Greywater Dock is still standing\", \"predicate\": \"references\", \"subject\": \"tomas\", \"object\": \"Greywater Dock\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Ask me after another cup\", \"predicate\": \"mentions\", \"subject\": \"rui\", \"object\": \"Kappa Cola\", \"confidence\": 0.5}]}"
+}

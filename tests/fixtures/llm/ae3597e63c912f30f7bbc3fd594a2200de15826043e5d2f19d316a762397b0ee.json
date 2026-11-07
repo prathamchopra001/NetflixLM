@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Rui check their watches\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"Kappa Cola\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Rui check their watches\", \"predicate\": \"holds\", \"subject\": \"rui\", \"object\": \"Kappa Cola\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Grab me a Kappa Cola\", \"predicate\": \"mentions\", \"subject\": \"dov\", \"object\": \"Kappa Cola\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Ask me after another cup\", \"predicate\": \"mentions\", \"subject\": \"rui\", \"object\": \"Kappa Cola\", \"confidence\": 1.0}, {\"line\": 4, \"quote\": \"Keep your head down\", \"predicate\": \"decision\", \"subject\": \"dov\", \"value\": \"to keep head down\", \"confidence\": 1.0}]}"
+}

@@ -1,0 +1,121 @@
+# Corpus manifest. Media is never committed: `nip eval corpus fetch` downloads into data/corpus/<id>/
+# and verifies/records sha256. Entries with `picture: null` are manifest-only (download on demand
+# once a URL is verified). Public-domain status is US-only (docs/evaluation.md).
+# Picture files come from the official Blender mirror ftp.halifax.rwth-aachen.de because
+# download.blender.org returned HTTP 403 to automated requests on 2026-10-15.
+sets:
+  smoke: [sintel]
+  mvp: [sintel, tears-of-steel, synthetic-show]
+titles:
+- id: sintel
+  title: Sintel
+  license: CC-BY-3.0
+  attribution: "© copyright Blender Foundation | durian.blender.org"
+  source:
+    page: https://durian.blender.org/download/
+    picture: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/Sintel.2010.1080p.mkv
+    # Only the first-minute script is published as a file; the full CC BY script was not found.
+    script: https://durian.blender.org/wp-content/uploads/2009/11/1stminute_script_11-61.pdf
+    subtitles:
+      en: https://durian.blender.org/wp-content/content/subtitles/sintel_en.srt
+      es: https://durian.blender.org/wp-content/content/subtitles/sintel_es.srt
+      fr: https://durian.blender.org/wp-content/content/subtitles/sintel_fr.srt
+      de: https://durian.blender.org/wp-content/content/subtitles/sintel_de.srt
+  sha256: {"picture": "fae11ed41b2c99dfbeabce7ea5458446e21e7b840a982f510f2341919c3d9920", "script": "ff7f902bc5aabc92143efb2602bf6de4af34c87c968348452df0e4638cb2aa0e", "en": "4ed7e1f1bc5ff69fe33606960e4c048ba6766237bf33b132fef76e1a92cb64b2", "es": "02672e534f02321121ea2b8cc7fdac634112b6689021d1f8ed01ed26adc0e639", "fr": "cc107e3ee4c640bc1dfa3f9aa01cc24b317e4d0f7d43cbe77121777fc2bcd91c", "de": "47ddffc47bc38611d9e546b4c6b0ebcdb6c38ae6ccbf726168ad9fe2972c6732"}
+  restrictions: []
+- id: tears-of-steel
+  title: Tears of Steel
+  license: CC-BY-3.0
+  attribution: "(CC) Blender Foundation | mango.blender.org"
+  source:
+    page: https://mango.blender.org/download/
+    picture: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/tears_of_steel_720p.mov
+    script: null  # subscribers only
+    subtitles:
+      en: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/subtitles/TOS-en.srt
+      es: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/subtitles/TOS-es.srt
+      fr: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/subtitles/TOS-fr-Goofy.srt  # quality unverified, review before use
+      de: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/subtitles/TOS-de.srt
+      nl: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/subtitles/TOS-nl.srt
+      it: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/subtitles/TOS-it.srt
+      ru: https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/subtitles/TOS-ru.srt
+      "no": https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/subtitles/TOS-no.srt
+  sha256: {"picture": "efa9062d9cdb7a338e40ad530dfdf234806743f29ae6a1a136b97ece4e588e8f", "en": "ce9578f6fe098a5821045a38884b229160f9e7ba27890448a92f5be330c6e6fe", "es": "b1936989cf42eda28988ec9120a80b7303562ea6429e49441160ba688da39a5c", "fr": "493e7d80483479b972f7d3eaf1e5dc062ccc44e37ba544f6efcda7aba12c9930", "de": "666685daa9064a5a59144e47bddd2d570bbdda199df6e4e39f3273e479ab1f4b", "nl": "1146fe8a924306d680d9b7c82cf652e56e9f1ed28c81142fa477daee04b45b58", "it": "6b8f6023b88b16acadea52d1664aa92ef132d7481e3e1957f1f334260477c870", "ru": "3fcb17b4671bcc6f3b92c823eeeab134234e739cd8878ed5a4c1ab56b320829c", "no": "e8ba243d2927ef7d2751f3e6fd522669a0a7201ae2c501d12fa51b4353791c8c"}
+  restrictions: ["The Original Soundtrack is CC BY-ND 3.0 (not part of this corpus); never redistribute it"]
+- id: cosmos-laundromat
+  title: Cosmos Laundromat
+  license: CC-BY-4.0
+  attribution: "(c) copyright Blender Foundation | gooseberry.blender.org"
+  source: {page: "https://studio.blender.org/films/cosmos-laundromat/", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["No official subtitles; target tracks are generated"]
+- id: sprite-fright
+  title: Sprite Fright
+  license: CC-BY-4.0
+  attribution: "(c) copyright Blender Foundation | studio.blender.org"
+  source: {page: "https://studio.blender.org/films/sprite-fright/", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: []
+- id: elephants-dream
+  title: Elephants Dream
+  license: CC-BY-2.5
+  attribution: "(c) copyright 2006, Blender Foundation, Netherlands Media Art Institute | orange.blender.org"
+  source: {page: "https://orange.blender.org/", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["Soundtrack is CC BY-NC-ND 2.5: never redistribute derivatives with its soundtrack"]
+- id: spring
+  title: Spring
+  license: CC-BY-4.0
+  attribution: "(c) copyright Blender Foundation | studio.blender.org"
+  source: {page: "https://studio.blender.org/films/spring/", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["No dialogue: visual-only negative"]
+- id: charge
+  title: Charge
+  license: CC-BY-4.0
+  attribution: "(c) copyright Blender Foundation | studio.blender.org"
+  source: {page: "https://studio.blender.org/films/charge/", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["No dialogue: visual-only negative"]
+- id: singularity
+  title: Singularity
+  license: CC-BY-4.0
+  attribution: "(c) copyright Blender Foundation | studio.blender.org"
+  source: {page: "https://studio.blender.org/films/singularity/", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["No dialogue: visual-only negative"]
+- id: beverly-hillbillies-s01
+  title: The Beverly Hillbillies, season 1 (36 episodes)
+  license: Public-Domain-US
+  attribution: "Public domain in the US (copyright not renewed); verify elsewhere"
+  source: {page: "https://archive.org/search?query=beverly+hillbillies+season+1", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["Theme song is still copyrighted: strip from derived media, never publish clips containing it"]
+- id: dragnet
+  title: Dragnet (1951-59), public-domain episodes
+  license: Public-Domain-US
+  attribution: "Public domain in the US for episodes whose copyright was not renewed; verify per episode"
+  source: {page: "https://archive.org/search?query=dragnet+1951", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["Verify each episode individually"]
+- id: his-girl-friday
+  title: His Girl Friday (1940)
+  license: Public-Domain-US
+  attribution: "Public domain in the US (copyright not renewed)"
+  source: {page: "https://archive.org/details/his-girl-friday-1940_202109", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: []
+- id: night-of-the-living-dead
+  title: Night of the Living Dead (1968)
+  license: Public-Domain-US
+  attribution: "Published without a valid copyright notice (US)"
+  source: {page: "https://archive.org/search?query=night+of+the+living+dead+1968", picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["The shooting script's copyright status is separate: internal use only"]
+- id: synthetic-show
+  title: Harbor Lights, synthetic show (6 episodes x 25 scenes)
+  license: CC-BY-4.0
+  attribution: "Generated by eval.synthetic (seeded template generator, no LLM, no third-party content)"
+  source: {page: null, picture: null, script: null, subtitles: {}}
+  sha256: {}
+  restrictions: ["Script-only: no picture or subtitles", "Always reported separately from real-content results"]

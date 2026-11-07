@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<FinalDraft DocumentType="Script" Template="No" Version="5">
+  <Content>
+    <Paragraph Type="Scene Heading" Number="12A"><SceneProperties Length="1/8"/><Text>INT. HARBOR WAREHOUSE - NIGHT</Text></Paragraph>
+    <Paragraph Type="Action"><Text>Maya enters, </Text><Text Style="Italic">flashlight</Text><Text> sweeping the crates.</Text></Paragraph>
+    <Paragraph Type="Character"><Text>MAYA (V.O.)</Text></Paragraph>
+    <Paragraph Type="Parenthetical"><Text>(whispering)</Text></Paragraph>
+    <Paragraph Type="Dialogue"><Text>Where is </Text><Text Style="Bold">he</Text><Text>?</Text></Paragraph>
+    <DualDialogue>
+      <Paragraph Type="Character"><Text>LEO</Text></Paragraph>
+      <Paragraph Type="Dialogue"><Text>Behind you.</Text></Paragraph>
+    </DualDialogue>
+    <Paragraph Type="Transition"><Text>CUT TO:</Text></Paragraph>
+    <Paragraph Type="Scene Heading"><Text>EXT. DOCK - DAY</Text></Paragraph>
+    <Paragraph Type="General"><Text>Gulls wheel.</Text></Paragraph>
+  </Content>
+</FinalDraft>

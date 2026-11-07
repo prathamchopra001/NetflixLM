@@ -40,9 +40,12 @@ All models are open-weight and self-hosted — on a laptop, a workstation, or yo
 | [Data Model](docs/data-model.md) | Time representation, Postgres schema, flag and evidence format, input file formats |
 | [Tech Stack](docs/tech-stack.md) | Components and versions, model catalog defaults, license policy, Compose layout, monitoring, security |
 | [Evaluation](docs/evaluation.md) | Open and public-domain corpus, error injectors, metrics, MVP targets, regression gate |
-| [Phased Plan](docs/phased-plan.md) | 8-week plan for 2 people, exit criteria, cut order, risks |
+| [Phased Plan](docs/phased-plan.md) | 8-week plan, exit criteria, cut order, risks |
 | [API Contracts](docs/api-contracts.md) | REST and WebSocket API, roles, review UI contract |
 | [Project Structure](docs/project-structure.md) | Repository layout, module boundaries, dev setup (incl. Windows + WSL2), CLI, configuration |
+| [Decision Log](docs/decisions.md) | Every significant choice: options considered, what we chose, why, and what it cost |
+| [Experiment Log](docs/experiments.md) | X-vs-Y experiments, written before they run, with measured results from MLflow |
+| [Engineering Journal](docs/journal.md) | Dated record of what was done, measured, broken, and fixed |
 
 ## Quick Start
 

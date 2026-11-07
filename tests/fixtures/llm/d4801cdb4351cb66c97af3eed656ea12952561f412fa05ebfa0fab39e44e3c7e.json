@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Ada and Sasha argue quietly at Station House.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Ada and Sasha argue quietly at Station House.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Station House\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Hey the pilot, got a minute?\", \"predicate\": \"references\", \"subject\": \"ada\", \"object\": \"secret_1\", \"confidence\": 1.0}, {\"line\": 3, \"quote\": \"Not a minute. The harbor never goes quiet.\", \"predicate\": \"state\", \"subject\": \"sasha\", \"value\": \"injured: <detail>\", \"confidence\": 0.8}]}"
+}

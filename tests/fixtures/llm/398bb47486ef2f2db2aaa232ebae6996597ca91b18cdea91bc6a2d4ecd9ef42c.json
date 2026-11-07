@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Tomas and Ada check their watches at The Lantern Bar. Tomas picks up the pocket watch.\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas and Ada check their watches at The Lantern Bar. Tomas picks up the pocket watch.\", \"predicate\": \"present_at\", \"subject\": \"ada\", \"object\": \"The Lantern Bar\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Tomas picks up the pocket watch.\", \"predicate\": \"holds\", \"subject\": \"tomas\", \"object\": \"ada\", \"value\": \"obtain\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Is that what I think it is?\", \"predicate\": \"learns\", \"subject\": \"ada\", \"object\": \"secret_1\", \"confidence\": 0.8}]}"
+}

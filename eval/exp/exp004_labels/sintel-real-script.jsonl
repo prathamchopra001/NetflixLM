@@ -1,0 +1,3 @@
+{"title": "sintel-real-script", "scene": 1, "element": 1, "text": "What brings you to the edge of the world?", "start_ms": 129400, "start_frame": 3106, "labeller": "agent", "basis": "srt-cue-7-start"}
+{"title": "sintel-real-script", "scene": 1, "element": 3, "text": "I am searching for someone I love.", "start_ms": 135000, "start_frame": 3240, "labeller": "agent", "basis": "srt-cue-8-start"}
+{"title": "sintel-real-script", "scene": 1, "element": 6, "text": "A dragon.", "start_ms": 143400, "start_frame": 3442, "labeller": "agent", "basis": "srt-cue-10-start"}

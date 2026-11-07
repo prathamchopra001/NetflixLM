@@ -24,16 +24,83 @@ Versions below were current on 2026-09-27.
 | Object storage (cloud) | AWS S3 · Google Cloud Storage (XML API + HMAC keys) · Azure Blob via an S3 shim | — | — | Same S3 client code; only `NIP_S3_*` values change |
 | API | FastAPI + Uvicorn | current | MIT / BSD | Typed REST + WebSocket |
 | DB access | SQLAlchemy 2 (Core) + psycopg 3 + Alembic | current | MIT / LGPL-3.0 / MIT | Raw SQL for rules, migrations |
-| Review UI | React + TypeScript + Vite, served by Caddy (also reverse-proxies `/api` and `/ws`) | current | MIT / Apache-2.0 | Single origin, no CORS |
+| Review UI | React-admin + `ra-keycloak` on React + TypeScript + Vite, served by Caddy (also reverse-proxies `/api` and `/ws`) | 5.15.4 · 2.0.0 | MIT / Apache-2.0 | List, filter, and detail screens and OIDC login out of the box; the evidence player is a plain React component on `<video>` ([D-029](decisions.md#d-029--review-ui-react-admin--ra-keycloak)) |
 | Identity | Keycloak locally; any OIDC provider in production | current | Apache-2.0 | Standard OIDC; roles from a token claim |
-| Media | FFmpeg (LGPL build) | current | LGPL-2.1 | Probe, decode, keyframes, proxies |
-| Parsing | lxml (FDX, TTML), pdfplumber (PDF), pysubs2 (SRT/VTT), own Fountain parser | current | BSD / MIT / MIT | — |
+| Media | FFmpeg (LGPL shared build) + TorchCodec | current · 0.17.0 | LGPL-2.1 / BSD-3-Clause | FFmpeg: probe and review proxies. TorchCodec: frame-exact decoding for shot detection and keyframes, using our FFmpeg libraries ([D-027](decisions.md#d-027--parsing-and-decoding-libraries-and-what-stays-custom)) |
+| Parsing | ttconv (TTML/IMSC), pysubs2 (SRT/WebVTT), screenplay-tools (Fountain), pdfplumber (PDF), stdlib XML (FDX) | 1.2.3 · 1.9.0 · 0.0.10 · current | BSD-2-Clause / MIT | Libraries where they pass our tests; our own FDX and PDF script readers ([D-027](decisions.md#d-027--parsing-and-decoding-libraries-and-what-stays-custom)) |
 | Phone numbers | `phonenumbers` (libphonenumber port) | current | Apache-2.0 | Format/possibility checks for `clr.phone` |
 | GPU inventory | `nvidia-ml-py` (imported as `pynvml`) | 13.615.71 | BSD | NVML access; the old `pynvml` package is deprecated |
 | Kubernetes | KubeRay operator + `ray-cluster` Helm chart; NVIDIA GPU Operator | 1.7.1 · v26.7.1 | Apache-2.0 | GPU nodes and Ray clusters on Kubernetes (the chart's default Ray image is old — always override it with the `nip` image) |
-| Monitoring | Prometheus + Grafana | current | Apache-2.0 / AGPL-3.0 | Grafana runs unmodified as a separate service |
-| Tooling | uv, ruff, mypy, pytest, hypothesis, import-linter | current | MIT / Apache-2.0 / BSD | Lockfile, lint, types, tests, module-boundary enforcement |
+| Monitoring | Prometheus + `prometheus-client` + Grafana; vLLM's and Ray's built-in metrics; NVIDIA DCGM exporter on cloud GPU nodes (ships with the GPU Operator) | current | Apache-2.0 / AGPL-3.0 | Live operational metrics. Grafana runs unmodified as a separate service |
+| Experiment tracking | MLflow (tracking server and UI; LLM call tracing on benchmark runs) | pinned at setup | Apache-2.0 | Every benchmark run's settings, metrics, and reports, compared side by side; stored in our Postgres and SeaweedFS ([D-022](decisions.md#d-022--self-hosted-mlflow-for-experiments-no-dag-tool-no-hosted-trackers)) |
+| Run queue | pgqueuer (Postgres-backed) | 1.5.0 | MIT | One active run per episode, cancellation, and requeue after a worker crash, on the Postgres we already run ([D-023](decisions.md#d-023--run-queue-pgqueuer-no-ray-jobs)) |
+| Cloud provisioning | SkyPilot | 0.14.0 | Apache-2.0 | Finds the cheapest available GPU machines across ~25 clouds and Kubernetes, runs our image, starts Ray ([D-024](decisions.md#d-024--cloud-provisioning-skypilot)) |
+| Labelling | Label Studio Community | 1.23.2 | Apache-2.0 | Hand-made ground truth for experiments: cuts, camera setups, line starts, fact checks, story order ([D-028](decisions.md#d-028--labelling-and-inspection-label-studio--fiftyone)) |
+| Data inspection | FiftyOne open source (local only) | 1.22.1 | Apache-2.0 | Browse keyframes, detection boxes, and embedding clusters. Bundles MongoDB (SSPL), so it is never deployed |
+| Pipeline / DAG | None separate: the stage-group order and each check's declared inputs, run by our controller on Ray | — | — | A second scheduler would compete with Ray for GPUs ([D-004](decisions.md#d-004--no-orchestrator-incremental-re-runs-from-a-content-hash-cache)). Progress is visible in the Ray dashboard and the run view |
+| Tooling | uv, ruff, mypy, pytest + pytest-cov, Hypothesis, import-linter, pre-commit, pip-licenses | current | MIT / Apache-2.0 / BSD | Lockfile, lint, types, tests, coverage, module boundaries, lint-before-commit, dependency license gate |
+| CI/CD | GitHub Actions; a self-hosted runner on the dev laptop for nightly GPU jobs; GHCR (image registry); kind (tests the Helm chart without GPUs) | — | — | The same image digest built once in CI and pulled by every environment |
 | Windows dev | Docker Desktop (WSL2 backend) + WSL | 4.92 · 2.7 | — | GPU containers on Windows 11 |
+
+### Libraries
+
+| Purpose | Library | License | Used for |
+|---------|---------|---------|----------|
+| Model runtimes | transformers, sentence-transformers, gliner | Apache-2.0 | Detector, image and text embedders, NER |
+| | faster-whisper (CTranslate2) | MIT | Speech-to-text with word timestamps |
+| | PaddleOCR | Apache-2.0 | On-screen text |
+| | transnetv2-pytorch, scenedetect | MIT / BSD-3-Clause | Shot boundaries, fades |
+| Model files | huggingface_hub | Apache-2.0 | `nip models pull` / `mirror` |
+| Model client | openai (Python SDK) | Apache-2.0 | Calls to vLLM's OpenAI-compatible API, including `response_format` JSON schemas; instructor wraps it |
+| Vision & numeric | OpenCV | Apache-2.0 | Image sharpness for clearance prominence; compositing in injectors |
+| | scikit-learn | BSD-3-Clause | Clustering shots by camera setup |
+| | NumPy, Pillow | BSD-3-Clause / MIT-CMU | Drift regression, image I/O |
+| Text | rapidfuzz | MIT | Fuzzy matching of names, terms, and quotes (grounding validator) |
+| | charset-normalizer | MIT | Detecting the text encoding of old SRT files |
+| | PyYAML | MIT | Bible, catalog, rule packs |
+| Storage client | boto3 | Apache-2.0 | S3 API for SeaweedFS, AWS S3, and GCS |
+| Structured extraction | instructor | MIT | Pydantic schemas over vLLM's API, the quote-check validator, one repair retry ([D-025](decisions.md#d-025--structured-extraction-instructor--our-quote-check-registry-ids-as-an-enum)) |
+| Sensitive-entity detection | Presidio analyzer with its GLiNER recognizer; urlextract | MIT / Apache-2.0 / MIT | Phone, email, URL, plate-format, and name detection with allow-lists and deny-lists for the Clearance Scanner ([D-026](decisions.md#d-026--clearance-text-detection-presidio--gliner--urlextract)) |
+| Evaluation | scipy | BSD-3-Clause | Optimal one-to-one matching of flags to labels (`linear_sum_assignment`) |
+| Planning aid | hf-mem | MIT | Estimates a new catalog variant's memory from model file headers, without downloading it |
+
+### Test oracles (tests only, never shipped)
+
+Independent implementations that check ours ([D-030](decisions.md#d-030--test-oracles-and-copyleft-tools)):
+
+| Oracle | License | Checks |
+|--------|---------|--------|
+| OpenTimelineIO, `timecode` | Apache-2.0 / MIT | Our timecode math |
+| Subtitle Edit `seconv lint --json` | MIT | Our subtitle timing and readability rules |
+| ffsubsync | MIT, but it pins a GPL dependency (auditok), so it runs as a command in its own environment | Our drift and offset detection |
+| screenplain | MIT | Generates FDX test fixtures from Fountain |
+
+### Deliberately not used
+
+| Tool | Why not | Add it when |
+|------|---------|-------------|
+| Airflow, Dagster, Prefect, Kubeflow Pipelines | A second scheduler would compete with Ray over GPU placement; the content-hash cache already gives incremental re-runs | Runs must start from schedules or from other teams' data arriving |
+| DVC | Every benchmark set regenerates exactly from manifest checksums, injector version, and seed | People start hand-editing labelled data |
+| Weights & Biases, Comet | Hosted services: benchmark dialogue and frames would leave our infrastructure | — (MLflow is the self-hosted equivalent) |
+| LangChain, LlamaIndex | We make direct OpenAI-compatible calls with JSON schemas; a framework adds indirection, not capability | A feature needs tool-using agents with memory |
+| Ragas, DeepEval, promptfoo | Generic LLM evaluators can't score subtitle drift or clearance occurrences; our benchmark has domain labels | — |
+| Loki, ELK | The Ray dashboard and Compose logs cover a two-person team | Searching logs across many nodes becomes a daily need |
+| Sentry | No users outside the team yet | Editors start using the review UI |
+| MLflow model and prompt registries | `catalog.yaml` and prompt files in git already version these | — |
+| MkDocs | GitHub renders the Markdown docs | A hosted docs site is needed |
+| Ray Data / `ray.data.llm` | Fits the offline batch workload well, but the team kept Ray Serve ([D-014](decisions.md#d-014--vllm-as-a-process-inside-ray-serve-not-ray-serve-llm)) | The scheduler or process supervisor becomes a maintenance burden |
+| Ray Jobs API | With Ray Serve, GPUs belong to the model deployments, so isolating each run in a job frees nothing | — |
+| Graphiti, Cognee, Apache AGE | No Postgres support / Postgres store "not production-ready" / graph queries with no notion of time | Queries need deep graph traversal |
+| LangExtract, Outlines | No Pydantic schemas or repair retry / only enforces structure, which vLLM already does | — |
+| llama-swap | Swaps models per request; staged mode already loads models per stage group | — |
+| Refine; Streamlit, NiceGUI, Reflex, Gradio | Stalled npm releases; poor fit for frame-level video review (and Reflex's OIDC is proprietary) | — |
+| CVAT, Argilla | 18-service install (kept as the fallback for labelling cuts); no longer developed | Label Studio's seeking proves too imprecise for cuts |
+| pycaption, pysrt | Misreads the SMPTE time base; GPL-3.0 | — |
+| PyMuPDF, decord, fastdup | AGPL-3.0; abandoned; non-commercial license | — |
+| OpenALPR, nomeroff-net | AGPL-3.0 / GPL-3.0 | — |
+| spaCy Spanish and French models | GPL-3.0 / LGPL-LR | — |
+| DeepEval, Ragas | Our judge is one structured call; telemetry and a paid-cloud push | — |
+| pooch, imagehash, mir_eval | Covered by ~25 lines of stdlib, our DINOv2 embeddings, and scipy respectively | — |
 
 ### Build notes
 
@@ -42,6 +109,11 @@ Versions below were current on 2026-09-27.
 - **GCS through the S3 API** requires `AWS_REQUEST_CHECKSUM_CALCULATION=when_required` and `AWS_RESPONSE_CHECKSUM_VALIDATION=when_required` (newer boto3 checksum defaults break GCS).
 - **Qwen models for JSON extraction** are called with thinking disabled (`chat_template_kwargs: {enable_thinking: false}`) and a `response_format` JSON schema.
 - **pgvector HNSW** indexes `vector` columns up to 2,000 dimensions; large embedders are truncated to 1,024 dimensions (Matryoshka) to stay within the limit.
+- **TorchCodec 0.17** needs torch ≥ 2.11 and FFmpeg 4–9 shared libraries. Check the torch version in the vLLM image in week 1; FFmpeg comes from an LGPL shared build, never from PyAV's wheels (which bundle GPL encoders).
+- **ttconv** only logs bad timing expressions (the time becomes `None`), so ingest captures its log errors and fails validation on them.
+- **instructor** runs in JSON-schema mode with `max_retries=1`, and the scene text is passed as validation context to the quote check.
+- **Presidio** is English-only by default: every recognizer gets `supported_languages`, organizations are un-ignored, and Spain is added to the phone regions. Its language engine uses the MIT spaCy models for en and de and tokenizer-only pipelines for es and fr; names in all four languages come from GLiNER.
+- **Label Studio** projects use frame rate `23.976023976` (the string `24000/1001` is silently read as 24), and its frames are numbered from 1.
 
 ---
 
@@ -161,8 +233,31 @@ services:
     image: grafana/grafana:<pinned>
     ports: ["127.0.0.1:3001:3000"]
 
+  mlflow:              # experiment tracking: Postgres database `mlflow` + SeaweedFS bucket `nip-mlflow`
+    image: nip-mlflow:<release>          # ghcr.io/mlflow/mlflow + psycopg2-binary + boto3 (deploy/docker/mlflow.Dockerfile)
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000
+      --backend-store-uri ${NIP_MLFLOW_BACKEND_URI}
+      --artifacts-destination s3://nip-mlflow
+    environment: [MLFLOW_S3_ENDPOINT_URL=http://objectstore:8333, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]
+    ports: ["127.0.0.1:5000:5000"]
+
+  label-studio:        # hand labelling for experiments: docker compose --profile labeling up
+    image: heartexlabs/label-studio:<pinned 1.23 tag>
+    profiles: [labeling]
+    environment:
+      - DJANGO_DB=default
+      - POSTGRE_HOST=postgres
+      - POSTGRE_NAME=labelstudio
+      - POSTGRE_USER=nip
+      - POSTGRE_PASSWORD
+      - SSRF_PROTECTION_ENABLED=false   # lets it read media from SeaweedFS on the Compose network
+    ports: ["127.0.0.1:8081:8080"]
+
 volumes: {pg-data: {}, s3-data: {}, models: {}}
 ```
+
+MLflow gets its own small image because the official one doesn't include the Postgres driver or the S3 client.
 
 `<pinned …>` tags are fixed in the repository's `compose.yaml` by digest; the laptop and cloud VMs use the same file. Only the UI, Keycloak, and localhost-bound dashboards are published; Postgres, object storage, and model servers are reachable only on the Compose network. In production, egress is blocked at the host or VPC level (firewall rules, or NetworkPolicy on Kubernetes), and nodes fill their model cache from the internal mirror (`NIP_MODEL_SOURCE=s3://…`) instead of the internet. On Kubernetes, the Helm chart deploys the same `nip` image as a KubeRay `RayCluster` (head + GPU worker groups) plus API and UI; Postgres and object storage are managed services there.
 
@@ -188,12 +283,18 @@ volumes: {pg-data: {}, s3-data: {}, models: {}}
 | `nip_gpu_seconds_total` | Counter | slot, variant (cost accounting) |
 | `nip_cache_hits_total` | Counter | stage |
 
+Prometheus also scrapes vLLM's own `/metrics` (queue time, tokens per second, KV-cache use) from each model replica, and Ray's built-in metrics.
+
 ### Dashboards
 
 1. **Pipeline** — runs, stage progress, queue depth, coverage gaps.
 2. **Agents** — flags per check and tier, verification drop rates, unit latency.
-3. **Plans & GPUs** — current Plan per slot, replicas, model load times, amendments, GPU memory, GPU-seconds per content-hour.
+3. **Plans & GPUs** — current Plan per slot, replicas, model load times, amendments, GPU memory, vLLM queue time and KV-cache use, GPU-seconds per content-hour.
 4. **Review** — disposition rates by action, override reasons, time to review.
+
+### Operations vs experiments
+
+Prometheus and Grafana answer "what is the system doing right now?". MLflow answers "how good was this configuration, and how does it compare with the last one?". Benchmark results never live in Prometheus, and live operational metrics never live in MLflow.
 
 ---
 
@@ -210,3 +311,8 @@ volumes: {pg-data: {}, s3-data: {}, models: {}}
 | Secrets | `.env` locally (git-ignored); Kubernetes Secrets or the cloud secret manager in production |
 | Supply chain | Image digests pinned; `uv.lock`; model checkpoints pinned by revision; license allowlist enforced at startup |
 | Test data | Private real-brand assets for clearance injection live in a restricted bucket and are never published |
+| Experiment data | MLflow traces contain pre-release dialogue, so LLM tracing is on only for benchmark runs, and MLflow is reachable only on the internal network (localhost-bound locally) |
+| CI runner | The self-hosted GPU runner on the dev laptop runs only scheduled or manually started workflows on `main`, never pull requests from forks |
+| Telemetry and downloads | `MLFLOW_DISABLE_TELEMETRY=true`; Presidio's domain list stays offline (`TLDEXTRACT_PUBLIC_SUFFIX_LIST_URLS=""`); `HF_HUB_OFFLINE=1` in production |
+| Labelling and inspection tools | Label Studio runs with SSRF protection off so it can read internal storage, so it is reachable only on localhost or the internal network. FiftyOne runs only locally: no login, and its bundled MongoDB (SSPL) awaits legal review |
+| Codec licensing | FFmpeg is our own LGPL shared build; PyAV's GPL-bundled wheels are not used |

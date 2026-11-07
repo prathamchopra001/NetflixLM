@@ -1,0 +1,49 @@
+# Localization rule pack: defaults shared by every language (architecture.md > Rule pack defaults,
+# Netflix Timed Text Style Guide, D-011). Packs resolve by tag fallback, es-ES -> es -> _base
+# (D-021); a more specific pack overrides keys section by section. Fractions are exact ("5/6").
+readability:
+  max_chars_per_line: 42
+  max_lines: 2
+  min_duration_s: 5/6  # 20 frames at 24 fps
+  max_duration_s: 7
+  min_gap_frames: 2
+  # Gaps shorter than this are closed to min_gap_frames (3-11 frames at 24 fps).
+  close_gap_below_s: 1/2
+
+# Subtitle <-> source cue alignment and the timing checks built on it (2.4: loc.shot_change,
+# loc.drift, loc.offset). Rates and windows are conventions, never a constant in code: the frame
+# rate itself always comes from the picture's probe.
+timing:
+  # A target cue links to a source cue when their overlap is at least this share of the shorter one.
+  align_min_overlap: 0.3
+  # Shot changes: a cue in/out point 1..ceil(fps * window) - 1 frames from a cut is flagged
+  # (1/2 s: 1-11 frames at 24 fps; the 2-frame gap rule keeps points exactly on the cut valid).
+  shot_change_window_s: 1/2
+  # Frame rates a track may have been timed at by mistake. The drift slope is compared with
+  # rate/picture_fps - 1 (both directions) for each of these.
+  sync_rates: [25, 24, 30, 24000/1001, 30000/1001]
+  # A regression slope (target start - source start per second of episode time) counts as drift when
+  # |slope| >= min and the drift accumulated over the track is at least min_total_s. 0.1% (SMPTE-24
+  # vs 23.976 media time) is the smallest confusion we know.
+  drift_min_slope: 0.0005
+  drift_min_total_s: 0.5
+  # A slope matches a known confusion when it is within this share of the confusion's slope.
+  drift_match_tolerance: 0.2
+  # A constant offset this large (seconds) is flagged: 6 frames at 24 fps.
+  offset_min_s: 1/4
+
+# Names & terms (loc.term): fuzzy matching of registry renderings in the aligned target cue.
+term:
+  # A rendering token that is not in the target cue but resembles one (rapidfuzz ratio, 0-100)
+  # is reported as a misspelling.
+  near_miss_ratio: 75
+  # No approved rendering: the observed standard is the rendering that carries at least this share
+  # of at least `observed_min_cues` mentions of the name over the whole show, and singles the
+  # mentions out (its share of the mentions minus its share of the other cues >= observed_min_lift).
+  observed_min_share: 0.6
+  observed_min_cues: 3
+  observed_min_lift: 0.5
+  # An episode that switches the standard: it carries >= others share of the mentions in the other
+  # episodes but <= here share in this one (with at least observed_min_cues mentions each).
+  observed_switch_others: 0.9
+  observed_switch_here: 0.2

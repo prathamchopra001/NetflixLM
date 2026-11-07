@@ -1,0 +1,137 @@
+"""Clearance matching: normalization, the five registry statuses, scope, strictest-status-wins."""
+
+import pytest
+
+from nip.agents.clearance.matching import Item, Registry, in_scope, match, normalize
+
+LOG = (
+    Item(1, "(212) 555-0234", "phone", "pending"),
+    Item(2, "(415) 555-2671", "phone", "cleared"),
+    Item(3, "https://velthorn.io", "url", "denied"),
+    Item(4, "ines.valdor@quillmere-books.com", "email", "pending"),
+    Item(5, "1428 Marrow Hollow Road", "address", "cleared"),
+    Item(6, "7KLM482", "plate", "denied"),
+    Item(7, "Veltrix Cola", "brand", "pending"),
+    Item(8, "Acme Hardware", "logo", "pending", scope="S01E03"),
+    Item(9, "Orbitel Mobile", "brand", "cleared", scope="S01E01-S01E08"),
+)
+REG = Registry(LOG, fictional=("Kappa Cola", "The Land of the Gatekeepers"))
+
+
+def status(check: str, text: str, ep: str = "S01E01") -> tuple[str, int | None]:
+    m = match(REG, check, text, ep)
+    return m.status, m.item.id if m.item else None
+
+
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [
+        ("clr.phone", ("(212) 555-0234", "212.555.0234")),
+        ("clr.phone", ("(212) 555-0234", "+1 212 555 0234")),
+        ("clr.url", ("https://velthorn.io", "www.Velthorn.io/")),
+        ("clr.email", ("Hello@Velthorn.IO", "hello@velthorn.io.")),
+        ("clr.plate", ("7KLM482", "7KLM-482")),
+        ("clr.address", ("1428 Marrow Hollow Rd.", "1428 marrow hollow road")),
+        ("clr.brand_text", ("The Veltrix Cola Co", "veltrix cola")),
+    ],
+)
+def test_normalize_makes_variants_equal(a: str, b: tuple[str, str]) -> None:
+    assert normalize(a, b[0]) == normalize(a, b[1])
+
+
+def test_each_status() -> None:
+    assert status("clr.brand_text", "Kappa Cola") == ("fictional", None)  # dropped
+    assert status("clr.phone", "(415) 555-2671") == ("cleared", 2)
+    assert status("clr.phone", "(212) 555-0234") == ("pending", 1)
+    assert status("clr.url", "velthorn.io") == ("denied", 3)
+    assert status("clr.phone", "(617) 482-9154") == ("unknown", None)
+
+
+def test_variants_and_ocr_slips_match_names() -> None:
+    assert status("clr.brand_text", "VELTRIX COLA") == ("pending", 7)
+    assert status("clr.brand_text", "Veltrix Colo") == ("pending", 7)  # one OCR slip
+    assert status("clr.address", "1428 Marrow Hollow Rd") == ("cleared", 5)
+    assert status("clr.address", "Marrow Hollow Road") == ("cleared", 5)  # tokens contained
+    assert status("clr.brand_text", "Veltrix") == ("unknown", None)  # one token is not a name
+
+
+def test_identifiers_match_exactly_against_cleared_and_unknown() -> None:
+    """One digit or letter off is another number or plate; a wrong 'cleared' would hide it."""
+    assert status("clr.phone", "(415) 555-2672") == ("unknown", None)  # one off a CLEARED number
+    assert status("clr.phone", "(212) 555-0299") == ("unknown", None)  # two off the pending one
+    assert status("clr.plate", "7KLX4X2") == ("unknown", None)
+    assert status("clr.email", "ines.valdor@quillmere-book.com") == ("unknown", None)
+
+
+def test_one_edit_off_a_pending_or_denied_identifier_is_a_near_match_of_it() -> None:
+    """I3: an OCR slip must never turn a pending / denied phone or plate into unknown or hidden."""
+    m = match(REG, "clr.phone", "(212) 555-0235", "S01E01")  # last digit misread
+    assert (m.status, m.item and m.item.id, m.near) == ("pending", 1, True)
+    assert match(REG, "clr.phone", "(212) 55-0234", "S01E01").near  # a dropped digit
+    assert match(REG, "clr.plate", "7KLM462", "S01E01").status == "denied"  # 8 -> 6
+    assert match(REG, "clr.plate", "7KIM482", "S01E01").near  # L -> I
+    assert not match(REG, "clr.plate", "7KLM482", "S01E01").near  # an exact read is exact
+    assert match(REG, "clr.plate", "7K482", "S01E01").status == "unknown"  # too short to compare
+
+
+def test_a_check_only_matches_its_kinds() -> None:
+    assert status("clr.url", "(212) 555-0234") == ("unknown", None)
+    assert status("clr.brand_text", "Acme Hardware", "S01E03") == ("pending", 8)  # kind logo
+
+
+def test_scope() -> None:
+    assert status("clr.brand_text", "Acme Hardware", "S01E03") == ("pending", 8)
+    assert status("clr.brand_text", "Acme Hardware", "S01E04") == ("unknown", None)
+    assert status("clr.brand_text", "Orbitel Mobile", "S01E08") == ("cleared", 9)
+    assert status("clr.brand_text", "Orbitel Mobile", "S01E09") == ("unknown", None)
+    assert in_scope(None, "S02E01") and in_scope("", "S02E01")
+    assert in_scope("S01E01, S02E05-S02E07", "S02E06") and not in_scope("S01E01", "S01E02")
+
+
+def test_strictest_status_wins() -> None:
+    reg = Registry(
+        (
+            Item(1, "Veltrix Cola", "brand", "cleared"),
+            Item(2, "Veltrix Cola", "logo", "denied"),
+            Item(3, "Veltrix Cola", "product", "pending"),
+        )
+    )
+    m = match(reg, "clr.brand_text", "Veltrix Cola", "S01E01")
+    assert (m.status, m.item and m.item.id) == ("denied", 2)
+
+
+def test_the_clearance_log_wins_over_the_fictional_and_title_rules() -> None:
+    """N1: a logged pending / denied item is never swallowed by the film's own names."""
+    reg = Registry(
+        (
+            Item(1, "Waffle House", "brand", "denied"),  # contains the show title "House"
+            Item(2, "12 Springfield Road", "address", "pending"),  # a one-word bible place
+            Item(3, "Sound Design", "brand", "pending"),
+        ),
+        fictional=("House", "Springfield"),
+    )
+    assert match(reg, "clr.brand_text", "WAFFLE HOUSE", "S01E01").status == "denied"
+    assert match(reg, "clr.address", "12 Springfield Road", "S01E01").status == "pending"
+    assert match(reg, "clr.brand_text", "Sound Design", "S01E01").status == "pending"
+    # unlogged text with the film's own words is still the production's, not a clearance item
+    assert match(reg, "clr.brand_text", "THE HOUSE OF CARDS", "S01E01").status == "fictional"
+    assert match(reg, "clr.address", "9 Springfield Lane", "S01E01").status == "fictional"
+
+
+def test_an_exact_read_of_a_cleared_number_stays_cleared_only_by_exact_match() -> None:
+    """N3: cleared needs an exact read of the cleared entry, even when a denied number is one edit
+    from it; a read merely near the cleared one is not cleared (near a denied one: denied)."""
+    reg = Registry(
+        (
+            Item(1, "(415) 555-2671", "phone", "cleared"),
+            Item(2, "(415) 555-2672", "phone", "denied"),  # one digit from the cleared one
+        )
+    )
+    exact = match(reg, "clr.phone", "(415) 555-2671", "S01E01")
+    assert (exact.status, exact.item and exact.item.id, exact.near) == ("cleared", 1, False)
+    other = match(reg, "clr.phone", "(415) 555-2672", "S01E01")
+    assert (other.status, other.item and other.item.id) == ("denied", 2)
+    slip = match(reg, "clr.phone", "(415) 555-2673", "S01E01")  # one off both
+    assert (slip.status, slip.item and slip.item.id, slip.near) == ("denied", 2, True)
+    only_cleared = Registry((Item(1, "(415) 555-2671", "phone", "cleared"),))
+    assert match(only_cleared, "clr.phone", "(415) 555-2679", "S01E01").status == "unknown"

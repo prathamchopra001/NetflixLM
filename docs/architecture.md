@@ -133,7 +133,7 @@ The LLM reads one scene at a time (plus the bible entries for characters present
 
 **Grounding validator.** Every extracted fact carries a quote and a line id. A deterministic validator checks the quote exists in that line (normalized, fuzzy threshold). Facts that fail are dropped and counted in extraction metrics — the LLM cannot invent a fact that isn't in the text.
 
-**Entity resolution.** Names and aliases are resolved against the bible's character list first, then against previously seen entities. Unresolved names become *candidate entities* shown in the review UI's fact queue.
+**Entity resolution.** The extraction schema constrains character and entity IDs to the registry (an enum), so the model returns a known ID or `UNKNOWN` ([D-025](decisions.md#d-025--structured-extraction-instructor--our-quote-check-registry-ids-as-an-enum)). `UNKNOWN` mentions are fuzzy-matched against aliases; names that still don't resolve become *candidate entities* shown in the review UI's fact queue.
 
 **Fact correction loop.** Low-confidence facts (below `NIP_FACT_REVIEW_THRESHOLD`) and candidate entities appear in the correction queue. A reviewer can confirm, edit, or retract. Corrections are stored as new fact versions (never destructive updates), and every flag whose evidence included the corrected fact is automatically re-evaluated.
 
@@ -243,9 +243,9 @@ Finds items that need legal clearance and reports them in a form an errors-and-o
 
 | Channel | Method | Finds |
 |---------|--------|-------|
-| **On-screen text** | OCR on keyframes → deterministic parsers | Phone numbers that look real. Only fiction-reserved ranges pass (per-country config; NANP: 555-0100–0199 — other 555 numbers returned to general use in 2016). URLs and emails (RFC 2606 reserved domains such as `example.com` pass), street addresses, license plates, brand names |
+| **On-screen text** | OCR on keyframes → Presidio recognizers (phone, email, plate formats; URLs via urlextract) with allow-lists for fiction-reserved values ([D-026](decisions.md#d-026--clearance-text-detection-presidio--gliner--urlextract)) | Phone numbers that look real. Only fiction-reserved ranges pass (per-country config; NANP: 555-0100–0199 — other 555 numbers returned to general use in 2016). URLs and emails (RFC 2606 reserved domains such as `example.com` pass), street addresses, license plates, brand names |
 | **Logos & artwork** | Open-vocabulary detector proposes regions (`logo`, `sign`, `poster`, `screen`, `packaging`, `artwork`); only frames with candidates go to the vision model, which names the item and returns its box | Brand logos, product packaging, posters, artworks, screens showing real content |
-| **Dialogue & subtitles** | Zero-shot NER + LLM on source dialogue and subtitles; entities not in the bible's fictional registry are candidates | Real people, companies, products, places referenced by name |
+| **Dialogue & subtitles** | Presidio with a GLiNER recognizer (people, organizations, products) plus deny-lists built from the clearance log, on source dialogue and subtitles; entities not in the bible's fictional registry are candidates | Real people, companies, products, places referenced by name |
 
 **Matching.** Each detection is normalized (case, punctuation, known variants) and matched against the clearance registry:
 

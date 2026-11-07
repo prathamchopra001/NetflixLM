@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha, Ines and Rui crowd into Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha, Ines and Rui crowd into Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha, Ines and Rui crowd into Pier Nine.\", \"predicate\": \"present_at\", \"subject\": \"rui\", \"object\": \"Pier Nine\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Ines, the fog is worse than yesterday.\", \"predicate\": \"state\", \"subject\": \"sasha\", \"object\": \"sasha\", \"value\": \"injured: <detail>\", \"confidence\": 0.0}, {\"line\": 3, \"quote\": \"I counted gulls instead of sleeping.\", \"predicate\": \"state\", \"subject\": \"ines\", \"object\": \"ines\", \"value\": \"injured: <detail>\", \"confidence\": 0.0}]}"
+}

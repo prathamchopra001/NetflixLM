@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Dov and Tomas check their watches at Saltworks Yard\", \"predicate\": \"present_at\", \"subject\": \"dov\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov and Tomas check their watches at Saltworks Yard\", \"predicate\": \"present_at\", \"subject\": \"tomas\", \"object\": \"Saltworks Yard\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Dov checks the signal flare again\", \"predicate\": \"holds\", \"subject\": \"dov\", \"object\": \"ada\", \"value\": \"check\", \"confidence\": 1.0}, {\"line\": 2, \"quote\": \"Put it away before someone sees\", \"predicate\": \"decision\", \"subject\": \"tomas\", \"value\": \"put it away\", \"confidence\": 1.0}]}"
+}

@@ -1,0 +1,17 @@
+# EXP-001 / 1.7 dev override for ray-head (compose.yaml itself unchanged):
+#   docker compose -f compose.yaml -f eval/exp/exp001.compose.yaml up -d --wait ray-head mlflow
+# - Weights from the repo's models/ on D: (HF_HOME=/models/hf), not the named `models` volume.
+# - HF_HUB_OFFLINE=1: no Hub round trips during starts (weights pre-downloaded).
+# - Source bind-mounted ahead of the installed copy, so code changes need no 23 GB image rebuild.
+services:
+  ray-head:
+    environment:
+      PYTHONPATH: /app/src:/app
+      NIP_VLLM_LOG_DIR: /tmp/nip-vllm
+      HF_HUB_OFFLINE: "1" # weights are already in models/hf; vLLM otherwise calls the Hub on every start
+    volumes:
+      - ./models:/models
+      - ./src:/app/src:ro
+      - ./eval:/app/eval:ro
+      - ./tests:/app/tests:ro
+      - ./config:/app/config:ro

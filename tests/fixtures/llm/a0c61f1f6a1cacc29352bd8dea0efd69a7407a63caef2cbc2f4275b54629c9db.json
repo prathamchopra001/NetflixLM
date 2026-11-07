@@ -1,0 +1,5 @@
+{
+ "variant": "qwen3.5-4b-awq",
+ "schema": "Extraction",
+ "response": "{\"events\": [{\"line\": 1, \"quote\": \"Sasha and Ines argue quietly at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"sasha\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Ines argue quietly at Quill Archive.\", \"predicate\": \"present_at\", \"subject\": \"ines\", \"object\": \"Quill Archive\", \"confidence\": 1.0}, {\"line\": 1, \"quote\": \"Sasha and Ines argue quietly at Quill Archive.\", \"predicate\": \"relationship\", \"subject\": \"sasha\", \"object\": \"ines\", \"value\": \"colleagues\", \"confidence\": 0.8}, {\"line\": 2, \"quote\": \"Did you sleep at all, Ines?\", \"predicate\": \"learns\", \"subject\": \"sasha\", \"object\": \"ines\", \"confidence\": 0.9}, {\"line\": 3, \"quote\": \"I counted gulls instead of sleeping.\", \"predicate\": \"state\", \"subject\": \"ines\", \"value\": \"lost\", \"confidence\": 1.0}]}"
+}

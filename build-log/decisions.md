@@ -137,6 +137,185 @@ Every entry names the deliverable (from [docs/phased-plan.md](../docs/phased-pla
 | [B-127](#b-127--phase-2s-commit-messages-were-rewritten-once-before-the-first-push-to-drop-claude-co-author-trailers) | process | phase-2 messages rewritten once to drop Claude trailers before the first push |
 | [B-128](#b-128--tests-force-typers-plain-non-rich-terminal-output) | CI | Tests force Typer's plain output |
 | [B-129](#b-129--tests-that-need-local-data-files-are-marked-integration-ci-is-replayed-locally-before-a-push) | CI | Local-data tests are integration; replay CI locally before a push |
+| [B-130](#b-130--nip-ingest-takes-tagpath-positionals) | 2.0 | `nip ingest` takes `[TAG=]PATH` positionals |
+| [B-131](#b-131--episode_seq--season--1000--number) | 2.0 | `episode_seq = season * 1000 + number` |
+| [B-132](#b-132--frames-at-ingest-a-non-24-fps-picture-after-24-fps-rows-is-refused) | 2.0 | Frames at ingest; a non-24 fps picture after 24 fps rows is refused |
+| [B-133](#b-133--replacing-an-episodes-source-is-refused-show-level-files-are-upserted) | 2.0 | Replacing an episode's source is refused; show-level files upserted (superseded in part by 2.9B-1) |
+| [B-134](#b-134--bible-mapping-to-entity-and-entity_alias) | 2.0 | Bible mapping to `entity` / `entity_alias` |
+| [B-135](#b-135--script_lineseq-is-1-based-within-its-scene) | 2.0 | `script_line.seq` is 1-based within its scene |
+| [B-136](#b-136--line-asr-fact-and-clearance-refs-are-built-in-nipstoreload) | 2.0 | Line/ASR/fact/clr refs built in `nip.store.load` |
+| [B-137](#b-137--fact-spans-carry-their-source-quotes-clearance-item-spans-carry-the-item-name) | 2.0 | Fact spans carry source quotes; clearance spans the item name |
+| [B-138](#b-138--the-checks-construction-convention) | 2.0 | The `CHECKS` construction convention |
+| [B-139](#b-139--run-artifacts-are-per-episode) | 2.0 | Run artifacts are per episode |
+| [B-140](#b-140--run-lifecycle-and-the-stage-contract-epunit-gaps-coverage-from-check-units) | 2.0 | Run lifecycle and the stage contract (`ep.unit()`, gaps, coverage from check units) |
+| [B-141](#b-141--artifacts-are-published-only-after-the-commit-the-whole-run-is-one-transaction) | 2.0 | Artifacts published after commit; whole run one transaction (controller ruling) |
+| [B-142](#b-142--a-store-run-plans-with-current_plan) | 2.0 | A store run plans with `current_plan({})` |
+| [B-143](#b-143--the-file-mode-cli-is-renamed-nip-run-files-nip-run-is-the-store-command) | 2.0 | File-mode CLI renamed `nip run-files` |
+| [B-144](#b-144--keyframe-object-keys-use-the-shot-index) | 2.0 | Keyframe object keys use the shot index |
+| [B-145](#b-145--script_linespeaker-is-added-by-28-in-migration-0002) | 2.0 | `script_line.speaker` added by 2.8 in 0002 (controller ruling) |
+| [B-146](#b-146--a-serve-client-module-is-named-after-its-slot-clientstext_embedderpy) | 2.0 | Serve client module named after its slot (controller ruling) |
+| [B-147](#b-147--every-flag-must-carry-at-least-one-stable-evidence-ref) | 2.0 | Every flag carries a stable evidence ref (controller ruling) |
+| [B-148](#b-148--each-work-unit-runs-in-a-savepoint-a-malformed-evidence-ref-is-a-counted-drop) | 2.0 | Work units run in a savepoint; malformed refs are counted drops |
+| [B-149](#b-149--nip-eval-compare-prints-every-logged-metric-and-refuses-mixed-groups-r10) | 2.0 | `nip eval compare` prints every metric, refuses mixed groups (R10) |
+| [B-150](#b-150--the-store-integration-tests-go-into-ci-in-w-int) | 2.0 | Store integration tests go into CI in W-int (controller ruling) |
+| [B-151](#b-151--knowledge-thresholds-stay-module-constants-until-configpipelineyaml-is-free) | 2.1 | Knowledge thresholds stay module constants until pipeline.yaml is free (controller ruling) |
+| [B-152](#b-152--llmclient-goes-through-instructor-and-returns-a-plain-instance-parsed-from-the-final-reply) | 2.1 | `LLMClient` through instructor, plain instance re-parsed from the reply |
+| [B-153](#b-153--recorded-llm-stub-keyed-by-sha256variant-system-prompt-schema) | 2.1 | Recorded LLM stub keyed by sha256(variant, system, prompt, schema) |
+| [B-154](#b-154--registry-keys-are-bible-id-or-canonical-name-candidates-are-not-in-the-enum) | 2.1 | Registry keys are bible id or canonical name; candidates not in the enum |
+| [B-155](#b-155--grounding-normalized-partial_ratio--90-ratio-for-over-long-quotes-two-word-minimum) | 2.1 | Grounding: `partial_ratio` ≥ 90, `ratio` for long quotes, two-word minimum |
+| [B-156](#b-156--raw-events-were-uploaded-inside-the-stage-deviation-moved-by-w-int) | 2.1 | Raw events uploaded inside the stage (moved to `publish` by W-int) |
+| [B-157](#b-157--fact_eventwork_unit_id-stays-null) | 2.1 | `fact_event.work_unit_id` stays NULL |
+| [B-158](#b-158--consolidation-re-runs-show-wide-and-keeps-the-ids-of-unchanged-facts) | 2.1 | Consolidation re-runs show-wide and keeps unchanged fact ids |
+| [B-159](#b-159--interval-choices-the-docs-left-open) | 2.1 | Interval choices the docs left open |
+| [B-160](#b-160--fact-shapes-shared-with-23-and-state-lost-from-losedrop-events) | 2.1 | Fact shapes shared with 2.3; `state: lost` from lose/drop (controller ruling) |
+| [B-161](#b-161--names-match-on-whole-words-subset-with-at-least-half-the-words-an-exact-name-scores-101) | 2.1 | Whole-word name matching, exact name scores 101 |
+| [B-162](#b-162--object-less-holdsownswearing-events-are-not-stored) | 2.1 | Object-less holds/owns/wearing not stored |
+| [B-163](#b-163--exp-006-first-wave-keep-threshold-90-the-bar-is-not-met-by-any-threshold) | 2.1/EXP-006 | Keep threshold 90; no threshold meets the bar |
+| [B-164](#b-164--exp-020-first-wave-no-decision-until-the-rule-precision-half) | 2.1/EXP-020 | No decision until the rule-precision half |
+| [B-165](#b-165--runaway-guard-at-most-4-events-per-scene-line-enforced-by-the-grammar) | 2.1B | Runaway guard: at most 4 events per scene line |
+| [B-166](#b-166--line-is-an-enum-of-the-scenes-line-numbers) | 2.1B | `line` is an enum of the scene's line numbers |
+| [B-167](#b-167--post-model-drops-zero-confidence-duplicates-argument-kinds-per-predicate) | 2.1B | Drop zero-confidence, duplicate and mistyped events (`ARG_KINDS`) |
+| [B-168](#b-168--the-openai-sdk-under-instructor-runs-with-max_retries0) | 2.1B | OpenAI SDK `max_retries=0` |
+| [B-169](#b-169--the-prompt-prints-one-numbered-line-per-script_line) | 2.1B | One printed line per `script_line` |
+| [B-170](#b-170--resolved-dialogue-speakers-are-present-at-the-headings-location-d-21b-1) | 2.1B | Derived `present_at` for resolved dialogue speakers, not for off-screen voices |
+| [B-171](#b-171--a-candidate-entitys-guessed-kind-is-provisional) | 2.1B | Candidate kinds are provisional |
+| [B-172](#b-172--holdsowns-values-are-mapped-only-from-the-prompts-vocabulary-other-verbs-are-dropped-and-counted-d-21b-2) | 2.1B | holds/owns values only from the prompt's verbs (controller ruling) |
+| [B-173](#b-173--script_linespeaker-stores-the-character-cue-as-written-d-21b-3) | 2.1B | `script_line.speaker` keeps the cue as written (controller ruling) |
+| [B-174](#b-174--all-gpu-work-in-the-exp-harnesses-goes-through-gpu_session-which-releases-only-a-lock-it-owns) | 2.1B | `gpu_session`: the lock is released only by its owner |
+| [B-175](#b-175--exp-harness-down-deletes-serve-apps-by-status) | 2.1B | EXP harness `down` deletes Serve apps by status |
+| [B-176](#b-176--secret-in-scene-check-for-learnsreferences-measured-not-shipped) | 2.1B | Secret-in-scene check measured, not shipped |
+| [B-177](#b-177--prompt-v2-for-learns-vs-references-proposed-not-built) | 2.1B | Prompt v2 for learns vs references proposed, not built |
+| [B-178](#b-178--prop_provenance-on-never-obtained-personal-props-lower-tier-proposed-to-23) | 2.1B | Lower tier for never-obtained props proposed to 2.3 |
+| [B-179](#b-179--exp-018-do-not-adopt-the-fp8-kv-cache) | 2.1B/EXP-018 | Do not adopt the FP8 KV cache |
+| [B-180](#b-180--exp-020-inconclusive-d-025-registry-ids-as-an-enum-stands-by-default) | 2.1B/EXP-020 | Inconclusive; D-025 stands by default |
+| [B-181](#b-181--exp-006-ship-the-argument-checks-the-bar-is-still-not-met) | 2.1B/EXP-006 | Ship the argument checks; bar still not met |
+| [B-182](#b-182--exp-005-8k-arm-only-inconclusive-until-the-32k-arm-runs) | 2.1B/EXP-005 | 8k arm only; inconclusive until 32k |
+| [B-183](#b-183--exp020_rules-is-the-harness-for-future-extraction-experiments) | 2.1B | `exp020_rules` is the extraction-experiment harness |
+| [B-184](#b-184--fix-round-1-must-re-measure-the-plot-rules-on-real-facts-later-rounds-re-score-without-the-gpu) | 2.1B | Re-measure plot rules on real facts; later rounds re-score without the GPU (controller ruling) |
+| [B-185](#b-185--a-pure-derive-with-the-marker-lexicon-as-module-constants-the-llm-only-for-ambiguous-transitions) | 2.2 | Pure `derive`, lexicon as module constants, LLM only for ambiguous transitions |
+| [B-186](#b-186--flashbacks-with-an-unknown-day-rank-first-in-the-show-and-are-inferred) | 2.2 | Unknown-day flashbacks rank first and are inferred |
+| [B-187](#b-187--flashback-spans-a-heading-cue-marks-one-scene-a-lead-in-cue-marks-until-the-present-returns) | 2.2 | Flashback spans: heading cue = one scene, lead-in cue = until the present returns |
+| [B-188](#b-188--bible-overrides-always-win-including-over-the-llm) | 2.2 | Bible overrides always win, including over the LLM (review fix) |
+| [B-189](#b-189--the-stage-re-derives-the-whole-show-for-every-episode-verdicts-memoised-per-variant) | 2.2 | Stage re-derives the whole show per episode; verdict memo per variant |
+| [B-190](#b-190--markers-stored-in-the-data-model-set-cues-read-from-every-heading-segment-except-the-location) | 2.2 | Data-model marker set; cues from every heading segment except the location (review fix) |
+| [B-191](#b-191--an-ambiguous-transitions-synthetic-variant-so-exp-007-can-discriminate) | 2.2B | Ambiguous-transitions synthetic variant (controller ruling) |
+| [B-192](#b-192--exp-007-holds-the-facts-fixed-oracle-facts-only-the-story-columns-vary-between-arms) | 2.2B | EXP-007 holds oracle facts fixed; only story columns vary |
+| [B-193](#b-193--how-the-variant-hides-story-time-prose-cues-a-regressing-heading-silent-cases-kept) | 2.2B | How the variant hides story time; silent cases kept |
+| [B-194](#b-194--prompt-v2-a-regressing-time-of-day-is-normally-the-next-day) | 2.2B | Prompt v2: a regressing time of day is normally the next day |
+| [B-195](#b-195--storyprompt-is-v2) | 2.2B | `story.PROMPT` is v2 (controller ruling) |
+| [B-196](#b-196--exp-007-decision-keep-the-llm-step-with-prompt-v2-bible-overrides-first) | 2.2B | EXP-007 decision: keep the LLM step with v2, bible first |
+| [B-197](#b-197--the-experiments-down-deletes-serve-apps-by-status-under-the-gpu-lock) | 2.2B | Experiment `down` deletes Serve apps by status, under the GPU lock |
+| [B-198](#b-198--three-story-step-improvements-proposed-and-left-undone) | 2.2B | Cascade guard, silent-case trigger, `Verdict.days` cap: proposed, not done |
+| [B-199](#b-199--one-parameterized-sql-file-per-rule-claim-on-the-script-line-one-flag-per-claim-line) | 2.3 | One SQL file per rule; claim on the script line; one flag per claim line |
+| [B-200](#b-200--severities-4--3--3--2-the-inferred-story-factor-applied-once-on-raw-event-confidence) | 2.3 | Severities 4/3/3/2; inferred factor applied once on raw event confidence |
+| [B-201](#b-201--the-fact-contract-the-rules-assume-and-what-21-must-emit) | 2.3 | Fact contract the rules assume (use = `holds` event with `event: use`) |
+| [B-202](#b-202--marker-exemptions-dead_acts-and-two_places-skip-flashbackdreamvision-the-other-two-do-not) | 2.3 | Marker exemptions per rule |
+| [B-203](#b-203--two_places-orients-a-pair-by-screen-order-so-it-is-flagged-once-in-the-later-episode) | 2.3 | `two_places` orients pairs by screen order |
+| [B-204](#b-204--the-re-check-re-runs-the-rules-sql-and-compares-only-the-claim-line) | 2.3 | Re-check re-runs the SQL, compares only the claim line |
+| [B-205](#b-205--the-oracle-facts-loader-lives-in-evalexplayer1_oraclepy-tagged-plot-l1) | 2.3 | Oracle-facts loader in `eval/exp/layer1_oracle.py`, tag `PLOT-L1` |
+| [B-206](#b-206--lost-is-handled-like-destroyed-21-builds-state-lost-facts) | 2.3 | `lost` like `destroyed`; 2.1 builds `state: lost` facts (controller ruling) |
+| [B-207](#b-207--cue-alignment-fits-one-line-per-track-by-onset-coincidence-then-measures-overlap-on-that-line) | 2.4 | Cue alignment fits one line per track by onset coincidence, then overlap on that line |
+| [B-208](#b-208--links-are-persisted-by-the-stage-the-checks-recompute-them) | 2.4 | Links persisted by the stage; checks recompute them |
+| [B-209](#b-209--drift-and-offset-require-the-picture-superseded-by-b-210) | 2.4 | drift and offset require the picture (**Superseded** by B-210) |
+| [B-210](#b-210--drift-and-offset-run-without-a-picture-and-say-less) | 2.4 | drift and offset run without a picture: rate-pair causes, offset in seconds |
+| [B-211](#b-211--locterm-matching-rules) | 2.4 | loc.term matching rules (phrase integrity, common-noun inflection, confidences) |
+| [B-212](#b-212--observed-standard-per-episode-names-kept-verbatim-only-superseded-by-b-213) | 2.4 | Observed standard per episode, verbatim only (**Superseded** by B-213) |
+| [B-213](#b-213--observed-standard-over-the-whole-show-recomputed-every-run) | 2.4 | Observed standard over the whole show, recomputed every run |
+| [B-214](#b-214--native-labels-for-shot_change-come-from-the-clean-run-and-are-a-regression-guard-not-truth) | 2.4 | shot_change natives from the clean run are a regression guard; raw column is the precision |
+| [B-215](#b-215--the-tos-it-offset-injection-runs-in-process) | 2.4 | ToS `it` offset injection runs in-process |
+| [B-216](#b-216--shot_change-passes-an-out-point-at-cut---2--cut-and-flags-points-on-either-side-of-a-cut) | 2.4 | shot_change passes out points at cut - 2 .. cut; flags either side of a cut |
+| [B-217](#b-217--the-benchmark-driver-lives-in-evalexploc_benchpy-and-runs-at-a-committed-sha) | 2.4 | Benchmark driver in `eval/exp/loc_bench.py`, run at a committed SHA |
+| [B-218](#b-218--24-follow-ups-assigned-to-w-int) | 2.4 | Injector fix and stale MLflow runs assigned to W-int (controller ruling) |
+| [B-219](#b-219--faster-whispers-own-audio-decoder-is-bypassed-nip-reads-a-16-khz-wav) | 2.5 | faster-whisper's PyAV decoder bypassed; nip reads a 16 kHz wav |
+| [B-220](#b-220--laptop-asr-default-is-faster-whisper-large-v3-turbo-int8) | 2.5 | Laptop ASR default is large-v3-turbo-int8 |
+| [B-221](#b-221--decoding-no-vad-temperature-fallback-min_prob-05-superseded-by-b-222-for-the-fallback-and-the-filter) | 2.5 | No VAD + temperature fallback + min_prob 0.5 (**Superseded** by B-222) |
+| [B-222](#b-222--asr-decoding-default-is-the-deterministic-novad-hst-arm) | 2.5 | ASR decoding default is the deterministic `novad-hst` arm (controller ruling) |
+| [B-223](#b-223--token-level-alignment-is-the-default-with-a-03-s-first-word-cap) | 2.5 | Token-level alignment default with a 0.3 s first-word cap |
+| [B-224](#b-224--not_in_cut-needs-at-least-8-unplaced-dialogue-words) | 2.5 | `not_in_cut` needs at least 8 unplaced dialogue words |
+| [B-225](#b-225--exp-004-ground-truth-derived-as-broadcast-scripts-labels-outside-evallabels) | 2.5 | EXP-004 ground truth from derived scripts, labels in `eval/exp/exp004_labels/` (controller ruling) |
+| [B-226](#b-226--timeline-stages-type-the-episode-with-a-protocol-instead-of-importing-nippipeline) | 2.5 | Timeline stages typed by a Protocol, no `nip.pipeline` import |
+| [B-227](#b-227--exp-003-logs-substitutionsdeletions-and-per-film-sdi-next-to-wer) | 2.5 | EXP-003 logs sub+del and per-film S/D/I next to WER |
+| [B-228](#b-228--no-transcript-spans-on-the-timeline-yet) | 2.5 | No transcript spans on the Timeline yet |
+| [B-229](#b-229--the-ocr-slot-uses-rapidocr-onnx-runtime-with-pp-ocrv6-medium-the-catalog-id-pp-ocrv6-medium-is-kept) | 2.6 | `ocr` slot uses RapidOCR (ONNX Runtime) with PP-OCRv6 medium |
+| [B-230](#b-230--ocr-detection-on-the-gpu-recognition-on-the-cpu) | 2.6 | OCR detection on GPU, recognition on CPU |
+| [B-231](#b-231--the-cpu-onnxruntime-is-excluded-from-the-lock) | 2.6 | CPU `onnxruntime` excluded from the lock |
+| [B-232](#b-232--fiction-reserved-phone-numbers-are-matched-on-the-national-significant-number) | 2.6 | Fiction-reserved numbers matched on the national significant number |
+| [B-233](#b-233--555-01000199-is-fiction-reserved-under-every-area-code) | 2.6 | 555-0100..0199 reserved under every area code (controller ruling) |
+| [B-234](#b-234--reserved-domains-are-filtered-in-code) | 2.6 | Reserved domains filtered in code |
+| [B-235](#b-235--textscanner-takes-one-language-fictional-and-deny-listed-brands-are-constructor-arguments) | 2.6 | `TextScanner` takes one language; fictional/deny-listed brands as arguments |
+| [B-236](#b-236--presidio-without-gpl-spacy-models-gliner-carries-names-gliner-with-its-own-word-splitter-and-no-extra-weights) | 2.6 | Presidio without GPL spaCy; GLiNER for names, own word splitter, no extra weights |
+| [B-237](#b-237--gliners-cap-transformers5170-is-accepted-for-now) | 2.6 | gliner's transformers<5.17 cap accepted; vLLM smoke in W-int (controller ruling) |
+| [B-238](#b-238--plate-patterns-are-case-sensitive-allow-one-space-and-exclude-caption-words-by-name) | 2.6 | Plate patterns case-sensitive, one space, caption stop-lists |
+| [B-239](#b-239--gb-drama-ranges-from-a-secondary-source-of-ofcoms-table-unverifiable-blocks-removed) | 2.6 | GB drama ranges from a secondary source of Ofcom's table; unverifiable blocks removed |
+| [B-240](#b-240--ocr-and-ner-clients-read-nip_serve_url) | 2.6 | OCR/NER clients read `NIP_SERVE_URL` |
+| [B-241](#b-241--ocr-url-cleanup-joins-a-spaced-dot-only-before-a-known-tld-cctlds-only-in-lower-case) | 2.6 | OCR URL cleanup: known TLDs only after a spaced dot; ccTLDs lower case |
+| [B-242](#b-242--gliner-spans-that-overlap-a-structured-finding-are-not-second-findings) | 2.6 | GLiNER spans overlapping a phone/URL/email are not second findings |
+| [B-243](#b-243--identifiers-match-exactly-names-fuzzily-the-strictest-status-wins) | 2.7 | Identifiers match exactly, names fuzzily; strictest status wins |
+| [B-244](#b-244--pendingdenied-are-must_review-and-cleared-suppressed-whatever-the-confidence) | 2.7 | Pending/denied `must_review`, cleared `suppressed`, whatever the confidence |
+| [B-245](#b-245--candidate-confidence--ocr-confidence-x-maxrecognizer-score-certainty-floor) | 2.7 | Confidence = OCR x max(recognizer score, certainty floor) |
+| [B-246](#b-246--occurrences-merge-by-a-2-s-gap-between-keyframe-cells-scene-boundaries-are-not-used) | 2.7 | Occurrences merge by a 2 s gap between keyframe cells, not by scene |
+| [B-247](#b-247--a-keyframe-span-stands-for-its-cell-the-flags-claim-is-the-keyframes-superseded-by-b-248) | 2.7 | Keyframe-cell claims (**Superseded** by B-248) |
+| [B-248](#b-248--the-claim-is-the-occurrences-frame-range-as-a-clrocc-hash-span) | 2.7 | Claim = occurrence frame range as a `clr/occ-` span (controller ruling) |
+| [B-249](#b-249--each-occurrence-has-its-own-stable-ref-so-r13-fingerprints-separate-distinct-items) | 2.7 | Per-occurrence stable ref; 0 fingerprint collisions |
+| [B-250](#b-250--a-one-edit-ocr-slip-of-a-pendingdenied-phone-or-plate-escalates-to-must_review) | 2.7 | One-edit slip of a pending/denied phone or plate escalates (controller ruling) |
+| [B-251](#b-251--exp-008-keep-the-4-s--2-s-keyframe-policy-as-a-recorded-override-of-the-bar) | 2.7 | EXP-008: keep 4 s / 2 s keyframes as an override of the bar (controller ruling) |
+| [B-252](#b-252--exp-017-keep-the-dedicated-ocr-engine-pp-ocrv6-medium-via-rapidocr) | 2.7 | EXP-017: keep the OCR engine over the vision model |
+| [B-253](#b-253--credits-and-title-cards-give-no-gliner-brand-or-address-guesses) | 2.7 | Credits and title cards give no GLiNER brand/address guesses |
+| [B-254](#b-254--credits-urls-are-correct-unknown-flags-precision-is-reported-against-injected-labels-only-junk-is-dropped-by-rule) | 2.7 | Credits URLs are native labels; precision vs injected labels only; junk by rule (controller ruling) |
+| [B-255](#b-255--the-clearance-log-is-matched-before-any-junk-rule) | 2.7 | The clearance log is matched before any junk rule |
+| [B-256](#b-256--no-ner-pin-in-code-the-plannercatalog-decides-the-ner-variant) | 2.7 | No NER pin in code; planner decides (controller ruling) |
+| [B-257](#b-257--pipelinepy-two-stages-and-the-slot-tables-beyond-the-one-sanctioned-add_stage) | 2.7 | `pipeline.py`: two stages and slot tables beyond the one sanctioned line (ratified) |
+| [B-258](#b-258--clearance-csv-per-run-and-episode-cli-now-api-route-later) | 2.7 | Clearance CSV per run and episode; CLI now, API route in 4.1 |
+| [B-259](#b-259--crop-sharpness-is-stored-as-a-companion-detection-row) | 2.7 | Crop sharpness as a companion `detection` row |
+| [B-260](#b-260--unknown-plates-stay-at-their-recognizer-score-and-suppressed) | 2.7 | Unknown plates stay at their score and `suppressed` |
+| [B-261](#b-261--the-embedder-client-module-is-clientstext_embedderpy) | 2.8 | Embedder module named `clients/text_embedder.py` (controller ruling) |
+| [B-262](#b-262--script_linespeaker-text-in-migration-0002-holds-the-raw-character-cue) | 2.8 | `script_line.speaker` in migration 0002 (controller ruling) |
+| [B-263](#b-263--unique-scene_id-kind-embedder_variant-on-scene_chunk-the-writer-is-an-upsert) | 2.8 | `UNIQUE (scene_id, kind, embedder_variant)`; upsert writer |
+| [B-264](#b-264--one-hnsw-partial-expression-index-per-catalog-embedder-variant-with-the-variant-inlined) | 2.8 | One HNSW partial index per catalog embedder variant, variant inlined |
+| [B-265](#b-265--hybrid-score--cosine--weight-x-idf-weighted-entity-overlap-weight-10) | 2.8 | Hybrid = cosine + 1.0 x IDF-weighted entity overlap |
+| [B-266](#b-266--cpu-is-the-in-process-embedding-default-the-serve-actor-uses-cuda) | 2.8 | CPU in-process embedding default; Serve actor on CUDA |
+| [B-267](#b-267--no-instruction-prompt-scene-text-is-heading-plus-speaker-text-truncated-at-1024-tokens) | 2.8 | No instruction prompt; scene text format, 1,024-token cut |
+| [B-268](#b-268--the-index-stage-is-a-no-op-without-a-text_embedder-decision-never-a-silent-stub) | 2.8 | Index stage is a no-op without a `text_embedder` decision |
+| [B-269](#b-269--the-synthetic-show-is-a-template-generator-with-truth-by-construction-a-script-line-is-a-fountain-element) | 2.9A | Synthetic show: template generator, truth by construction, line = Fountain element |
+| [B-270](#b-270--label-conventions-per-target-kind) | 2.9A | Label conventions per target kind |
+| [B-271](#b-271--cleared-clearance-items-are-rendered-but-not-labelled) | 2.9A | Cleared clearance items rendered but not labelled |
+| [B-272](#b-272--clearance-text-is-an-overlay-plate-over-a-still-stretch) | 2.9A | Clearance text is an overlay plate over a still stretch |
+| [B-273](#b-273--phone-positives-must-be-valid-numbers-outside-the-fiction-range) | 2.9A | Phone positives valid and outside the fiction range (controller ruling) |
+| [B-274](#b-274--track-plan-per-title-stacked-edits-in-one-copy-separate-tracks-for-drift-and-offset) | 2.9A | Track plan per title; drift and offset on their own tracks |
+| [B-275](#b-275--glossary-variants-live-in-the-notes-column) | 2.9A | Glossary variants in the `notes` column |
+| [B-276](#b-276--synthetic-show-in-the-manifest-with-license-cc-by-40-and-no-source) | 2.9A | `synthetic-show` in the manifest, CC-BY-4.0, no source |
+| [B-277](#b-277--nip-eval-inject-is-wired-as-a-command-not-a-sub-app) | 2.9A | `nip eval inject` wired as a command |
+| [B-278](#b-278--each-injector-seeds-its-own-stream-from-injector-id-seed) | 2.9A | Seeds per (injector id, seed) |
+| [B-279](#b-279--a-film-is-showslug-episodes01e01) | 2.9A | A film is `show=<slug>`, `episode=S01E01` (controller ruling) |
+| [B-280](#b-280--evallabels-is-reserved-for-label-format-files-exp-004-ground-truth-moves-out) | 2.9A | `eval/labels/` reserved for Label format; EXP-004 truth moves out (controller ruling) |
+| [B-281](#b-281--mention-truth-records-every-entity-surface-in-a-line) | 2.9A | Mention truth records every entity surface |
+| [B-282](#b-282--wiring-by-an-idempotent-pipelinewire-called-from-nip-run-not-module-level-add_stage) | W-int | Wiring by an idempotent `wire()` called from `nip run` |
+| [B-283](#b-283--stage-order-knowledge-stages-before-timeline-cue-alignment-after-it) | W-int | Stage order: knowledge stages before `timeline`, cue alignment after |
+| [B-284](#b-284--nip-run-asks-for-asr-text_llm-and-text_embedder-asr-pinned-to-timelineasrvariant) | W-int | `nip run` asks for asr/text_llm/text_embedder; asr pinned to turbo |
+| [B-285](#b-285--knowledge-and-story-constants-move-to-configpipelineyaml-with-identical-values) | W-int | Knowledge constants in `config/pipeline.yaml` |
+| [B-286](#b-286--load_timeline-resolves-superseded-facts-as-well-as-active-ones) | W-int | `load_timeline` resolves superseded facts |
+| [B-287](#b-287--vllm-structured-outputs-run-with-xgrammar-and-disable_any_whitespace) | W-int | xgrammar `disable_any_whitespace` (did not cure the runaway) |
+| [B-288](#b-288--cis-integration-step-runs-the-postgres-only-store-tests) | W-int | CI runs the Postgres-only store tests (controller ruling) |
+| [B-289](#b-289--the-clearance-ocr-stage-is-not-wired-by-w-int-27-may-add-the-one-line) | W-int | Clearance OCR stage left to 2.7 (controller ruling) |
+| [B-290](#b-290--the-vllm-image-smoke-is-re-run-on-the-new-lock-with-a-forced-exact-kv-setting) | W-int | vLLM image smoke re-run on the new lock (controller ruling) |
+| [B-291](#b-291--the-asr-stub-under-the-cpu-profile-still-does-its-io-proposal-not-built) | W-int | cpu-profile ASR stub keeps its I/O (not built) |
+| [B-292](#b-292--a-w-serve-step-before-w2-nip-run-inside-ray-head-with-staged-serving-and-an-hf_home-default) | W-serve | **W-serve step: `nip run` in ray-head with staged serving, `HF_HOME` default** (controller ruling) |
+| [B-293](#b-293--nip-run---in-cluster-plus-a-documented-docker-compose-exec-line-no-wrapper-command-no-schedulerpy) | W-serve | `nip run --in-cluster`, no wrapper, no `scheduler.py` |
+| [B-294](#b-294--only-vllm-slots-are-deployed-as-serve-apps-actor-slots-stay-in-process) | W-serve | Only vLLM slots deployed; actors in-process |
+| [B-295](#b-295--staged-serving-is-cut-into-stage-segments-not-17s-servingrunplan-work) | W-serve | Stage segments inside `serving.group` |
+| [B-296](#b-296--a-skipped-slots-stages-are-skipped-by-one-guard-in-run_store-and-the-checks-they-feed-are-gaps) | W-serve | Skipped slots: one guard, fed checks are gaps |
+| [B-297](#b-297--a-vram-skip-says-free-vs-needed-from-the-planners-own-formula) | W-serve | VRAM skip reason states free vs needed |
+| [B-298](#b-298--importing-nip-defaults-hf_home-to-the-repos-model-cache) | W-serve | `HF_HOME` defaults to the repo model cache |
+| [B-299](#b-299--composedevyaml-mounts-the-weights-and-the-source-into-ray-head) | W-serve | `compose.dev.yaml` mounts weights and source into ray-head |
+| [B-300](#b-300--nip_vram_margin_gb-default-05-the-8-gb-laptop-may-set-025) | W-serve | **`NIP_VRAM_MARGIN_GB`, default 0.5, laptop 0.25** (controller ruling) |
+| [B-301](#b-301--one-execution-order-everywhere-each-stage-over-all-episodes-before-the-next-stage) | W-serve | **One stage-major execution order everywhere** (controller ruling) |
+| [B-302](#b-302--a-serve-group-that-fails-to-deploy-is-a-coverage-gap-vram-drift-after-the-work-is-a-warning) | W-serve | Deploy failure is a gap; drift is a warning |
+| [B-303](#b-303--the-extraction-runaway-and-single-stream-throughput-are-handed-on-not-fixed-in-w-serve) | W-serve | Runaway and single-stream throughput handed to 2.1B / W2 |
+| [B-304](#b-304--cuda-12-cublas-only-on-ldconfig-and-the-uv-cache-dir-fixed) | 2.close | CUDA 12 cuBLAS only, on `ldconfig`; uv cache dir fixed |
+| [B-305](#b-305--gliner-x-large-stays-the-planners-pick-on-the-8-gb-laptop-measured-no-pin) | 2.close | `gliner-x-large` stays the laptop pick, measured and scored (controller ruling) |
+| [B-306](#b-306--occurrence-ref-clrocc-hash-with-kind-clearance_item-occurrences-are-derived-not-stored) | 2.close | `clr/occ-<hash>` refs, kind `clearance_item`, derived from stored detections |
+| [B-307](#b-307--the-occurrence-hash-uses-registry-independent-fields-only) | 2.close | Occurrence hash uses registry-independent fields (controller ruling) |
+| [B-308](#b-308--nothing-changed-in-the-image-for-ocr-the-cpu-fallback-stays) | 2.close | No image change for OCR; CPU fallback stays |
 
 ---
 
@@ -807,7 +986,7 @@ Every entry names the deliverable (from [docs/phased-plan.md](../docs/phased-pla
 ### B-108 · The `loc.readability.v1` injector: isolated cues, one kind per pick, ref-based labels
 
 - **Date / commit:** 2026-10-16 · `77257b6` · 1.10
-- Edits only isolated cues (both neighbours at least 600 ms away, 1 to 6 s long, no two picks adjacent) so an edit can never create a violation on an unlabelled cue; one kind per pick, rotating so all six kinds appear before any repeats; ms-level edits chosen to break the rule at any common frame rate (min duration to 500 ms; max to 8 s; gap to 20 ms; CPS to 1.5x the limit, at least 900 ms). Labels cite the cue ref, not frames (the injector has no frame rate), and `metrics.py` matches ref-only labels by shared ref. `episode` defaults to the corpus title directory, `lang` to the `<lang>_` file prefix. Limits come from the same rule pack the check uses, which is why the 1.00 score is circular ([C-018](experiments.md#c-018--walking-skeleton-benchmark-prf1-100-on-planted-readability-errors-and-why-it-proves-little)). `pysubs2.load` autodetection failed on a synthetic SRT, so the injector passes `format_` from the file extension.
+- Edits only isolated cues (both neighbours at least 600 ms away, 1 to 6 s long, no two picks adjacent) so an edit can never create a violation on an unlabelled cue; one kind per pick, rotating so all six kinds appear before any repeats; ms-level edits chosen to break the rule at any common frame rate (min duration to 500 ms; max to 8 s; gap to 20 ms; CPS to 1.5x the limit, at least 900 ms). Labels cite the cue ref, not frames (the injector has no frame rate), and `metrics.py` matches ref-only labels by shared ref. `episode` defaults to the corpus title directory, `lang` to the `<lang>_` file prefix (since 2.9A a film is `show=<slug>`, `episode="S01E01"`, [B-279](#b-279--a-film-is-showslug-episodes01e01)). Limits come from the same rule pack the check uses, which is why the 1.00 score is circular ([C-018](experiments.md#c-018--walking-skeleton-benchmark-prf1-100-on-planted-readability-errors-and-why-it-proves-little)). `pysubs2.load` autodetection failed on a synthetic SRT, so the injector passes `format_` from the file extension.
 
 ### B-109 · The Sintel picture stage is reused from the cached 1.8B run
 
@@ -907,6 +1086,1112 @@ Every entry names the deliverable (from [docs/phased-plan.md](../docs/phased-pla
 - **Date:** 2026-10-16 · process, after the 1.8B incident · extends [B-070](#b-070--parallel-agents-on-disjoint-paths-with-path-scoped-commits)
 - **Context:** B-070's pathspec commit stops cross-agent sweeping of *staged* files, but a pathspec naming a directory (`eval/exp`) also commits every untracked file in it. 1.8B's commit `6854081` therefore included 1.7's untracked `eval/exp/exp001.compose.yaml` and `eval/exp/exp001_vllm_headroom.py`; the committed blobs are 1.7's final versions (verified clean against HEAD), so no separate 1.7 commit holds them.
 - **Choice:** 1.8B's fix round (`be9daac`) listed its five files explicitly. History was not rewritten (nothing is pushed, and the blobs are correct); owners were told to expect the files already in HEAD.
+
+## 2.0 Store spine
+
+### B-130 · `nip ingest` takes `[TAG=]PATH` positionals
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-1 in `notes/2.0.md`
+- **Context:** the docs give `nip ingest --show S --episode E files…` with no rule for telling a subtitle's language or a csv's kind.
+- **Options:** a flag per kind; a manifest file; `[TAG=]PATH` positionals.
+- **Choice:** positionals. Kind comes from the extension (script pdf/fountain/fdx, picture mp4/mov/mkv/mxf/m4v, bible yaml); subtitles must be `LANG=PATH` with a BCP-47-shaped tag (`_LANG_RE` from `ingest/tables.py`); a csv must be `glossary=PATH` or `clearance_log=PATH`; `--source-lang` (default `en`) sets the source/target role; `--episode` is needed only for episode files and must match `SxxEyy` (the `episode` row needs a season and a number); after review m4 the show slug must match `[a-z0-9][a-z0-9_-]*` because it goes into S3 keys.
+- **Consequence:** file-mode episode refs such as `E1` cannot be ingested; films become `S01E01` ([B-279](#b-279--a-film-is-showslug-episodes01e01)).
+
+### B-131 · `episode_seq = season * 1000 + number`
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-2
+- **Choice:** not a true release order, but monotonic in SxxEyy order, which is all `screen_key` needs. **Consequence:** the API's `POST /episodes` can set it explicitly later.
+
+### B-132 · Frames at ingest; a non-24 fps picture after 24 fps rows is refused
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-3
+- **Choice:** scenes are stored with unclipped `scene_bounds` frames, cues with exact ms → frame ([B-062](decisions.md#b-062--sub-frame-cues-keep-one-frame-and-shot-refs-use-the-list-index)), both at the episode's probed fps or 24 fps when there is no picture yet; `load_timeline` clips scenes to `episode.duration_frames` as `build_timeline` does. A picture whose fps is not 24 arriving after rows were placed at 24 fps is refused ("ingest the picture first"), not re-derived. A cached `picture.json` whose fps or duration differ from the probe, or whose shots end past the probed duration, is refused.
+- **Consequence:** order matters when a non-24 fps title is ingested in pieces; the `ponytail:` upgrade path is to re-derive rows from the stored source objects. Deferred (review m5): `analyze_picture` still runs inside the open ingest transaction.
+
+### B-133 · Replacing an episode's source is refused; show-level files are upserted
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-4 · **Superseded in part** by 2.9B-1 (`4eff744`), which accepts a new script draft
+- **Choice:** an episode that already has a script, a picture or a track in the same language rejects another one (`INPUT_REJECTED`) until 2.9B decides how a new draft replaces rows that facts reference. Show-level files are upserted: entities by (show, kind, canonical_name) with aliases added; glossary approved renderings replaced per language; clearance items by (name case-insensitive, kind, scope) with status, notes and source updated. Idempotency is by sha256, so the same bytes under another language tag are "unchanged".
+- **Consequence:** re-ingest of identical files writes nothing (11.7 s, hashing only).
+
+### B-134 · Bible mapping to `entity` and `entity_alias`
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-5
+- **Choice:** characters: `canonical_name = name`, `attributes = {bible_id, gender, pronouns, identity_hidden_until}`, aliases = name (kind `name`) and aliases (kind `nickname`), lang `any`. Secrets: `canonical_name = id`, `attributes = {bible_id, description, revealed_on_screen}`. Fictional brands, orgs and places become kinds `brand`, `org`, `location` with `fictional=true`. Glossary: `entity(kind=term, origin=glossary)` with alias (any, term, name) plus (lang, rendering, approved_rendering).
+- **Not stored:** relationships and `story_overrides`; 2.2 and the Phase 3 formality check read them from the bible file.
+
+### B-135 · `script_line.seq` is 1-based within its scene
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-6; refined by 2.9A ([B-269](#b-269--the-synthetic-show-is-a-template-generator-with-truth-by-construction-a-script-line-is-a-fountain-element))
+- **Choice:** `{ep}/line/{scene}.{seq}` with seq the 1-based position of the element in the scene (`S01E01/line/1.2` is scene 1's second element). 2.9A found that the Fountain reader merges consecutive action paragraphs into one element, so seq counts elements, not printed lines. **Consequence:** 2.9A's line labels and 2.1/2.3 refs use the same base.
+
+### B-136 · Line, ASR, fact and clearance refs are built in `nip.store.load`
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-7
+- **Context:** `nip.contracts.refs` is frozen and has builders only for scene, shot, keyframe and cue; `refs.parse` already reads the other formats.
+- **Choice:** f-strings in `load.py`. **Proposal (not ruled in the ledger):** add `line()`, `asr()`, `fact()`, `clr()` builders to `refs.py`, together with the rr m3 fix (require a BCP-47-shaped lang in `parse`). 2.close later added `refs.occurrence()` / `refs.is_occurrence()` there ([B-306](#b-306--occurrence-ref-clrocc-hash-with-kind-clearance_item-occurrences-are-derived-not-stored)).
+
+### B-137 · Fact spans carry their source quotes; clearance-item spans carry the item name
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-8
+- **Choice:** a fact span's text is its source events' quotes joined with newlines in event-id order, with no frames, so a quote check (`ev.quote in span.text`) accepts any source quote. Clearance-item spans: text = item name, no frames; all of the show's items are included, without filtering by scope.
+
+### B-138 · The `CHECKS` construction convention
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-9
+- **Choice:** each agent package exports `CHECKS: list[type[Check]]`; a class is used when `cls.active(available)` holds and is constructed with only the keywords its `__init__` names, out of `langs` (target languages), `source_lang`, `conn` (the run's SQLAlchemy Connection, or None in file mode), `show`, `episode`. A `ValueError` from a constructor (no rule pack) is `INPUT_REJECTED` and nothing is written.
+- **Options rejected:** a context object (needs a new type in `agents.base` or the frozen contracts); factories (lose `Check.active` on the class).
+- **Consequence:** `Readability(langs)` stays untouched; 2.3's SQL checks get the run's own connection and see rows written earlier in the same transaction.
+
+### B-139 · Run artifacts are per episode
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-10
+- **Context:** the brief and data-model put the report at `runs/{run_id}/report.json`, but a run spans episodes and `Report` is per episode.
+- **Choice:** `nip-artifacts/runs/{run_id}/{ep}/report.json` and `--out-dir/{ep}/...`, plus `runs/{run_id}/plan.json` (the full Plan with its `plan_N` id) and `--out-dir/run.json`. The reviewer accepted the deviation.
+
+### B-140 · Run lifecycle and the stage contract: `ep.unit()`, gaps, coverage from check units
+
+- **Date:** 2026-10-16 · 2.0 · commits `870c54b`, `0a086a1` · DP-11 and the fix round 1 proposal; review I1
+- **Context:** the first version let a stage only raise (failing the whole run), inserted units inside `stage_checks`, and computed coverage over every unit, which raised `KeyError` on content stages ([journal](journal.md#2026-10-16--20-review-and-two-fix-rounds-the-stage-contract-artifacts-after-commit-stable-refs-a-savepoint-per-unit)).
+- **Choice:** prepare (episodes, inputs, check construction; a rejection writes nothing) → plan and run rows committed (`running`, `code_version` = HEAD SHA plus `-dirty` when tracked files differ, `previous_run_id` = the show's last run over the same sorted `episode_ids`) → stages in one transaction → `completed`, or `completed_with_gaps` when any unit failed; on an exception the transaction rolls back, the run is set `failed` and the exception is re-raised. A stage records work through `with ep.unit(stage, key, model_variant=...)`; a failed unit is a gap and the stage continues; units are inserted once per episode after its last stage; coverage per agent counts only check-id units (1.0 when the agent is active with no units, 0.0 when all its checks were skipped); content-stage gaps only set `completed_with_gaps`, because the Report's coverage is keyed by agent. `add_stage(name, fn, before="timeline")` keeps call order. One attempt per unit (`ponytail:`; retries with backoff come with model stages); `cache_key` NULL and `--force` accepted with no effect until 2.9B.
+- **Consequence:** W1 stages are `fn(ep) -> None`, read `ep.plan`, and wrap each unit in `ep.unit`. The docs' "retry up to 3 times with backoff" is not built (doc correction).
+
+### B-141 · Artifacts are published only after the commit; the whole run is one transaction
+
+- **Date:** 2026-10-16 · 2.0 · commit `0a086a1` · review I2; **Controller ruling** (whole-run transaction)
+- **Context:** reports uploaded inside the episode loop survived a rolled-back run and named flag ids that never existed.
+- **Choice:** `publish()` writes S3 and `--out-dir` after `conn.commit()`; the whole run, across episodes, is all-or-nothing (R8). The controller ruled this acceptable for Phase 2 on condition that 2.9B writes stage-cache entries and objects in their own transactions.
+- **Consequence:** a crash in episode N discards episodes 1..N−1, including GPU work, until the cache exists (2.9B-1 writes each cache put in its own short transaction, [B-122](decisions.md#b-122--cache-objects-are-gzip-json-not-zstd)). If an S3 upload fails after the commit the run is `completed` with no report (re-review m-d, accepted as the lesser failure).
+
+### B-142 · A store run plans with `current_plan({})`
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-12
+- **Choice:** `nip plan`'s path, with `NIP_PROFILE=cpu` giving the stub Plan; the workload is empty because no check declares a model slot yet (W-int adds slot workloads). The plan row stores the inventory, catalog sha, objective, and decisions/pins/amendments as JSON. The report's `plan.mode` is the Plan's mode (`resident` for the empty plan; file mode had used the `staged` sentinel).
+
+### B-143 · The file-mode CLI is renamed `nip run-files`; `nip run` is the store command
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-13 · supersedes the Phase 1 CLI form of [B-103](decisions.md#b-103--srcnippipelinepy-is-the-phase-1-composition-root-and-nip-run-takes-files)
+- **Choice:** `nip run --show S --episodes E…` is the documented store command (synchronous, R8); the file command is kept as `nip run-files` so agents without Postgres can still run the walking skeleton, and builds its checks through the same `build_checks`.
+
+### B-144 · Keyframe object keys use the shot index
+
+- **Date:** 2026-10-16 · 2.0 · commit `870c54b` · DP-14
+- **Choice:** `{show}/{ep}/keyframes/{shot_index}_{n}.jpg`, not `{shot_id}`, because the index is the evidence-ref id ([B-062](decisions.md#b-062--sub-frame-cues-keep-one-frame-and-shot-refs-use-the-list-index)). Images are uploaded only when `<picture.json dir>/keyframes/<file>` exists; Sintel's cached `picture.json` has no images beside it, so its 398 keyframes have no `object_key`.
+
+### B-145 · `script_line.speaker` is added by 2.8 in migration 0002
+
+- **Date:** 2026-10-16 · 2.0 (DP-15) → 2.8 · **Controller ruling**
+- **Context:** `script_line` had no speaker column and `speaker_entity_id` stays NULL until 2.1's entity resolution, so the speaker name was lost at ingest, and 2.1 needs speakers.
+- **Choice:** 2.8, the sole schema owner, adds `script_line.speaker text` in 0002; 2.0's `_write_script` writes it (one line). Until then speakers came from the stored script object. **Cost if wrong (ledger):** one more migration.
+
+### B-146 · A Serve client module is named after its slot (`clients/text_embedder.py`)
+
+- **Date:** 2026-10-16 · 2.0 (DP-16) → 2.8 · commit `870c54b` · **Controller ruling**
+- **Context:** `_bind` resolves `nip.runtime.clients.<slot value>.Actor`; the text embedder slot is `text_embedder`, but phase2-plan named the module `embedder.py`, and `clients/__init__.py` is frozen.
+- **Choice:** the module is `clients/text_embedder.py`, so the generic hook works; carried into the 2.8 brief. A module that exists but fails to import raises instead of silently falling back to `Placeholder`; after review m7, an app whose slots resolve to different actor classes raises `ServingError`.
+
+### B-147 · Every flag must carry at least one stable evidence ref
+
+- **Date:** 2026-10-16 · 2.0 · commit `0a086a1` · review I3 · **Controller ruling**
+- **Context:** R13 excludes `fact/` and `asr/` refs from the fingerprint because they churn on re-extraction; a flag citing only facts then hashed to `sha256(check + "\n" + lang)`, shared by every such flag of that check in every episode, so one override would override all of them and a new finding would look "unchanged".
+- **Options (reviewer):** raise when no stable ref remains, or fall back to the fact's source-line refs.
+- **Choice:** a flag must cite at least one scene, line, shot, keyframe, cue or clearance-item ref; `runs.fingerprint` raises `ValueError` otherwise, and `require_stable_refs` drops such flags at verification with reason `no stable evidence ref (scene/line/shot/kf/cue/clr), R13`, in store and file mode. **Cost if wrong (ledger):** a pure fact-only finding needs a scene anchor, which is always available for plot rules.
+- **Consequence:** 2.3's SQL rules cite the offending line or scene as the claim. Drops are logged, listed in the run summary and `dropped.jsonl`, not persisted (re-review m-c).
+
+### B-148 · Each work unit runs in a savepoint; a malformed evidence ref is a counted drop
+
+- **Date:** 2026-10-16 · 2.0 · commit `9d0727d` · re-review N1
+- **Context:** without a savepoint a failed unit's partial rows were committed with the run, and a DB error inside a unit aborted the Postgres transaction for every later unit.
+- **Choice:** `ep.unit()` wraps its body in `conn.begin_nested()`, rolls back to the savepoint on `Exception`, records the gap, and releases the savepoint on success (one SAVEPOINT/RELEASE round trip per unit). `BaseException` still propagates to `run_store`, which rolls back the whole run. `require_stable_refs` catches `refs.parse`'s `ValueError` and drops the flag with `malformed evidence ref: …`.
+- **Consequence:** a unit's output is all-or-nothing; a body must not call `conn.commit()` / `rollback()` itself.
+
+### B-149 · `nip eval compare` prints every logged metric and refuses mixed groups (R10)
+
+- **Date:** 2026-10-16 · 2.0 · commit `5989485` · ruling R10 ([B-120](decisions.md#b-120--phase-2-plan-rulings-r1-to-r15-adopted)); closes 1.11 minors
+- **Choice:** a row for every other logged metric key; `--exp` validated against `[\w.-]+` (it goes into an MLflow filter); `--subset` must be `shown` or `all`; a variant column whose runs repeat a seed or have different `plan_fingerprint` values is refused; `nip eval run` ids are `{set}-s{seed}-{ts}-{variant}-{4 hex}`. `--md` stays a no-op flag.
+- **Consequence:** experiment numbers can be read from `nip eval compare` alone, as the docs' rule requires.
+
+### B-150 · The store integration tests go into CI in W-int
+
+- **Date:** 2026-10-16 · 2.0 · **Controller ruling**
+- **Context:** `ci.yml` was not 2.0's file; the store tests ran only locally against the compose Postgres.
+- **Choice:** adding `tests/integration/test_store.py` (with `test_migrations_pg.py`) to `ci.yml` is assigned to W-int.
+
+## 2.1 Fact extraction, grounding, entity resolution, consolidation
+
+### B-151 · Knowledge thresholds stay module constants until `config/pipeline.yaml` is free
+
+- **Date:** 2026-10-16 · 2.1 · commit `38fa323` · **Controller ruling** (W1 dispatch: "config/pipeline.yaml stays 2.5's until 2.5 is complete; 2.1 keeps knowledge keys as module constants until told")
+- **Context:** the 2.1 brief made 2.1 the sole W1 owner of the `knowledge:` keys, while 2.5 was still writing the file. **Options:** add the keys now, or keep constants. **Choice:** constants (`extract.PROMPT_VERSION`, `extract.MAX_TOKENS` 2048, `grounding.THRESHOLD` 90, `entities.RESOLVE_THRESHOLD` 90), with the proposed YAML in the notes. **Consequence:** the reviewer's M-5 called the notes' "2.5 owns the file" wrong for this key; nothing functional. Cost if wrong, as ruled: one later move of keys. W-int moved them into `config/pipeline.yaml` (`3d66622`); 2.1B's `EVENTS_PER_LINE` is still a module constant.
+
+### B-152 · `LLMClient` goes through instructor and returns a plain instance parsed from the final reply
+
+- **Date:** 2026-10-16 · 2.1 · commit `38fa323` · 1.7 review M6
+- **Context:** D-025 and tech-stack's build notes ask for instructor in JSON-schema mode with one repair; Phase 1 deferred it ([B-079](decisions.md#b-079--only-the-llm-client-in-phase-1-stubs-are-minimal-valid-schema-instances-instructor-deferred)). **Choice:** JSON-schema mode, `max_retries=1`, `context=` (instructor 1.17's keyword), temperature 0, thinking off; the instance instructor returns (a subclass carrying `_raw_response`) is not returned, the final reply is re-parsed into the schema. **Consequence:** 1.7's wire test passes unchanged; only the line number is a structural validator, so a bad quote drops the event without a repair.
+
+### B-153 · Recorded LLM stub keyed by sha256(variant, system, prompt, schema)
+
+- **Date:** 2026-10-16 · 2.1 · commit `38fa323` · D-020; brief item 5
+- **Choice:** recordings in `tests/fixtures/llm/{key}.json`, replayed for `qwen3.5-4b-awq` by exact call, else `stub_instance`; `NIP_LLM_RECORD_DIR` records real replies. The key includes `system` (a superset of the brief's key); `json.dumps(sort_keys=True)` over `model_json_schema()` makes it deterministic. **Consequence:** any prompt, registry or schema edit needs a re-recording (D-020's stated cost): 2.1B re-recorded twice (`b8d320b`, `8a5d5bd`). A miss is logged since `6b2ddf4` (review M-9), because a silent fallback turns replays into empty event lists.
+
+### B-154 · Registry keys are bible id or canonical name; candidates are not in the enum
+
+- **Date:** 2026-10-16 · 2.1 · commit `38fa323` · DP-1 in notes/2.1.md
+- **Choice:** the enum is built from bible ids for characters, else canonical names, in id order; candidate entities are excluded, so a prompt does not change with earlier extraction output and recordings stay replayable. Unknown names fall back to fuzzy matching. **Consequence:** review M-7: two non-character entities with the same canonical name (a location and a brand "Harbor") give a duplicate enum value; the proposal (`kind:name` for the later one) was not built because no current registry collides.
+
+### B-155 · Grounding: normalized `partial_ratio` ≥ 90, `ratio` for over-long quotes, two-word minimum
+
+- **Date:** 2026-10-16 · 2.1 · commits `38fa323`, `6b2ddf4` · DP-8; review M-4
+- **Choice:** NFKC + quote marks and dashes + whitespace, `partial_ratio` ≥ 90; `ratio` when the quote is longer than its line; a quote needs two words unless it is the whole line (fix round 1). Threshold 90 kept because 85 / 90 / 95 are indistinguishable on real output ([EXP-006](experiments.md#exp-006--grounding-validator-threshold)). **Consequence:** the check bounds quotation, not truth; 2.1B added argument checks next to it ([B-167](decisions.md#b-167--post-model-drops-zero-confidence-duplicates-argument-kinds-per-predicate)).
+
+### B-156 · Raw events were uploaded inside the stage (deviation, moved by W-int)
+
+- **Date:** 2026-10-16 · 2.1 · commit `38fa323` · DP-2; review M-1
+- **Context:** EXP-006 needs pre-grounding events per run; 2.0's contract publishes artifacts only after commit. **Choice:** `runs/{run_id}/{ep}/knowledge.events.raw.jsonl` written inside the stage, each event with its grounding verdict and resolved ids; a failed run can leave the object behind. Not moved in the fix round because `publish` is in `pipeline.py` (W-int's file). **Consequence:** W-int (item 4a) added `EpisodeRun.artifacts` and moved the upload into `publish`.
+
+### B-157 · `fact_event.work_unit_id` stays NULL
+
+- **Date:** 2026-10-16 · 2.1 · commit `38fa323` · DP-3; review M-2 (accepted)
+- **Context:** work-unit rows are inserted after the episode, so their ids do not exist while the stage runs. **Choice:** NULL; the column is nullable. **Consequence:** linking was left to 2.9B (per-scene cache) or an `EpisodeRun.unit` that inserts at start.
+
+### B-158 · Consolidation re-runs show-wide and keeps the ids of unchanged facts
+
+- **Date:** 2026-10-16 · 2.1 · commits `38fa323`, `6b2ddf4` · DP-4; review I-2
+- **Context:** the first version superseded all active facts and reinserted them, so `fact/{id}` evidence stopped resolving and the table grew on every run. **Choice:** identity = (predicate, subject, object, value, story range, screen range); an unchanged fact keeps its row (events and confidence updated in place); facts no longer produced are superseded before inserts (the EXCLUDE constraint holds); new facts carry `supersedes`. **Consequence:** a no-op re-run adds 0 rows; ≥ 80 % of S01E01's ids survive S01E02. Still open: `load_timeline` resolves only active facts, so an episode-1 `fact/{id}` closed by episode 2 stops resolving (re-review M-b; flags keep a stable line ref); `supersedes` can name the wrong predecessor when several old facts share (predicate, subject, object) (M-a); a reviewer's `fact_correction` retraction is not carried into the next consolidation (Phase 4's correction loop must re-apply it). Re-extraction deletes the scene's previous `fact_event` rows, so superseded facts may point at deleted event ids (the array column has no FK).
+
+### B-159 · Interval choices the docs left open
+
+- **Date:** 2026-10-16 · 2.1 · commit `38fa323` · DP-5
+- **Choice:** `state: injured` lasts until another state of the subject (`healed` / `treated`), not until the end of the story day; holds/owns end when someone else holds the object, on give / lose / lost / drop / sell, or on the object's destroyed / lost state; closed screen ranges end at the superseding scene's screen start, or at the fact's own last scene when the superseding scene is earlier on screen; without a full `story_seq` script order is used and nothing is inferred.
+
+### B-160 · Fact shapes shared with 2.3, and `state: lost` from lose/drop events
+
+- **Date:** 2026-10-16 · 2.1 · commit `38fa323` · **Controller ruling** (four rulings applied, the last from 2.3's review I-1)
+- **Choice:** a use is a `holds` event with `{"event": "use"}` inside the holder's fact; `state` facts carry `value.state`; speakers resolve into `script_line.speaker_entity_id` and no candidate is created for an unmatched speaker (for 2.3's dead_acts); a `state: lost` event is its own fact, and a holds/owns lose / lost / drop event also yields the prop's `state: lost` fact from the same event id, both ending the holds interval. **Consequence:** without the last ruling `plot.prop_provenance`'s lost case could never fire on extracted facts (2.3 review I-1, fixed in 2.3 by `3aa1594`). Tests `test_state_lost_is_a_fact_and_a_later_state_ends_it`, `test_holds_ends_when_given_away_or_destroyed`.
+
+### B-161 · Names match on whole words (subset with at least half the words), an exact name scores 101
+
+- **Date:** 2026-10-16 · 2.1 · commits `6b2ddf4`, `608c5a1` · review I-1, re-review N-1
+- **Context:** WRatio scored any containment at exactly 90 ("tomato" → Tom, "Dover Street" → Dov). **Options:** raise the threshold (would also break "Ada" → "Ada Kovac", which used the same 90 path); `token_set_ratio` (the reviewer's suggestion; accepts the reverse containment "Dov Street" → Dov, "Captain Ada Kovac" → Ada); a directional whole-word subset. **Choice:** lower-case and strip punctuation; 100 when the surface's words are a subset of a known name's words and at least half of them, else rapidfuzz `ratio` (tolerates a typo: "Tomas Vael" 90); an exact normalized name scores 101 so it beats subset ties; whitespace collapsed. **Consequence:** titles, possessives on one-word names and lone middle names ("Captain Kovac", "Tom's", "Maria") fail closed into the candidate queue (recall cost, visible in `review_queue`); a bare surname candidate ("Vale") absorbs every later bare "Vale". Probes in [C-22](experiments.md#c-22--entity-name-scorer-wratio-vs-whole-word-subset-vs-exact-first).
+
+### B-162 · Object-less holds/owns/wearing events are not stored
+
+- **Date:** 2026-10-16 · 2.1 · commit `6b2ddf4` · review M-8
+- **Context:** `f.object_id == e.object_id` with None == None let an UNKNOWN object with no name end or continue an unrelated object-less holds fact. **Choice:** drop them at save time.
+
+### B-163 · EXP-006 (first wave): keep threshold 90; the bar is not met by any threshold
+
+- **Date:** 2026-10-16 · 2.1 / EXP-006 · commit `38fa323` (MLflow re-sweep after `6b2ddf4`) · DP-8
+- **Choice:** keep 90 (no measurable difference between 85, 90, 95) and record that D-005's quote check bounds quotation, not truth; propose argument type checks. Status done, bar not met. Superseded in part by [B-181](#b-181--exp-006-ship-the-argument-checks-the-bar-is-still-not-met) (checks shipped). Evidence: [EXP-006](experiments.md#exp-006--grounding-validator-threshold).
+
+### B-164 · EXP-020 (first wave): no decision until the rule-precision half
+
+- **Date:** 2026-10-16 · 2.1 / EXP-020 · commits `38fa323`, `6b2ddf4`, `608c5a1` · DP-7; review M-6
+- **Choice:** status inconclusive. The enum is "not shown at least as accurate" (0.949 vs 0.966, about 1.4 SE on about 550 arguments and 1 seed), not "fails". Alias resolution cannot be judged on the synthetic show (0 alias-only fact arguments). Continued in [B-180](#b-180--exp-020-inconclusive-d-025-registry-ids-as-an-enum-stands-by-default).
+
+## 2.1B Runaway guard, argument type checks, knowledge experiments on real models
+
+### B-165 · Runaway guard: at most 4 events per scene line, enforced by the grammar
+
+- **Date:** 2026-10-16 · 2.1B · commit `b8d320b` · DP-1 (shipped)
+- **Context:** the model loops inside valid JSON (W-serve: 42 events, 40 `wearing` at confidence 0.0) until `max_tokens`. **Options (brief):** `maxItems`; `confidence` minimum > 0 in the schema; dedupe; repetition / frequency penalty. **Choice:** `maxItems` = `EVENTS_PER_LINE` (4) × the scene's line count (largest legitimate reply in 2.1's 1,217 saved events: 3.5 per line; the looping scene: 10.5); confidence-0 events dropped after the call rather than forbidden in the schema (a constraint the grammar might not enforce would turn the whole reply into a repair); no penalty (it would penalise the repeated JSON keys; not tried). **Consequence:** failed scenes 8/75 → 0/150 ([C-23](experiments.md#c-23--runaway-guard-21s-schema-vs-a-per-line-cap-vs-cap--line-enum)); a capped reply's last item can be malformed (probe), and capped scenes' surplus is dropped. Ceiling (a `ponytail:` note in the code): a 30-line scene may ask for 120 events, more than `max_tokens: 2048` holds; scale `max_tokens` with the line count when real scripts need it. Proposed key `knowledge.extract.events_per_line: 4`.
+
+### B-166 · `line` is an enum of the scene's line numbers
+
+- **Date:** 2026-10-16 · 2.1B · commit `b8d320b` · found during the runs
+- **Context:** the cap-only pass still failed 2/150 with "line 2 is not a line of this scene ([1])", repeated by the repair call. **Choice:** `line` is a `Literal` of the scene's line numbers (the context validator stays for stubs). **Consequence:** 0/150 failures, but the review showed the two scenes were a rendering bug (two paragraphs under one number, [B-169](#b-169--the-prompt-prints-one-numbered-line-per-script_line)); the enum forced line 1 there "correct by luck" and hid the symptom.
+
+### B-167 · Post-model drops: zero confidence, duplicates, argument kinds per predicate
+
+- **Date:** 2026-10-16 · 2.1B · commit `b8d320b` (refined in `22074b9`) · DP-2 (shipped)
+- **Context:** EXP-006 showed the quote check keeps 93 % of hallucinated events, which are wrong arguments with correct quotes. **Choice:** `save_events` drops zero-confidence events, repeated events (same raw line / predicate / subject / object / names / value) and events whose argument kinds do not fit the predicate (`entities.ARG_KINDS`, from the prompt's predicate definitions); candidates are created only for kept events; every drop is counted and kept in the raw file with its reason. In fix round 1: subject-less events get their own reason `no subject` (M7), `seen` holds kept events only (M1). Two kinds are wider than the prompt (M7): a `state` subject may be a location, a `mentions` object may be a person or a term. **Consequence:** hallucinated kept 0.93 → 0.27, true dropped 0 → 1/150; enum fact precision 0.59 → 0.86 ([EXP-006](experiments.md#exp-006--grounding-validator-threshold), [EXP-020](experiments.md#exp-020--entity-resolution-enum-constrained-ids-vs-fuzzy-matching-afterwards)).
+
+### B-168 · The OpenAI SDK under instructor runs with `max_retries=0`
+
+- **Date:** 2026-10-17 · 2.1B · commit `b8d320b` · DP-3
+- **Context:** the SDK's default `max_retries=2` re-sent a deterministic temperature-0 request after each 600 s timeout: 3 scenes took 1,801 to 1,803 s. **Choice:** no SDK retries; instructor's one repair stays. A timeout of a temperature-0 request is not transient.
+
+### B-169 · The prompt prints one numbered line per `script_line`
+
+- **Date:** 2026-10-17 · 2.1B fix round 1 · commit `22074b9` (fixtures re-recorded in `8a5d5bd`) · review I1
+- **Context:** the Fountain reader joins consecutive action paragraphs into one `script_line` with `\n\n`; the second paragraph was printed unnumbered and cited as the next line, so grounding dropped it. **Options (review):** flatten paragraphs in `render`, or split action paragraphs into lines at ingest (changes line refs). **Choice:** flatten in `render`, whitespace collapsed; line refs and 2.0's ingest unchanged. **Consequence:** quote drops 28.7 → 3.7 (free text) and 57.3 → 4.3 (enum) per show, free-text fact recall 0.860 → 0.887 ([C-26](experiments.md#c-26--one-printed-line-per-script_line-quote-drops-before-and-after)).
+
+### B-170 · Resolved dialogue speakers are present at the heading's location (D-2.1B-1)
+
+- **Date:** 2026-10-17, amended 2026-10-18 · 2.1B fix rounds 1–3 · commits `22074b9`, `962512f`, `dd557fe` · D-2.1B-1; review I1, re-review N3
+- **Context:** `plot.two_places` needs `present_at` on lines such as "I got here as fast as I could.", which name no place; a quoted fact cannot come from them. **Choice:** `save_speakers` adds a derived `present_at` for each resolved dialogue speaker at the location the scene heading names, on the speaker's first line, quote = the whole line, confidence 0.9, unless the model already gave it. Amended: not for off-screen voices (V.O., O.S., O.C., filtered, pre-lap, phone, radio, intercom, voice-over) by cue or preceding parenthetical; **not** skipped in `intercut` scenes (tried: two_places 9/9 → 0/9, because `intercut` also marks SAME TIME scenes, which is where the rule is defined). **Consequence:** two_places 0 → 9/9 in both arms; fact precision scored against truth drops (enum 0.728 → 0.647) because truth puts `present_at` on the action line, not the speaker's line ([C-24](experiments.md#c-24--derived-speaker-presence-with-without-and-skipping-intercut-scenes)). Confidence 0.9 is above `NIP_FACT_REVIEW_THRESHOLD` 0.80, so the facts are active without review.
+
+### B-171 · A candidate entity's guessed kind is provisional
+
+- **Date:** 2026-10-17 · 2.1B fix round 1 · commit `22074b9` · review I2
+- **Choice:** `Resolver.provisional` holds every candidate id; `typed` checks only confirmed kinds. **Consequence:** a prop first met as a `state` subject (guessed character) is still a valid `holds` object; drops no longer depend on event order.
+
+### B-172 · holds/owns values are mapped only from the prompt's vocabulary; other verbs are dropped and counted (D-2.1B-2)
+
+- **Date:** 2026-10-18 · 2.1B fix rounds 1–2 · commits `11d03c4` (superseded), `962512f` · D-2.1B-2; **Controller ruling** on re-review N2
+- **Context:** the model wrote `check` (186) and `share` (171) where the prompt says `use`, and `plot.prop_provenance` reads `value.event = 'use'`. **First version (`11d03c4`, superseded):** any other verb → `use`, take/pick up/grab/get/find → `obtain`; free-text recall 0.25 → 0.47 at 92.3 false positives per injected show; the re-review showed the catch-all was chosen from and evaluated on the same replies, turned `remove` from an ending into a use, and turned acquisitions into uses (N2). **Choice (ruling):** `HOLDS_VERBS` maps obtain / pick up → obtain, use / carry / check → use, give / lose / lost / drop / sell / remove → themselves (with inflections); anything else is dropped as `unknown holds value` and counted, never guessed. **Consequence:** prop_provenance recall stays 8/9 with false positives 58.3 → 29.3 per injected show; `take`, `get`, `gets` are now dropped, which loses acquisitions on real scripts; the re-review's root-cause suggestion (enforce the prompt's value vocabulary in the schema) is open ([C-25](experiments.md#c-25--holdsowns-values-as-written-vs-any-verb--use-vs-prompt-verbs-only)).
+
+### B-173 · `script_line.speaker` stores the character cue as written (D-2.1B-3)
+
+- **Date:** 2026-10-18 · 2.1B fix round 3 · commit `dd557fe` · D-2.1B-3; **Controller ruling** ("a minimal ingest change is allowed, with no schema migration")
+- **Context:** `script.speaker_name` stripped `(V.O.)` at ingest, so N3's off-screen check could only see parentheticals. **Options (re-review):** keep the extension at ingest, or skip derived presence in intercut scenes (rejected, see B-170). **Choice:** `script.Element` carries `speaker` (clean name) and `extension`; the store writes speaker + extension into `script_line.speaker` (no migration); name readers use `speaker_name`. **Consequence:** shows ingested before this change keep clean speakers until re-ingested; the raw cue reached the extraction prompt (re-review 3 M-new1), fixed later by 2.9B-1 (`e2bab95`).
+
+### B-174 · All GPU work in the EXP harnesses goes through `gpu_session`, which releases only a lock it owns
+
+- **Date:** 2026-10-17 to 2026-10-18 · 2.1B · commits `dc4e6fc`, `bb68eac`, `22074b9`, `962512f`, `dd557fe` · review M2/M3, re-review N1, re-review 2 m5
+- **Context:** a crashed teardown held the lock 03:54 to 06:11; the desktop's VRAM made the planner refuse arms; extraction passes relied on a manual `mkdir`; the first `gpu_session` could tear down another holder's apps. **Choice:** UTF-8 decoding and release in its own `finally`; wait with the lock released while the device holds more than 1,500 MiB (retry every 5 min, 150 s gap after each release); `gpu_session(purpose, arm)` = acquire, wait, deploy, body, delete every Serve app and release in nested `finally`s, logging a dirty release; `owner.txt` ends with `pid N` and teardown/release run only when this process holds it; `owner.txt` is written into `gpu.lock.<pid>` and renamed onto `gpu.lock`. **Consequence:** not covered (re-review, inherent to an mkdir lock with no staleness check): a hard kill. Processes outside the harness can still use the GPU during the lock (the 2026-10-18 collision).
+
+### B-175 · EXP harness `down` deletes Serve apps by status
+
+- **Date:** 2026-10-17 · 2.1B · commit `bbf653a` · 2.2B finding (`23f13d4`)
+- **Context:** `exp020_resolution down` re-planned with the model loaded and deleted nothing. **Choice:** delete every Serve app by `serve.status()` and wait for VRAM; the EXP-018 driver calls `down` after every round.
+
+### B-176 · Secret-in-scene check for learns/references: measured, not shipped
+
+- **Date:** 2026-10-17 · 2.1B · commit `bbf653a` (variant in `exp020_rules`) · DP-4
+- **Choice:** not shipped. The variant (partial_ratio ≥ 90 of the secret's description vs the scene text) removed 12 of 16 enum false positives on the clean seed-1 show (16.00 → 3.67 ± 0.58 per clean show over 3 seeds), did nothing for the free-text arm and nothing for recall, and encodes how this generator writes secrets; it needs a real-script check first. The reviewer agreed it should not ship before I1 was fixed and real scripts are checked.
+
+### B-177 · Prompt v2 for learns vs references: proposed, not built
+
+- **Date:** 2026-10-17 · 2.1B · DP-5
+- **Context:** on the clean seed-1 show the enum arm's kept learns/references events: 8 correct, 8 with the predicate swapped, 2 with a wrong subject, 37 on lines where truth has no secret event; on the planted "Do not worry. <secret>. I have known for a long time." the model emits both `learns` and `references`, and a `learns` at the same story position counts as learned, so `plot.knowledge_order` cannot fire. **Proposal:** the teller references, the listener learns, never both on one line. Not built: needs `pipeline.yaml`'s `prompt_version` (not 2.1B's file) and a re-recording. knowledge_order stayed 0/9 in every variant.
+
+### B-178 · prop_provenance on never-obtained personal props: lower tier proposed to 2.3
+
+- **Date:** 2026-10-18 · 2.1B fix round 1 · no code (2.3's SQL) · decision proposal "For 2.3"
+- **Context:** with free-text props extracted, prop_provenance fires on personal items nobody ever obtains ("X uses the watch / thermos before obtaining it. No scene shows anyone obtaining it."). CPU what-if (not shipped): dropping the "never obtained anywhere" case removes all of them on the clean shows (58 / 67 / 55 → 0) but keeps only 3 of the 8 true flags (seeds 1–3: 2, 0, 1). **Proposal:** report such a use at a lower tier (review_recommended), or only for props the bible or a `setup` event tracks. Open; about 29 false positives per show remain after fix round 2.
+
+### B-179 · EXP-018: do not adopt the FP8 KV cache
+
+- **Date:** 2026-10-17, restated 2026-10-18 · 2.1B / EXP-018 · no code change (`serving.vllm_args`, planner KV term, catalog untouched) · DP-6; review M4, I3
+- **Choice:** keep the default KV cache. Reason as restated: FP8 is 21 % slower (133.8 vs 169.7 tok/s unconstrained) and per-scene extraction gains nothing from more context (a scene prompt is about 1.5k tokens; the planner's 16k already exceeds it). The F1 leg of the bar is unresolved, not failed (one pass per arm; fp8-32k has no F1 pass; no default-16k start trials). **Consequence:** FP8 32k starts 10/10, so EXP-005's 32k arm could run on the laptop with an FP8 confound. Evidence: [EXP-018](experiments.md#exp-018--kv-cache-precision-on-the-laptop).
+
+### B-180 · EXP-020: inconclusive; D-025 (registry IDs as an enum) stands by default
+
+- **Date:** 2026-10-18 · 2.1B / EXP-020 · fix round 1 rewrite · review I3 (supersedes the first reading "done, keep the enum")
+- **Choice:** status inconclusive. Enum accuracy 1.00 vs 0.96 is partly by construction (the type check removes exactly the enum's mis-resolved arguments) and the spec's metric (nicknames, titles, descriptions) has 0 alias-only arguments here; rule precision after the fixes (enum 0.20 vs free text 0.08) differs for reasons other than resolution: the enum has fewer knowledge_order false positives and cannot express props at all. **Next step:** a set with alias-only mentions (BH, R3) and prompt v2. Evidence: [EXP-020](experiments.md#exp-020--entity-resolution-enum-constrained-ids-vs-fuzzy-matching-afterwards).
+
+### B-181 · EXP-006: ship the argument checks; the bar is still not met
+
+- **Date:** 2026-10-17 · 2.1B / EXP-006 · commit `b8d320b` · EXP-006 follow-up decision
+- **Choice:** ship the checks: hallucinated kept 0.93 → 0.27, true dropped 0.00 → 0.007 (1/150). The bar (≤ 2 % true dropped, ≤ 1 % hallucinated kept) is not met: kinds catch wrong-argument errors, not wrong-predicate or invented-relation errors. Status done (bar not met).
+
+### B-182 · EXP-005: 8k arm only; inconclusive until the 32k arm runs
+
+- **Date:** 2026-10-17 · 2.1B / EXP-005 · ruling R4 ([B-120](decisions.md#b-120--phase-2-plan-rulings-r1-to-r15-adopted))
+- **Choice:** run the 8k arm on the laptop (synthetic show, generator truth, R3) and leave the success bar unjudged; the 32k arm is deferred to the Phase 4 cloud. The notes add that 8k vs 16k changes nothing in what the model sees (about 1.5k-token scene prompts); only the 32k variant (two neighbouring scenes on each side) is a different input.
+
+### B-183 · `exp020_rules` is the harness for future extraction experiments
+
+- **Date:** 2026-10-17 · 2.1B · commits `b8d320b`, `bbf653a` · DP-7
+- **Choice:** a throwaway database per show, a reply cache keyed by call key (so clean and injected twin shows share replies), truth story order, and the shipped `save_events`, consolidation and rules; commands `extract`, `flags`, `score`, `facts`, `runaway`, plus `--secret-check` and `--no-presence` variants. Failed rows are removed from the cache before a retry, so every reply used is a successful one.
+
+### B-184 · Fix round 1 must re-measure the plot rules on real facts; later rounds re-score without the GPU
+
+- **Date:** 2026-10-17 / 2026-10-18 · 2.1B · **Controller ruling** (ledger: "fix round 1/5 sent + re-measure plot rules on real facts before/after"; "fix round 2/5 sent (rescore from saved replies, no GPU)")
+- **Choice:** the first fix round re-ran real extraction (3 seeds, clean and injected) and scored before and after; fix rounds 2 and 3 re-scored the saved fix-round-1 replies. **Consequence:** the I1 bug's effect is measured, not argued; the r2 numbers carry no new model nondeterminism.
+
+## 2.2 Story order and story days
+
+### B-185 · A pure `derive` with the marker lexicon as module constants; the LLM only for ambiguous transitions
+
+- **Date:** 2026-10-16 · 2.2 · commit `6ad9a53` · notes "What was built", P5
+- **Context:** docs/architecture.md says derivation is rule-based, "ambiguous transitions go to the LLM with neighboring scenes", without defining ambiguous. EXP-007 needs a rules-only and a rules + LLM arm from the same code. The W1 controller ruling kept `config/pipeline.yaml` with 2.5 until 2.5 was done, and the brief said to keep the lexicon as module constants.
+- **Choice:** `derive(scenes, overrides, llm=None, *, unit, memo)` is pure over `SceneIn`; `llm=None` is the rules arm. An ambiguous transition is a time of day that goes backwards between present scenes with no cue; the default is the next day with `story_inferred=true`; with an LLM there is one schema-constrained `Verdict` per transition (temperature 0), and a failed call leaves the default and records the unit `failed`. `Story.ambiguous`, `llm_calls` and `Position.source` (rule | llm | override) let EXP-007 score both arms from one return value. Lexicon and limits are module constants; proposed keys (not applied): `story.llm_max_tokens: 300`, `story.excerpt_chars: 600`, `story.inferred_confidence_factor` (the env `NIP_INFERRED_STORY_CONFIDENCE_FACTOR` already exists), `story.days_per_unit: {WEEK: 7, MONTH: 30, YEAR: 365}`.
+- **Consequence:** the LLM is asked only on a regressing time of day, so scenes whose heading does not regress are never asked ("silent" cases, measured in [EXP-007](experiments.md#exp-007--story-order-rules-only-vs-rules--llm)). On the base synthetic show the trigger never fires.
+
+### B-186 · Flashbacks with an unknown day rank first in the show and are inferred
+
+- **Date:** 2026-10-16 · 2.2 · commit `6ad9a53` · P1 in the 2.2 notes
+- **Context:** D-006 and architecture.md say flashbacks are "moved", not where.
+- **Options:** keep screen position; place before the present; place at an LLM guess.
+- **Choice:** unknown-day flashbacks rank first in the show; a known day (override, "N YEARS EARLIER") ranks by that day; both are `story_inferred` unless the day is explicit.
+- **Consequence:** conservative for plot rules (a flashback never makes a character act before they could know something), and flags depending on it lose 15% confidence; wrong when a flashback shows something recent: rules-only tau 0.9998 on the synthetic show, where the generator puts the later of the two flashbacks earlier in story time.
+
+### B-187 · Flashback spans: a heading cue marks one scene, a lead-in cue marks until the present returns
+
+- **Date:** 2026-10-16 · 2.2 · commit `6ad9a53` · P2
+- **Choice:** a flashback cue in a heading marks that scene only; a cue in the lead-in (previous scene's transition such as `FLASHBACK TO:`, or an opening super such as `THREE YEARS EARLIER`) marks every scene until PRESENT DAY / BACK TO PRESENT / END FLASHBACK or the episode end.
+- **Consequence:** both conventions in real scripts are read, and an unended span cannot swallow the rest of the show. Lead-in scanning is loose (review M5: every transition of the previous scene counts; a short all-caps action line such as `THE VISION BLURS.` marks a vision); deferred.
+
+### B-188 · Bible overrides always win, including over the LLM
+
+- **Date:** 2026-10-16 · 2.2 · commits `6ad9a53`, `ad1b1b9` · P3, revised by review I2, I3, M1
+- **Context:** architecture.md: "the bible's `story_overrides` always win". The first version let an LLM verdict add markers to a markers-only override (I2) and ignored an override day on a sharing scene for ordering (I3); an override flashback with no day was `inferred=false` (M1). Scene keys are free text ([B-020](decisions.md#b-020--bible-schema-leniency)).
+- **Choice:** a non-empty override `markers` list replaces the detected markers (the Bible model cannot tell `markers: []` from absent); `story_day` replaces the day and, for a present scene, moves the day counter. With a markers-only override the LLM may fill only the unset day (`next_day`, `same_day`, `later_days`; source stays `override`); `earlier` / `simultaneous` are ignored. An override day on a dream / vision / intercut scene makes it its own rank unit at that day (marker kept, counter not moved). Override positions are `inferred=false`, except a flashback with no day (still a guess, `inferred=true`). Keys such as `S01E05 scene 3` and `s1e5 sc 3` are normalised to the ref; unmatched keys are logged as warnings, not rejected.
+- **Consequence:** seq always follows day for overridden scenes (re-review probe: days 1, 9, 2 give seqs 1, 3, 2). Known edge (re-review minor): an unoverridden sharing scene directly after an override-day sharing scene inherits that day. Override markers are lower-cased but not validated against the marker set (review M6, deferred).
+
+### B-189 · The stage re-derives the whole show for every episode; verdicts memoised per variant
+
+- **Date:** 2026-10-16 · 2.2 · commits `6ad9a53`, `ad1b1b9` · P4, review M3
+- **Context:** `story_seq` is show-wide, and ranking flashbacks needs every episode.
+- **Options:** per-episode derivation with stored chain state (rejected: cannot rank flashbacks across episodes); re-derive the whole show and overwrite the rows (idempotent).
+- **Choice:** the latter, with LLM verdicts memoised in a module dict so a multi-episode run asks each transition once; after the review the memo is keyed per model variant (`_VERDICTS[variant][prompt]`), so one variant's verdicts are not served to another.
+- **Consequence:** transitions of other episodes are recorded as units of the current episode run (review M4, deferred), so per-episode coverage counts are off for multi-episode shows; a memo hit records no unit. The notes proposed that 2.9B's stage cache replace the memo, keyed on the show's scene `text_hash` set; 2.9B-1 did not cache `knowledge.story` ([journal](journal.md#2026-11-06--29b-1-stage-cache-incremental-re-runs-and-get-runsiddiff)).
+
+### B-190 · Markers stored in the data-model set; cues read from every heading segment except the location
+
+- **Date:** 2026-10-16 · 2.2 · commits `6ad9a53`, `ad1b1b9` · P6, review I1
+- **Choice:** stored markers are the data-model set: `flashback`, `dream`, `vision`, `intercut` (INTERCUT, SAME TIME and MEANWHILE), `continuous` (CONTINUOUS, CONTINUING); the generator's `same_time` becomes `intercut`. PRESENT DAY ends a flashback; it is not a flashback marker. After review I1, `_tail` reads every " - " segment except the location (the segment starting INT./EXT., else the first) plus every parenthetical, so `FLASHBACK - INT. B - DAY`, `INT. B - FLASHBACK - NIGHT`, `INT. B - DREAM - NIGHT` and `INT. B - SAME TIME - NIGHT` are detected while `DREAM HOUSE` / `FLASHBACK DINER` stay locations.
+- **Consequence:** a dream or intercut scene shares the seq and day of the last non-sharing scene, even a flashback. Doc corrections recorded for architecture.md.
+
+## 2.2B EXP-007 story order: ambiguous-transitions variant and harness
+
+### B-191 · An ambiguous-transitions synthetic variant so EXP-007 can discriminate
+
+- **Date:** 2026-10-16 · 2.2 → 2.2B · **Controller ruling** (implemented in commit `11354bc`)
+- **Context:** on the base synthetic show rules only score tau 0.9998 and rules + bible 1.0000, and no ambiguous transition is one the next-day default gets wrong ([C-27](experiments.md#c-27--story-order-on-the-base-synthetic-show-rules-only-vs-rules--bible-and-stress-variants)). Beverly Hillbillies is deferred (R3, [B-120](decisions.md#b-120--phase-2-plan-rulings-r1-to-r15-adopted)).
+- **Choice:** 2.2B (W2) adds an "ambiguous transitions" variant with exact truth to `eval/synthetic`, additive only (2.9A's determinism tests stay byte-identical). Cost if wrong, as ruled: EXP-007 inconclusive.
+
+### B-192 · EXP-007 holds the facts fixed (oracle facts); only the story columns vary between arms
+
+- **Date:** 2026-10-16 · 2.2B · commit `11354bc` · notes, harness section
+- **Context:** the brief asks for downstream precision of `plot.knowledge_order` and `plot.dead_acts`; 2.1B was changing extraction at the same time.
+- **Choice:** every arm loads the same oracle facts from `truth.json` through 2.3's `layer1_oracle.consolidate`; only `scene.story_seq`, `markers`, `story_inferred` differ (the facts' story intervals follow the arm's seq). Arms are MLflow `variant` tags `<variant>-<arm>`, plus a `truth` sanity arm. Experiment `exp007-story`, tag `exp=EXP-007`.
+- **Consequence:** precision differences are attributable to story order alone; they say nothing about real extraction. The fact set inherits 2.3's consolidation stand-in semantics (review M-6 of 2.3).
+
+### B-193 · How the variant hides story time: prose cues, a regressing heading, silent cases kept
+
+- **Date:** 2026-10-16 · 2.2B · commit `11354bc`
+- **Choice:** NEXT MORNING → MORNING (`loose_next_day`) or → LATER (`later_unstated`); flashbacks lose "(FLASHBACK)" and "Years earlier." and open with "<N> years ago." in action prose (N 3..10, distinct; 2 of them are memories of dead characters); SAME TIME scenes lose "(SAME TIME)" and open with "At the same moment," / "Meanwhile," / "Across the harbor, at that very moment,"; the heading's time of day is forced to regress so a flashback, a cross-cut and a plain next day present the same heading signal. Scenes whose heading cannot regress are kept and marked `silent`. N is capped at 10 because `Verdict.days` allows at most 3650.
+- **Consequence:** resolvable from text for flashbacks and simultaneous scenes (the regex cue reader reaches tau 1.0 on seed 1), but `later_unstated` has no prose cue at all (review M1, deferred), and the cues are fixed templates, so the variant measures explicit cues only. `ambiguate`'s sample sizes hold for seeds 1-3 only (review M4).
+
+### B-194 · Prompt v2: a regressing time of day is normally the next day
+
+- **Date:** 2026-10-16/17 · 2.2B · commit `11354bc` (file `config/prompts/knowledge.story.v2.md`) · notes "Tried X -> switched"
+- **Context:** prompt v1 (2.2's) read a regressing time of day as `earlier`: verdict accuracy 0.29, 84 false flashbacks, cascading re-asks.
+- **Choice:** v2 says a time of day going backwards is normal and almost always the next day; `earlier`, `simultaneous`, `later_days` only when the second scene's own text says so; check the relations in that order; default `next_day`; `reason` one short sentence. Same `$` fields as v1, so `build_prompt` is unchanged. One version only, not iterated after its run.
+- **Consequence:** verdict accuracy 0.82 (mean of 0.893 / 0.792 / 0.769). v2 was written after v1's verdicts on all three seeds existed and its examples are the generator's templates, so it is tuned to this generator ([B-195](#b-195--storyprompt-is-v2)).
+
+### B-195 · `story.PROMPT` is v2
+
+- **Date:** 2026-10-17 · 2.2B · commit `6dc6ba8` · **Controller ruling** (proposal P1 in the 2.2B notes)
+- **Context:** `story.py` is 2.2's file; the 2.2B brief allowed edits there only for bugs. v1 makes the story step a source of false flashbacks.
+- **Options:** keep v1; switch to v2; drop the LLM step.
+- **Choice:** switch to v2; 2.2B makes the one-line edit (`PROMPT = "knowledge.story.v2.md"`). The ruling's stated evidence was "+30 pts precision on held-out seeds"; the review then found "held out" overstated (I1), and the notes were corrected to "a ceiling for explicit cues on this generator". Cost if wrong, as ruled: v2 overfit to templated ambiguity.
+- **Consequence:** every `nip run` with a `text_llm` slot uses v2; v1 is still reachable for `derive --arm llm`. No test pins `story.PROMPT` (re-review minor).
+
+### B-196 · EXP-007 decision: keep the LLM step with prompt v2, bible overrides first
+
+- **Date:** 2026-10-17 · 2.2B · commits `11354bc`, `6dc6ba8` · notes Decision, P2
+- **Context:** bar "keep the LLM step if rule precision rises by ≥ 3 points". On the ambiguous variant v1 gives +18 points but drops planted `dead_acts` recall 1.00 → 0.56; v2 gives +30 with all 18 planted flags found; on the base show the LLM is never asked (+0, not testable). Bible overrides give precision 1.00 with no call but no intercut marker and no `later_unstated` days.
+- **Choice:** keep the LLM step with v2, not v1; prefer bible overrides where the bible has them (`derive` already lets overrides win, so no code change). Rejecting v1 on recall is an extra criterion beyond the written bar, disclosed. EXP-007 status: done on the synthetic sets; the real-content check is deferred with R3.
+- **Consequence:** the +26 to +30 points are a ceiling for explicit, templated cues; the LLM's value on real scripts, and against a plain regex cue reader, is unmeasured.
+
+### B-197 · The experiment's `down` deletes Serve apps by status, under the GPU lock
+
+- **Date:** 2026-10-17 · 2.2B · commits `23f13d4`, `6dc6ba8` (docstring) · notes "What broke" 3, review M3
+- **Context:** `down` first re-planned to find the apps; with the model loaded the planner no longer fit it, so the list was empty, nothing was deleted, and teardown timed out on VRAM ([C-28](experiments.md#c-28--experiment-teardown-delete-by-re-planning-vs-delete-by-serve-status)).
+- **Choice:** delete every app in `serve.status().applications`, then wait for idle. It deletes all Serve apps, not only this experiment's, which is safe only because every GPU user holds `data/gpu.lock`; documented in the docstring, not narrowed.
+- **Consequence:** 18.9 s, VRAM 7651 → 343 MiB. 2.1B's `exp020_resolution.down` had the same flaw; 2.1B's commit `bbf653a` ("EXP harness down deletes Serve apps by status (2.2B finding)") adopted the by-status delete.
+
+### B-198 · Three story-step improvements proposed and left undone
+
+- **Date:** 2026-10-17 · 2.2B · notes P3, P4, P5
+- **Choice:** not done: (P3) a cascade guard after a mis-called `earlier` / `simultaneous` (v1 asked 36 / 59 / 63 times against 26 / 23 / 26; v2 asks 24-28, so it is unnecessary here); (P4) a second trigger for silent cases (a scene whose own opening says "years ago" / "at the same moment" / "meanwhile"), unmeasured; (P5) raising `Verdict.days` from 3650 to 36500 ("twelve years ago" fails validation, one retry, then a gap with the rule default).
+- **Consequence:** silent flashbacks and cross-cuts stay unreached (2 + 2 scenes on seed 2, 2 on seed 3), and `story/day_acc_present` stays low (0.10 rules, 0.32 v2) because one missed day shifts every later day.
+
+## 2.3 Script Critic Layer 1 SQL rules
+
+### B-199 · One parameterized SQL file per rule; claim on the script line; one flag per claim line
+
+- **Date:** 2026-10-16 · 2.3 · commit `35a33ca` · notes decisions 3, 6
+- **Choice:** `config/rules/plot.*.sql`, bound `:show` / `:episode` parameters, story order from scene rows (`scene.story_seq`, `markers`, `story_inferred`; a NULL `story_seq` never matches, and the prop rule excludes it explicitly), active facts only. A small loader (`layer1.rows()`) turns rows into `Finding`s: claim = `{ep}/line/{scene}.{seq}`, the setup or contradiction as `fact/{id}` with its quote, other-episode facts only as `fact/` refs. The loader keeps the first row per claim ref.
+- **Consequence:** label granularity matches (a planted line). The reviewer found the SQL injection-safe (fixed file chosen by the `CheckId` enum, bound parameters). A dead character with N lines in a later scene still gives N flags (review M-1, deferred).
+
+### B-200 · Severities 4 / 3 / 3 / 2; the inferred-story factor applied once, on raw event confidence
+
+- **Date:** 2026-10-16 · 2.3 · commit `35a33ca` · notes decision 1, "What broke" 2
+- **Choice:** `plot.dead_acts` 4 (a dead character on screen is glaring), `plot.knowledge_order` 3, `plot.two_places` 3, `plot.prop_provenance` 2 (easy to miss, easy to fix). Confidence = min of the cited events' raw `fact_event.confidence`, x `NIP_INFERRED_STORY_CONFIDENCE_FACTOR` once if any cited scene is `story_inferred`, because 2.1's consolidation already stores the reduced value in `fact.confidence`.
+- **Consequence:** no squared discount. The 0.85 default is now duplicated in three places (`consolidate.py`, `story.py`, `layer1.py`; review M-7, deferred: agents cannot import `nip.knowledge`). 2.9B-1 later added the factor to `SqlRule.params()` so changing it misses the cache.
+
+### B-201 · The fact contract the rules assume (and what 2.1 must emit)
+
+- **Date:** 2026-10-16 · 2.3 · commit `35a33ca` · notes decision 2, "What broke" 1
+- **Context:** the data model has no predicate or value shape for a prop use, and the EXCLUDE constraint forbids a separate `holds` fact for it.
+- **Choice:** `present_at` = the scene's own range with object = the location; `references` and `learns` objects = the secret; death = a `state` fact with `value.state = 'dead'` (open-ended); props: `holds` / `owns` events, a use = a `holds` event with `value.event = 'use'` (any other `holds` / `owns` event is a possession); destroyed / lost = a `state` event on the prop entity with `value.state` in (destroyed, lost). The prop rule reads the source events (`fact_event`) of active facts, so it works after consolidation merges a holder's events. Speaking = `script_line.speaker_entity_id` (dead_acts counts such lines also without a `present_at` fact). "Never obtained" means nobody held or owned it (matches `eval/synthetic/rules.py`).
+- **Consequence:** the reviewer found death/destroyed to be the docs' own contract, the use shape an invention that 2.1 had already adopted verbatim (`consolidate.py` docstring, prompt `obtain|use|give|lose`), and loss a mismatch (I-1, [B-206](#b-206--lost-is-handled-like-destroyed-21-builds-state-lost-facts)). If 2.1's wording changes, only the `.sql` files change.
+
+### B-202 · Marker exemptions: dead_acts and two_places skip flashback/dream/vision; the other two do not
+
+- **Date:** 2026-10-16 · 2.3 · commit `35a33ca` · notes decision 4
+- **Choice:** `dead_acts` skips flashback, dream and vision scenes (the brief). `two_places` also skips them, because 2.2 gives a dream or vision scene the base scene's `story_seq`, so it can share a seq with a scene elsewhere. `knowledge_order` and `prop_provenance` do not skip (a flashback that refers to a secret learned later is still a contradiction), matching `eval/synthetic/rules.py`.
+- **Consequence:** the reviewer accepted the dream/vision grounds and called the flashback exemption in `two_places` weakly grounded (not in the spec); recorded as a doc correction.
+
+### B-203 · `two_places` orients a pair by screen order, so it is flagged once, in the later episode
+
+- **Date:** 2026-10-16 · 2.3 · commit `35a33ca` · notes decision 5
+- **Choice:** the claim is the later scene in screen order (episode, scene); the earlier presence is cited as `fact/`. The data-model example uses `a.id < b.id`.
+- **Consequence:** a pair lands in one episode's report. Within an episode the order uses `scene.id`, which equals script order only because ingest inserts in order (review M-2, deferred).
+
+### B-204 · The re-check re-runs the rule's SQL and compares only the claim line
+
+- **Date:** 2026-10-16 · 2.3 · commit `35a33ca` · notes decision 7
+- **Choice:** Stage 5 step 2 re-executes the same rule file against the live connection and passes while the claimed line is still a row; it does not compare the cited other fact, because fact ids churn on re-extraction (R13).
+- **Consequence:** one whole-episode query per flag (about 0.05 s); a per-line parameter is the upgrade if flags get many. The re-check also passes if the line is still a row for another reason (review M-3, ratify); the evidence step covers a retracted cited fact on a fresh timeline (7 retract tests).
+
+### B-205 · The oracle-facts loader lives in `eval/exp/layer1_oracle.py`, tagged `PLOT-L1`
+
+- **Date:** 2026-10-16 · 2.3 · commits `35a33ca`, `3aa1594` · notes decision 8, review M-6
+- **Context:** the brief asks for an oracle benchmark, and no deliverable owns that file.
+- **Choice:** 2.3 writes it outside its ownership list (recorded); 2.2B / 2.1B import `build_store`, `consolidate`, `run_rules`. MLflow tag `exp=PLOT-L1`, not EXP-007, so EXP-007's tables stay clean. After review its `consolidate()` is documented as a stand-in for 2.1's consolidation.
+- **Consequence:** EXP-007 inherits this stand-in's semantics; the benchmark cannot see a mismatch with 2.1's real consolidation (as I-1 showed).
+
+### B-206 · `lost` is handled like `destroyed`; 2.1 builds `state: lost` facts
+
+- **Date:** 2026-10-16 · 2.3 (and 2.1) · commit `3aa1594` (2.3 side) · **Controller ruling** on review I-1
+- **Context:** in 2.1's consolidation a `lost` state or a `lose` / `drop` holds event started no fact, so the prop rule (which reads events of active facts) could never fire "after lost"; only `destroyed` worked. The reviewer offered two fixes: read loss events directly in the rule, or have 2.1 keep loss as a fact.
+- **Choice:** 2.1 builds `state: lost` facts from lose/lost/drop events; 2.3 treats `lost` exactly like `destroyed` and the oracle loader gains `--gone-as lost` (variant `oracle-facts-lost`). Fixed in the same round: `after_gone` uses the latest loss before the use (I-2).
+- **Consequence:** both oracle variants score 1.00 on 3 seeds; 2.1's working tree emitted `state: lost` at re-review time, but the rule was not run end to end on 2.1's output in 2.3.
+
+## 2.4 Source-target cue alignment and the localization sync/term checks
+
+### B-207 · Cue alignment fits one line per track by onset coincidence, then measures overlap on that line
+
+- **Date:** 2026-10-16 · 2.4 · commit `fa1f18c` · D-24-1
+- **Context:** plain temporal overlap on raw times fails on exactly the tracks `loc.drift` and `loc.offset` must catch; rank-based pairing locked onto a line one cue off under splits and merges, and a shifted rank search got 0 of 916 links on a 900-cue stress track ([journal](journal.md#2026-10-16--24-cue-alignment-rank-pairing-failed-on-splits-and-merges-onset-coincidence-replaced-it), [C-30](experiments.md#c-30--cue-alignment-rank-pairing-vs-shifted-rank-pairing-vs-rank-free-onset-coincidence)).
+- **Options:** (a) overlap on raw times; (b) rank pairing + Theil-Sen; (c) rank pairing over -5..+5 shifts; (d) rank-free onset cross-correlation by FFT over slope x offset, then nearest-start + Theil-Sen rounds. **Choice:** (d), plus a "same timing" alternative start that wins ties (found on a 5-cue track where the coarse search reported +29 frames on an identical track).
+- **Consequence:** a drifted track is aligned "corrected"; `Alignment.fit` is what drift/offset classify. Ceilings marked `ponytail:` in `cue_align.py`: one line per track (no mid-episode re-sync), slopes within +-30 %, offsets within +-60 s.
+
+### B-208 · Links are persisted by the stage; the checks recompute them
+
+- **Date:** 2026-10-16 · 2.4 · commit `fa1f18c` · D-24-2
+- **Choice:** `cue_align.stage` writes `subtitle_cue.aligned_source_cue_ids` (`[]` = aligned to nothing, NULL = never aligned); the checks recompute alignment from the Timeline (`aligned()` memoises the last 16 timelines), because the Timeline carries no links and recomputing is deterministic and cheap. **Consequence:** the column is for other consumers (UI, 2.7, and later `loc.term`'s show-wide standard, [B-213](#b-213--observed-standard-over-the-whole-show-recomputed-every-run)); both come from `align`, so they cannot diverge.
+
+### B-209 · drift and offset require the picture (**Superseded** by B-210)
+
+- **Date:** 2026-10-16 · 2.4 · commit `fa1f18c` · D-24-3
+- **Context:** without a picture the timeline's rate is an assumed 24, so the drift cause and the frame counts would be invented. **Choice:** both checks required the picture and were reported in the pipeline's `skipped` list without one; side effect: 2.0's script + subtitles integration tests stayed unchanged.
+- **Superseded:** the review (I-2) pointed out the activation matrix marks the picture optional for timing and that drift is a relative measurement; see [B-210](#b-210--drift-and-offset-run-without-a-picture-and-say-less).
+
+### B-210 · drift and offset run without a picture and say less
+
+- **Date:** 2026-10-16 · 2.4 fix round · commit `313ccd0` · review I-2
+- **Context:** a subtitles-only delivery, the common localization QC case, got no sync check at all under B-209.
+- **Options:** (a) drop `Input.PICTURE` and degrade; (b) ask the user to keep B-209. **Choice:** (a). Without a picture the slope is matched against the ratio of every ordered pair of `timing.sync_rates` (25/24 → "timing for 25 fps material read as 24 fps"), confidence 0.95 (0.99 with a probed rate, 0.90 when nothing matches); the offset is stated in seconds only ("Shift every cue by -0.500 s"). A timeline "has a picture" when it has shots.
+- **Consequence:** with a picture nothing changes. Near-equal ratios (24/23.976 and 30/29.97 are both 0.1001 %) mean the cause can name one of several pairs; on an exact tie only the first is named (re-review M-a). A run with media whose shot stage failed is treated as "no picture" (M-d; the flag text says so). The doc correction drafted under B-209 was withdrawn.
+
+### B-211 · loc.term matching rules
+
+- **Date:** 2026-10-16 · 2.4 · commits `fa1f18c`, `313ccd0` · D-24-4, review M-3 and M-6
+- **Choice:** content words must form the phrase (same order, same gaps); inflection only for common nouns, judged from the *source* surface (no capitalised content word), both stems >= 5 letters without accents, ending 1-3 letters; an accent alone is a misspelling; near miss = rapidfuzz `ratio` >= 75 (>= 85 under 5 letters), confidence 0.92; approved rendering missing 0.80; observed standard dropped sporadically 0.55 (suppressed, below 0.70); a near miss of an observed standard 0.85; groups of more than 2 cues capped at 0.65. Thresholds in `config/languages/_base.yaml term:`; confidences are module constants (tier policy, not language data). Fix round: the loose source-side match is for common nouns only ("Wren" is not mentioned by "wrench").
+- **Why 0.80 for a missing approved rendering** although a pronoun in its place is the same ambiguity that sets the observed case to 0.55 (M-6): the glossary is binding (an approved term is an instruction, an observed name only a habit). Reviewable tier, not `must_review`.
+- **Consequence:** the set-based version's recall 0.88 on ToS fr seed 1 and the false passes `Thomas`/`Sintell` are gone; German nouns are no longer misread as names ([journal](journal.md#2026-10-16--24-locterm-locshot_change-locdrift-and-locoffset-what-each-check-does)).
+
+### B-212 · Observed standard per episode, names kept verbatim only (**Superseded** by B-213)
+
+- **Date:** 2026-10-16 · 2.4 · commit `fa1f18c` · D-24-5
+- **Choice:** with no approved rendering, the standard was the name kept verbatim in >= 60 % of >= 3 groups of the current episode; `term.stage` wrote `observed_rendering` aliases with the episode's count, overwritten each run. A translated name had no standard (left to Phase 3).
+- **Superseded:** the review (I-3) showed the spec's own example ("Wren" rendered "Reyezuelo" in E3) was undetectable inside E3; see [B-213](#b-213--observed-standard-over-the-whole-show-recomputed-every-run).
+
+### B-213 · Observed standard over the whole show, recomputed every run
+
+- **Date:** 2026-10-16 · 2.4 fix round · commit `313ccd0` · review I-3
+- **Choice:** other episodes are read from the store (target cue text + the source cues in `aligned_source_cue_ids`); the current episode from its Timeline. A one-word name's rendering is the target word that best singles out the cues mentioning it (share of mentions carrying it minus its share of other cues, >= 0.5), a name kept verbatim winning when it qualifies; a multi-word name is its own standard. Standard = that rendering carries >= 60 % of >= 3 mentions over the show. An episode carrying 0 % against >= 90 % elsewhere (a switch) is flagged at 0.80 per mention; a sporadic miss stays 0.55. `term.stage` deletes the observed rows of entries without approved renderings and writes the show-wide count (idempotent).
+- **Consequence:** the doc example gives 5 flags at 0.80; alone, E3 gives none. Ceilings (`ponytail:`): translated standards for one-word names only; one (source cues, target cue) pair per target cue; the first episode of a run sees only episodes aligned by earlier runs (run again to converge). Re-review M-b: an entry approved in `es` but not in `fr` keeps a stale `fr` observed row.
+
+### B-214 · Native labels for shot_change come from the clean run and are a regression guard, not truth
+
+- **Date:** 2026-10-16 · 2.4 · commits `fa1f18c`, `313ccd0` · D-24-6, review ⚠️ item 2
+- **Context:** the official subtitles are not cut-aware (13 of 26 Sintel cues and 40 of 76 ToS cues per language near a cut), so raw precision against planted labels only is 0.12 / 0.03. **Choice:** variant `regression-<title>` labels every flag the check raises on the clean copy as native (SELF-LABELLED, untriaged); `raw-<title>` scores without them and is the precision figure. **Consequence:** the regression variant's 0.94 / 0.99 shows only that the injections add little noise; there is no honest precision for `loc.shot_change` until natives are hand-triaged; the cuts themselves are detector output (EXP-002).
+
+### B-215 · The ToS `it` offset injection runs in-process
+
+- **Date:** 2026-10-16 · 2.4 · commit `fa1f18c` (driver), `313ccd0` · D-24-7
+- **Context:** 2.9A put the ToS offset injection on `it`, which has no readability rule pack (not an MVP language), and the store pipeline needs one. **Choice:** the benchmark driver runs Drift/Offset on `it` in-process; proposal to 2.9A: move whole-track injections to es/fr/de or add `config/languages/it.yaml`. Not changed by 2.4 (not its files).
+
+### B-216 · shot_change passes an out point at cut - 2 .. cut and flags points on either side of a cut
+
+- **Date:** 2026-10-16 · 2.4 fix round · commit `313ccd0` · review I-1 and M-4
+- **Context:** the rule pack says cues ending within 1/2 s before a cut extend to it "keeping the 2-frame gap", and readability flags gaps under 2 frames, so the compliant out point is cut - 2; the first version flagged it.
+- **Choice:** `ShotChange` reads `min_gap_frames` from the readability pack and does not flag an out point 0..`min_gap_frames` frames before a cut. Points are flagged on either side of a cut (M-4): the doc is directional (in points after a cut, out points before); the line-220 example supports out-after; in-before is this build's reading of "1-11 frames from a cut" and of the injector's labels (narrowing would drop planted labels such as Sintel seed 2's "in-point 1 frames before the cut").
+- **Consequence:** clean copies 39 → 33 (Sintel) and 121 → 115 (ToS) flags; the pair `(100, 238), (240, 300)` raises no shot_change and no readability flag. An out point at cut - 1 passes shot_change while readability flags the 1-frame gap (M-e): the two checks stay consistent. The 2.9A injector had to stop planting cut - 1 / cut - 2 out points ([B-218](#b-218--24-follow-ups-assigned-to-w-int)).
+
+### B-217 · The benchmark driver lives in `eval/exp/loc_bench.py` and runs at a committed SHA
+
+- **Date:** 2026-10-16 · 2.4 fix round · commit `313ccd0` · review I-4
+- **Context:** round 0's driver was in the git-ignored workspace and its MLflow runs carried another deliverable's commit tag with uncommitted 2.4 code. **Choice:** commit the driver with a unit test (scoping, native labels), its own stub Plan, no import from tests; re-run all 12 runs (`exp=2.4r1`); cite the runs. **Consequence:** `nip eval compare --exp 2.4r1 --md --tracking-uri sqlite:///data/mlflow/mlflow.db` reproduces the table; the round-0 runs are superseded (soft-deleted in W-int).
+
+### B-218 · 2.4 follow-ups assigned to W-int
+
+- **Date:** 2026-10-16 · 2.4 complete · **Controller ruling**
+- **Choice:** the 2.9A injector fix (never plant a compliant cut - 1 / cut - 2 out point) and deleting the stale `exp=2.4` MLflow runs go to W-int, not back to 2.4 (`eval/injectors/**` is 2.9A's). **Consequence:** done in `be494b4` and the W-int MLflow cleanup; Sintel shot_change recall 0.83 → 1.00 ([journal](journal.md#2026-10-16--24-follow-up-in-w-int-the-injector-stops-planting-a-compliant-out-point)).
+
+## 2.5 Speech-to-text and script-to-transcript alignment
+
+### B-219 · faster-whisper's own audio decoder is bypassed; nip reads a 16 kHz wav
+
+- **Date:** 2026-10-16 · 2.5 · commit `bd74e53` · notes journal "faster-whisper on the Windows host"
+- **Context:** faster-whisper 1.2.1's `decode_audio` passes `metadata_errors` to `av.open`, which PyAV 19.0.1 (what uv resolved) rejects. **Options:** pin `av<17` (moves the shared lock) or bypass. **Choice:** ffmpeg writes 16 kHz mono PCM16; `read_wav()` (stdlib `wave` + numpy) passes a float32 array. **Consequence:** PyAV never runs; a smaller change than a pin.
+
+### B-220 · Laptop ASR default is `faster-whisper-large-v3-turbo-int8`
+
+- **Date:** 2026-10-16 · 2.5 · commits `bd74e53`, `fa47838` · proposal 2.5-1
+- **Context:** [EXP-003](experiments.md#exp-003--speech-to-text-whisper-large-v3-vs-large-v3-turbo). Under every equal-config no-VAD arm turbo's sub+del is at or below large-v3's; it is 2.3x (novad-hst) to 3.2x (fb-p50) faster and needs about half the VRAM. The WER bar (within +1.0 point) is met at `fb-p50` (-1.2) and `novad-hst` (+0.2), not under plain `fb` (+4.3).
+- **Choice:** turbo for the laptop and the workstation default; large-v3 stays selectable with the same decode settings. **Consequence:** `timeline.asr.variant` = turbo; English only was measured. W-int found the planner picks large-v3 on the laptop without a pin, so `nip run` pins asr to this variant unless `NIP_PIN_ASR`.
+
+### B-221 · Decoding: no VAD, temperature fallback, `min_prob 0.5` (**Superseded** by B-222 for the fallback and the filter)
+
+- **Date:** 2026-10-16 · 2.5 fix round · commit `fa47838` · proposal 2.5-2
+- **Context:** VAD on mis-timed segments by up to 234 s ("I have failed." at 211.75 s instead of 445.85 s); temperature 0 lets large-v3 loop. **Choice:** `vad: false`, fallback tuple 0..1.0 for every variant, `min_prob 0.5`; `decode_by_variant` supported. **Cost stated:** non-deterministic transcripts (WER SD up to 0.018), turbo RTF 0.0219 vs 0.0139, a transcript cache needed for reproducible re-runs. Revisit triggers: a film with continuous music under quiet dialogue (0.5 tuned on 2 films); the unexamined cause of the VAD mis-timing (probably faster-whisper 1.2.1's chunk-timestamp restore with array input and word timestamps, not VAD as such).
+- **Superseded:** the re-review showed the fallback changes nothing measurable for turbo on these films (ToS transcripts byte-identical); `vad: false` stays. See [B-222](#b-222--asr-decoding-default-is-the-deterministic-novad-hst-arm).
+
+### B-222 · ASR decoding default is the deterministic `novad-hst` arm
+
+- **Date:** 2026-10-16 · W-int, after the 2.5 re-review · commit `3d66622` · **Controller ruling**
+- **Context:** the 2.5 re-review (N-1): `fb-p50` and `novad-p50` turbo transcripts of ToS are byte-identical; the WER gap is Sintel insertions in non-dialogue regions; `novad-hst` is equal footing and meets the bar.
+- **Options:** (a) `fb-p50` (lowest WER 0.543, non-deterministic, RTF 0.0219); (b) `novad-p50` (deterministic, WER 0.574); (c) `novad-hst` (deterministic, WER 0.606 vs large-v3 0.604, sub+del 0.115, RTF 0.0161). **Choice:** (c): turbo, `temperature: 0.0`, `hallucination_silence_threshold: 2.0`, `min_prob: 0.0`, `vad: false`.
+- **Consequence:** a transcript is the same every run (WER SD 0), so it is cacheable and re-runs are reproducible; it also matches the docs' rule "model calls use temperature 0 unless the experiment is about sampling". Cost if wrong: a rare confident repetition loop is not retried. The fallback tuple remains available per variant through `decode_by_variant`. EXP-004's token default is unchanged (0.676).
+
+### B-223 · Token-level alignment is the default, with a 0.3 s first-word cap
+
+- **Date:** 2026-10-16 · 2.5 · commit `bd74e53` · proposal 2.5-3
+- **Context:** [EXP-004](experiments.md#exp-004--script-to-transcript-alignment-token-level-monotonic-vs-rapidfuzz-line-level): token 0.68 vs line 0.51 within +-12 frames (with the cap), 0.46 vs 0.37 without. Whisper's first word after silence starts 0.1-0.7 s before the audible onset. **Choice:** `timeline.align.variant: token`, `first_word_cap_s: 0.3` (a line starts at `max(f_in, f_out - 0.3 s)` of its first word), `min_match: 0.5`; the rapidfuzz line variant stays selectable. **Consequence:** the 95 % bar is not met; reaching it needs hand-marked starts and an ASR that catches short exclamations.
+
+### B-224 · `not_in_cut` needs at least 8 unplaced dialogue words
+
+- **Date:** 2026-10-16 · 2.5 · commit `bd74e53` · proposal 2.5-4
+- **Context:** a missed one-line scene is far more likely an ASR miss than a scene cut from the edit, and `not_in_cut` hides a scene from screen-order checks (Sintel had 2 of 10 scenes wrongly `not_in_cut`). **Choice:** `NOT_IN_CUT_WORDS = 8` and no anchored line; shorter scenes stay `in_cut=True` with `frames` None unless they can share a gap between anchored neighbours; such scenes are labelled "(unplaced)" on the Timeline (review I-3, `0440e1d`). **Consequence:** a scene moved in the edit still looks `not_in_cut`, because alignment is monotonic in script order; detecting moves needs a second, non-monotonic pass (not built). In-cut scenes before the first or after the last anchored scene get no frames (review M9).
+
+### B-225 · EXP-004 ground truth: derived as-broadcast scripts, labels outside `eval/labels/`
+
+- **Date:** 2026-10-16 · 2.5 · commit `bd74e53` · **Controller ruling** (labels location; R5 from [B-120](decisions.md#b-120--phase-2-plan-rulings-r1-to-r15-adopted))
+- **Context:** no hand-marked line starts exist; Sintel's script covers the first minute and ToS's is subscriber-only (R5). `eval/labels/` is reserved for Label-format benchmark files, and 2.9A's `test_committed_labels_validate` scanned 2.5's JSONL there. **Choice:** derive one Fountain line per official-en-SRT cue and label its start (agent, `basis: srt-cue-start`) plus 3 pairable lines of the real Sintel script; store them in `eval/exp/exp004_labels/`. **Consequence:** EXP-004 measures agreement with subtitle timing, not speech onset; the 3 real-script labels reuse cue starts already in the Sintel set (102 distinct targets in 105, review M2).
+
+### B-226 · Timeline stages type the episode with a Protocol instead of importing `nip.pipeline`
+
+- **Date:** 2026-10-16 · 2.5 fix round · commit `051534b` · controller note on layering
+- **Context:** `timeline.asr` / `timeline.align` imported `nip.pipeline` (timeline → pipeline → agents), breaking `lint-imports` and reaching `nip.agents.localization` from `nip.runtime.clients.asr`. **Choice:** a `StageEpisode` Protocol (conn, s3, episode, episode_id, plan, `unit(...)`) in `nip/timeline/asr.py`, which `EpisodeRun` satisfies. **Consequence:** `lint-imports` 7 kept, 0 broken; `mypy src` clean.
+
+### B-227 · EXP-003 logs substitutions+deletions and per-film S/D/I next to WER
+
+- **Date:** 2026-10-16 · 2.5 · commits `bd74e53`, `0440e1d` · proposal 2.5-6
+- **Context:** R6 (official SRT as reference) puts the credits song and shouts the SRT omits into insertions, so absolute WER is misleading (Sintel WER above 1). R6 assumed the inflation is equal for both variants; under temperature 0 it was not (large-v3 loops). **Choice:** log `sub_del_rate`, inserted-word counts and `sub_/del_/ins_<film>`; read WER next to them.
+
+### B-228 · No transcript spans on the Timeline yet
+
+- **Date:** 2026-10-16 · 2.5 · commit `bd74e53` · proposal 2.5-5
+- **Choice:** `transcript_segment` is persisted, but the Timeline gets scene spans only (no `asr` or line spans); whether checks need `{ep}/asr/{id}` or `{ep}/line/{id}` spans is left to W-int / later checks.
+
+## 2.6 OCR channel and Presidio recognizers
+
+### B-229 · The `ocr` slot uses RapidOCR (ONNX Runtime) with PP-OCRv6 medium; the catalog id `pp-ocrv6-medium` is kept
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a` · DP-2.6-1
+- **Context:** `paddlepaddle-gpu` 3.4.0 runs alone (5.24 kf/s) but cannot be locked beside torch 2.13.0 on Linux (`nvidia-nccl-cu13` 2.29.7 vs 2.30.7) and clashes on Windows (cuDNN 9.15 vs 9.20, duplicate OpenMP) ([journal](journal.md#2026-10-16--26-paddleocr-beside-torch-three-conflicts-then-rapidocr)).
+- **Options:** (a) paddle in the same env (cannot lock); (b) paddle in a separate OCR image/venv (works, about 4x faster, adds a second image and Serve app env); (c) RapidOCR with the same model family as ONNX. **Choice:** (c), one environment.
+- **Consequence:** 1.29 kf/s and 1,569 MiB VRAM delta on the laptop ([C-32](experiments.md#c-32--ocr-backends-on-sintels-398-keyframes-paddleocr-gpu-vs-rapidocr-variants)); the catalog's `family` and `vram_gb` needed changing (done by 2.close in `d2a8fa3`: `rapidocr`, 1.6). Revisit (separate paddle image for the actor) if EXP-008 shows OCR time matters.
+
+### B-230 · OCR detection on the GPU, recognition on the CPU
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a` · DP-2.6-2
+- **Context:** the CUDA recognizer took 5.3 s vs 0.5 s on CPU for 30 keyframes (variable line widths → new shapes); conv-algo search settings and padding did not help ([C-33](experiments.md#c-33--onnx-runtime-cuda-detector-and-recognizer-where-each-runs)). **Choice:** two ONNX Runtime sessions from one RapidOCR config, det on CUDA, rec on CPU (`RapidOcrBackend(cuda=True)`). **Consequence:** relies on the private `RapidOCR._load_det_model()` plus a config mutation; a rapidocr upgrade that loads eagerly would silently put rec back on CUDA (review M-5, deferred). Revisit with fixed-shape ONNX or CUDA graphs.
+
+### B-231 · The CPU `onnxruntime` is excluded from the lock
+
+- **Date:** 2026-10-16 · 2.6 · commit `eafce85`
+- **Context:** `rapidocr` depends on the CPU `onnxruntime`; it and `onnxruntime-gpu` own the same `onnxruntime/` directory and the CPU build overwrote the GPU one, so CUDA never registered (0.47-0.60 kf/s instead of a GPU path). **Choice:** `[tool.uv] override-dependencies = ["onnxruntime; sys_platform == 'never'"]`. **Consequence:** `pip check` in the image reports "faster-whisper 1.2.1 requires onnxruntime, which is not installed"; faster-whisper needs it only for Silero VAD, which is off. The same class of clash exists for `opencv-python-headless` beside `opencv-python` (review M-3, harmless while both are 5.0.0.93).
+
+### B-232 · Fiction-reserved phone numbers are matched on the national significant number
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a` · DP-2.6-3
+- **Context:** D-026 names "an anchored 555-01xx pattern"; Presidio's regex allow-list is `re.search` over free text. **Choice:** per-region `fullmatch` patterns in `config/clearance/fiction_phone_ranges.yaml` run on `str(national_number)`, so "(212) 555-0142", "212.555.0142" and "+1 212 555 0142" behave the same. NANP `\d{3}55501\d{2}`; GB Ofcom drama ranges ([B-239](#b-239--gb-drama-ranges-from-a-secondary-source-of-ofcoms-table-unverifiable-blocks-removed)); ES/DE/FR none (every number there is a candidate, failing toward flagging). **Consequence:** the NANP rule is keyed by region US/CA, not country code 1 (review M-1); `reserved()` re-parses with the first region that yields a valid number (M-2).
+
+### B-233 · 555-0100..0199 is fiction-reserved under every area code
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a` · DP-2.6-4 · **Controller ruling**
+- **Context:** the 2.6 brief said "(212) 555-0123 is a candidate"; D-026 and architecture.md reserve 555-0100..0199 under any area code. **Choice:** the documented rule; the ledger records the brief's example as the controller's error. (212) 555-0123 is not a candidate; (212) 555-0223 and (617) 482-9154 are. **Consequence:** if legal wants area-code-qualified numbers flagged, change `national` in the yaml. Known gap: bare 7-digit numbers are not detected by libphonenumber for US.
+
+### B-234 · Reserved domains are filtered in code
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a` · DP-2.6-5
+- **Choice:** `example.com/.net/.org`, `.example`, `.test`, `.invalid`, `.localhost` and their subdomains (list in `recognizers.yaml`) are removed from URL and email candidates and from GLiNER org spans on those hosts, not through Presidio's allow-list.
+
+### B-235 · `TextScanner` takes one language; fictional and deny-listed brands are constructor arguments
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a` · DP-2.6-6
+- **Choice:** `candidates(detections, lang)` scans in the episode's source language only (recognizers are language-agnostic apart from context words); `fictional=` (bible brands/orgs, normalized, token-boundary match) and `deny_brands=` (clearance-log items, 2.7) are constructor arguments; a seed list of 20 real brands lives in `recognizers.yaml`.
+
+### B-236 · Presidio without GPL spaCy models; GLiNER carries names; GLiNER with its own word splitter and no extra weights
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a` · notes journal "Presidio setup", "GLiNER"
+- **Choice:** `SlimSpacyNlpEngine` with MIT `en_core_web_sm` / `de_core_news_sm` and `spacy.blank` es/fr, setting the private `_blank_languages` directly (the public path would load GPL `es_core_news_sm`); no spaCy NER recognizer at all, organizations and names come from GLiNER; GLiNER's `stanza` splitter replaced by its whitespace/punctuation splitter; `snapshot_download(ignore_patterns=[onnx/*, model.bf16*, model.fp16*, *.png])` avoids 3.9 GB of unused copies. **Consequence:** private-API dependence under `>=` pins (review M-5); the snapshot has no `revision=` pin, although the license policy rejects a later non-commercial gliner-x release (review M-6, deferred).
+
+### B-237 · gliner's cap `transformers<5.17.0` is accepted for now
+
+- **Date:** 2026-10-16 · 2.6 fix round · commit `fa95853` (decision recorded) · DP-2.6-9 · vLLM smoke: **Controller ruling**
+- **Context:** `gliner==0.2.29` declares `transformers<5.17.0,>=4.51.3`; the whole lock (win32 and Linux, including the vLLM image's `nip` install) moved transformers 5.20.0 → 5.16.1, huggingface-hub 2.2.0 → 1.33.0, numpy on win32 2.5.4 → 2.3.5. vLLM 0.30.0's declared requirements are still met.
+- **Options:** (a) accept; (b) a uv override forcing transformers >= 5.17 (untested by gliner); (c) isolate GLiNER (own env or ONNX path). **Choice:** (a): GLiNER is the only `ner` backend and the laptop model's config classes (`qwen3_5`, `qwen3_5_moe`, `gemma4`, `ministral3`) exist in 5.16.1. The controller ruled that W-int re-runs the vLLM image smoke.
+- **Consequence:** catalog models needing transformers >= 5.17 (Qwen3.8-27B, Qwen3.6-35B-A3B unverified) cannot load in this environment; sentence-transformers and 2.8's embedders are frozen at 5.16.1. The W-int smoke passed (also openai 3.31.0 → 3.3.0 in the image). Revisit when gliner lifts the cap or a model needs a newer transformers; first try (b) with the `ner` tests.
+
+### B-238 · Plate patterns are case-sensitive, allow one space, and exclude caption words by name
+
+- **Date:** 2026-10-16 · 2.6 fix rounds · commits `fa95853`, `3c1a5de` · review I-1, re-review N-1
+- **Context:** Presidio's default `IGNORECASE` made "upper case only" void and captions matched (I-1); the first fix dropped the spaced forms that real plates use (N-1). Shape alone cannot separate "ABC 1234" from "MAY 1985".
+- **Choice:** `global_regex_flags=re.DOTALL | re.MULTILINE`; US/DE allow one space; negative lookaheads list months and caption words before "ABC 1234", units after "123 ABC", function words before German "B AB 1234" (which needs 3-4 digits when spaced). **Consequence:** 16/16 plate probes match; 26/50 caption-shaped probes still match ([C-34](experiments.md#c-34--plate-regexes-over-three-rounds-captions-vs-real-plates)); the error is on the over-flag side; plates stay "to validate" (EXP-019). Re-review 2 recommends not growing the stop-lists by hand and, if needed, a score tier (bare shape 0.4, context-word lifted).
+
+### B-239 · GB drama ranges from a secondary source of Ofcom's table; unverifiable blocks removed
+
+- **Date:** 2026-10-16 · 2.6 fix rounds · commits `fa95853`, `3c1a5de` · review I-2, re-review M-b
+- **Context:** the first list (written from memory) had 7 ranges; Ofcom's page returned HTTP 403 to automated fetches. **Choice:** the ranges in britishtelephones.com's reproduction of Ofcom's table (read 2026-10-16): 0113-0118, 0121, 0131, 0141, 0151, 0161 `496 0000-0999`; 020 `7946 0000-0999`; 0191 `498 0000-0999`; 028 `9649 6000-6999`; 029 `2018 0000-0999`; 01632 `960000-960999`; 07700 `900000-900999`; 08081 `570000-570999`; 0909 `879 0000-0999`; 03069 `990000-990999`. Coventry 024 7618, Portsmouth 023 9288 and Southampton 023 8049 6 (reviewer recollection, in no source) were added as `# unverified`, then removed. **Consequence:** a real number in those three blocks is a candidate (fails toward flagging); Ofcom's own page is still unread.
+
+### B-240 · OCR and NER clients read `NIP_SERVE_URL`
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a` · DP-2.6-7
+- **Context:** a 2.0 review minor relayed by the controller: the clients hard-coded port 8000. **Choice:** base URL through `clients.llm.SERVE_URL`.
+
+### B-241 · OCR URL cleanup joins a spaced dot only before a known TLD; ccTLDs only in lower case
+
+- **Date:** 2026-10-16 · 2.6 · commits `9c3bf5a`, `fa95853` · D-026 cleanup, review M-9
+- **Context:** a general ". followed by a 2-letter word" rule made hosts of "Hello. It works" and "Dolor. Es muy". **Choice:** after a space-dot only gTLDs or known ccTLDs may follow, ccTLDs in lower case only; after "x. " only gTLDs. **Consequence:** "Hola . Es verdad" is no host; upper-case spaced hosts with a ccTLD ("SHOP .DE") are missed (re-review M-a, accepted).
+
+### B-242 · GLiNER spans that overlap a structured finding are not second findings
+
+- **Date:** 2026-10-16 · 2.6 · commit `9c3bf5a`
+- **Context:** real GLiNER tagged "+1 415 555 0100" as `address` and URL hosts as organizations. **Choice:** an address candidate must contain a word of at least 3 letters; an address/brand span overlapping a phone/URL/email span (fiction-safe ones included) is dropped; the domain inside an email is not a URL finding.
+
+## 2.7 Clearance matching, occurrences, prominence, clearance CSV, clr.* flags
+
+### B-243 · Identifiers match exactly, names fuzzily; the strictest status wins
+
+- **Date:** 2026-10-16 · 2.7 · commit `4c131c1` · DP-2.7-4 in the 2.7 notes
+- **Context:** architecture.md's matching normalizes "case, punctuation, known variants" but does not say how close a match must be.
+- **Options:** fuzzy matching for every kind; exact for every kind; exact for identifiers, fuzzy for names. **Choice:** phones, plates, e-mails and URLs match exactly after normalization; addresses and brands by token containment (>= 2 tokens) or `rapidfuzz.ratio >= 90`. An item whose `scope` (`S01E03`, `S01E01-S01E08`, comma lists) does not cover the episode does not apply. With several matching items, denied > pending > cleared.
+- **Consequence:** a one-character difference in a phone number or plate is a different number, so a wrong "cleared" cannot hide a real exposure. The other side of that risk (an OCR slip of a pending/denied identifier becoming `unknown`) was closed by [B-250](#b-250--a-one-edit-ocr-slip-of-a-pendingdenied-phone-or-plate-escalates-to-must_review).
+
+### B-244 · Pending/denied are `must_review` and cleared `suppressed` whatever the confidence
+
+- **Date:** 2026-10-16 · 2.7 · commit `4c131c1` · brief (the one Phase 2 edit allowed in `agents/base.py`), extends [B-064](decisions.md#b-064--emit-enforces-evidence-or-nothing-and-assigns-the-tier)
+- **Choice:** `Finding.tier` is an optional override that `emit` uses instead of the confidence tiers. **Consequence:** the system target "pending/denied detected but not shown = 0" holds by construction for exact reads; tests run a pending phone and a denied plate through `emit` at confidences 0.0, 0.01, 0.3, 0.69, 0.7, 0.95, 1.0.
+
+### B-245 · Candidate confidence = OCR confidence x max(recognizer score, certainty floor)
+
+- **Date:** 2026-10-16 · 2.7 · commit `4c131c1` · DP-2.7-2, DP-2.7-11
+- **Context:** Presidio scores phones and plates 0.4, so an unlogged real phone number scored 0.38 and was `suppressed` ([journal](journal.md#2026-10-16--27-clearance-matching-occurrences-the-clearanceocr-stage-and-the-csv)).
+- **Choice:** per-check floors for recognizers that validate their match: phone 0.9 (libphonenumber), e-mail 0.9, URL 0.85. Plates and GLiNER spans keep their own score (plates stay "to validate", EXP-019). `Scan.rows` stores this confidence, not the Presidio score.
+- **Consequence:** unlogged phone numbers, e-mails and URLs reach a reviewer; unknown plates stay <= 0.4 and `suppressed` ([B-260](#b-260--unknown-plates-stay-at-their-recognizer-score-and-suppressed)). Not exercised by the benchmark (every injected positive is logged, so its tier is forced).
+
+### B-246 · Occurrences merge by a 2 s gap between keyframe cells; scene boundaries are not used
+
+- **Date:** 2026-10-16 · 2.7 · commit `4c131c1` · DP-2.7-3
+- **Context:** architecture.md merges "detections of the same item in consecutive shots of a scene (gap <= 2 s)".
+- **Choice:** merge by time gap only (<= 2 s, inclusive, between keyframe cells). Store scenes are script estimates until alignment sets `timeline_source = 'picture'`, and a text that comes back within 2 s across a scene cut is still the same sign. Unknown items group by exact normalized text.
+- **Consequence:** review minors M5 (OCR variants of one unknown item, e.g. "Netherlands Film Fund" / "THENETHERLANDSFILMFUND", stay separate occurrences) and M6 (under 1 per shot, two adjacent long shots showing one sign split because cells are capped at 4 s) were recorded as known limits, not changed.
+
+### B-247 · A keyframe span stands for its cell; the flag's claim is the keyframes (**Superseded** by B-248)
+
+- **Date:** 2026-10-16/17 · 2.7 · commits `4c131c1`, `2407222` · DP-2.7-1 (round 0)
+- **Context:** the brief's shot-span claim cannot reach IoU 0.3 against 3 to 4 s overlays in 4 to 24 s shots ([C-36](experiments.md#c-36--claim-span-for-an-occurrence-shot-span-vs-keyframe-cell-vs-occurrence-range)).
+- **Options:** shot spans (the brief); extend `emit`/verification to accept sub-ranges (outside 2.7's files); keyframe-as-cell. **Choice (round 0):** keyframe-as-cell, `cell_cap_s` = 4 s, keyframe claims with quote + crop, shots as context.
+- **Why superseded:** the review (I4) found the width a constant matched to the injector (a label longer than about 13.3 s could never match), the claim differed from the occurrence range the CSV reports, and stored `kf` evidence had ranges a fresh `load_timeline` does not reproduce, so re-verification would drop every clr flag.
+
+### B-248 · The claim is the occurrence's frame range, as a `clr/occ-<hash>` span
+
+- **Date:** 2026-10-17 · 2.7 fix round 1 · commit `f324627` · **Controller ruling** (review I4)
+- **Ruling text (progress.md):** clr flag claim = occurrence frame range (as in CSV), not a fixed 4 s window; spec occurrence semantics; re-verifiable. Cost if wrong: lower IoU on long labels, reported honestly.
+- **Choice:** the `clearance.ocr` stage adds one span per occurrence to the run's timeline (`clr/occ-<hash>`, kind `clearance_item`, frames = the occurrence's range = the CSV's tc_in/tc_out, text = what was read); that span is the claim. The keyframe is `context` with quote + crop and its single stored frame; shots are `context`. `windows()` and the stretched keyframe spans are gone. The range is the union of the keyframes' cells (cell capped at `cell_cap_s` = 4 s, an evidence-horizon estimate also used for screen time).
+- **Consequence:** recall unchanged (1.00 current and dense, 0.50 1 per shot); a unit test shows a 60 s label against a 4 s occurrence (IoU 0.07) does not match. A fresh `load_timeline` lacks the `clr/occ-` span, so re-verification must run `clearance.ocr` first or refs need an occurrence kind; the Phase 2 closeout made `clr/occ-` refs resolve from the store (`5f65199`).
+
+### B-249 · Each occurrence has its own stable ref, so R13 fingerprints separate distinct items
+
+- **Date:** 2026-10-17 · 2.7 fix round 1 · commit `f324627` · review I2
+- **Context:** fingerprints use stable refs only (R13); round 0's clr flags carried only `kf` and `shot` refs, so every unknown item on one keyframe set shared one identity (41 of 109 flags in 17 colliding groups per seed, measured by the reviewer).
+- **Choice:** `Occurrence.ref` = `clr/occ-` + sha1[:12] of (episode, check, registry item or normalized text, first keyframe). It parses as a `clr/` ref, so `runs.stable_refs` includes it. **Consequence:** 253 flags, 253 fingerprints, 0 colliding ([C-38](experiments.md#c-38--fingerprint-collisions-among-clr-flags-41-of-109-per-seed--0-of-253)). The implementer proposed a real occurrence kind (`occ/{ep}/{id}`) to the refs owner. Later the Phase 2 closeout ruled that the hash use registry-independent fields only (episode, check, normalized first read, first keyframe), commit `ddf6206`.
+
+### B-250 · A one-edit OCR slip of a pending/denied phone or plate escalates to `must_review`
+
+- **Date:** 2026-10-17 · 2.7 fix round 1 · commit `f324627` · **Controller ruling** (review I3)
+- **Ruling text:** near-match (<= 1 edit) to pending/denied phone/plate escalates to must_review, because "pending/denied detected but not shown = 0". Cost if wrong: some extra reviews.
+- **Context:** with exact matching an O/0, I/1, B/8 slip of a pending/denied plate became `unknown`, at score <= 0.4 (no plate floor), `suppressed`, while still matching the label: detected but not shown. Not observed on this set (OCR read all 32 exactly).
+- **Choice:** with no exact in-scope hit, a phone or plate of normalized length >= 6 within Levenshtein distance 1 of a pending/denied item of that kind returns `Match(status=that item's, item, near=True)`; the explanation says "may be the denied item ... (one character different ...)". Exact matching stays for `cleared` and for e-mails, URLs and names.
+- **Consequence:** a different number one digit from a pending one is shown as a possible match (accepted by the ruling). Residual (re-review N3, tested, by design): with two logged numbers one digit apart, an exact read of the cleared one that was really a misread of the denied one stays cleared.
+
+### B-251 · EXP-008: keep the 4 s / 2 s keyframe policy as a recorded override of the bar
+
+- **Date:** 2026-10-17 · 2.7 fix round 1 · commit `f324627` (config comment; first recorded in `e464917`) · **Controller ruling**, DP-2.7-9
+- **Context:** [EXP-008](experiments.md#exp-008--keyframe-density-for-on-screen-text): shown recall 0.50 / 1.00 / 1.00 for 1 per shot / current / 1 per 1 s, keyframes 302 / 723 / 1,458. The bar ("a denser policy is kept only if recall rises >= 5 points for <= 50 % more keyframes") applied against the sparsest arm rejects both denser arms (+0.50 recall for +139 %; +0.00 for +102 %), so by its text the policy is 1 per shot. Its recall of 0.50 fails the 0.85 MVP recall target for the six `clr.*` checks (evaluation.md).
+- **Ruling text (progress.md):** EXP-008 keep 4s/2s as OVERRIDE of the bar (1/shot recall 0.50 < 0.85 MVP). Cost if wrong: +139 % keyframes vs 1/shot.
+- **Choice:** `timeline.keyframes` stays at the B-027 policy ([B-027](decisions.md#b-027--keyframe-policy-made-concrete)); `config/pipeline.yaml` says it is an override. The round-0 text that presented this as "per the bar" was withdrawn.
+- **Consequence:** +139 % keyframes and, per the notes, +700 % OCR time on the policy frames (1,470 vs 180 s per content hour on the GPU scans). The set favours density (3 to 4 s overlays in long shots); revisit with a set of persistent signage.
+
+### B-252 · EXP-017: keep the dedicated OCR engine (`pp-ocrv6-medium` via RapidOCR)
+
+- **Date:** 2026-10-17 · 2.7 · commit `e778928` · experiment result under the written bar
+- **Context:** [EXP-017](experiments.md#exp-017--ocr-engine-vs-reading-text-with-the-vision-model): recall 1.00 for both readers; bar "keep PP-OCR unless the vision model's recall is >= 10 points higher".
+- **Choice:** keep `pp-ocrv6-medium` (RapidOCR PP-OCRv6 medium, 2.6's fallback). **Consequence:** the vision model's lower shown-FP count is not counted as an advantage, because 16.1 % of its reads failed on credits cards; it also takes 1.30x the stage seconds and a 156.6 s load to 7.9 GB on the 8 GB card, where the OCR actor needs 1.5 GiB.
+
+### B-253 · Credits and title cards give no GLiNER brand or address guesses
+
+- **Date:** 2026-10-17 · 2.7 · commit `2407222` · DP-2.7-10
+- **Context:** GLiNER tagged names, roles and software in the closing credits as organizations / products; shown FPs on seed 1 were 95 (Sintel) and 89 (Tears of Steel) ([C-35](experiments.md#c-35--scanner-rules-on-unlogged-credits-text-shown-false-positives-95--29-and-89--24)).
+- **Choice:** a keyframe with >= 8 OCR lines (`dense_frame_lines`, config) gets no GLiNER address/brand guesses (deny-lists, phones, URLs, e-mails and plates still count); a GLiNER person / job-title reading removes an overlapping brand or address; a brand span needs 3 letters ("IT", "CG", "O0" are OCR noise).
+- **Consequence:** shown FPs 95 → 29 and 89 → 24 (seed 1). A real brand named only in credits ("Dell Computers") is not flagged unless logged. The rules were written looking at seed-1 flags; the review (I5) called them principled in kind but tuned on the evaluation data in degree. The recall cost on in-scene text-heavy frames (newsstand, storefront row) is not measurable on these films, which have none.
+
+### B-254 · Credits URLs are correct `unknown` flags; precision is reported against injected labels only; junk is dropped by rule
+
+- **Date:** 2026-10-17 · 2.7 fix round 1 · commit `f324627` (natives adjusted in `cda802e`) · **Controller ruling** (review I5)
+- **Ruling text (progress.md):** credits third-party URLs are correct `unknown` flags → agent-provisional natives; precision reported vs injected labels only; junk filters by rule, measured on seeds 2-3.
+- **Choice:** (a) the injected-run precision is called "precision vs injected labels only"; the 113/h figure is not the spec's noise metric (clean runs with human triage), which stays unmeasured. (b) Rules: the show's own title and the bible's fictional names (whole words) are never clearance items; a brand/address made only of credit words (a trade vocabulary in `recognizers.yaml`) is a credit line; GLiNER reads all-caps OCR lines in title case; GLiNER guesses only on lines read at OCR confidence >= 0.8; brand spans need 3 letters. (c) Measured on seeds 2 to 3. (d) Native labels `eval/labels/exp008/{sintel,tears-of-steel}.native.jsonl` for real web addresses printed in the credits (`accepted_urls.yaml`; OCR fragments l.org, DivX.Inc, Yi.us rejected; injector `clr.native.agent.v1`, `reviewed` false, labeller agent (provisional)); 8 + 5 in fix round 1, **7 + 5 = 12** after `www.sintel.org` (first-party) was removed in fix round 2. Native frames are seed 1's own occurrence ranges (IoU 1 with seed 1's flags by construction; seeds 2 to 3 share the credits frames).
+- **Consequence:** final precision 0.21 ± 0.01 injected-only, 0.44 ± 0.01 with natives, recall 1.00 ([C-35](experiments.md#c-35--scanner-rules-on-unlogged-credits-text-shown-false-positives-95--29-and-89--24)). The credit vocabulary was partly extended from these films' credits (farm, servers, bug, fixing, violinist, gold, financial, administration, printing, websites), so it is not independent of the data (re-review N4). Real organizations in credits and sponsor cards were not labelled (the ruling names URLs).
+
+### B-255 · The clearance log is matched before any junk rule
+
+- **Date:** 2026-10-17 · 2.7 fix round 2 · commit `cda802e` · re-review N1
+- **Context:** the fix-round-1 rules ran before the log, so a logged `Waffle House` (denied) with a show titled "House" became `fictional` ([journal](journal.md#2026-10-17--27-re-review-a-fix-that-could-hide-logged-items-and-fix-round-2)).
+- **Choice:** `match` returns registry hits (exact, in scope) and the one-edit near match first; the fictional / own-title test runs only when nothing in the log matched. In `TextScanner`, deny-list results skip the credit-word, person/role-overlap, fictional-substring and short-noise drops; only the reserved-host test stays. **Consequence:** "fictional" now means unlogged; unlogged look-alikes ("THE HOUSE OF CARDS", "9 Springfield Lane") are still dropped. No benchmark flag changed (0 frames with different candidates).
+
+### B-256 · No NER pin in code; the planner/catalog decides the NER variant
+
+- **Date:** 2026-10-17 · 2.7 fix round 1 · commit `f324627` (the pin was added in `2407222`) · **Controller ruling** (review I6); DP-2.7-5 withdrawn
+- **Context:** round 0 pinned the `ner` slot to `gliner-x-base` (`clearance.ner_variant`, one line in `pipeline.current_plan`) because the quality objective picked `gliner-x-large` (catalog 3.7 GiB, never downloaded or measured). The reviewer: an unconditional pin contradicts tech-stack.md ("`gliner-x-large` on big GPUs") and belongs in the catalog/planner.
+- **Ruling text:** NER variant from planner/catalog (no unconditional gliner-x-base pin); exercise GPU nip run --in-cluster on Sintel once.
+- **Choice:** pin and key removed; `current_plan` pins asr only; 2.7's runs set `NIP_PIN_NER=gliner-x-base` (the documented env mechanism). **Consequence:** all published 2.7 numbers (EXP-008, EXP-017, e2e) were produced with `gliner-x-base`. The Phase 2 closeout measured `gliner-x-large` at 2.6 GiB, kept it as the planner's laptop pick, and scored it on EXP-008's set ([C-54](experiments.md#c-54--ner-ab-on-replayed-ocr-gliner-x-large-vs-gliner-x-base-on-the-exp-008-end-to-end-benchmark)).
+
+### B-257 · `pipeline.py`: two stages and the slot tables, beyond the one sanctioned `add_stage`
+
+- **Date:** 2026-10-16 · 2.7 · commits `4c131c1`, `2407222`, `f324627` · DP-2.7-6, accepted by the **Controller ruling** on review I6
+- **Context:** the controller had allowed "the ONE `add_stage(...)` line" for the OCR stage (progress.md, after W-int/W-serve).
+- **Choice:** `add_stage("clearance.ocr")` + `add_stage("clearance.csv")`; `STAGE_SLOTS["clearance.ocr"] = Slot.OCR` and `FEEDS["clearance.ocr"] = "clr."` (a skipped OCR slot skips the stage and the clr checks as a recorded gap, as for extraction); `MODEL_SLOTS += (OCR, NER)` (without them the Plan has no OCR decision and the stage silently does nothing); `tests/unit/test_cli.py` dry-run expectation updated.
+- **Consequence:** every `nip run` Plan now carries OCR and NER (VRAM budget beside text_llm); the in-cluster run confirmed text_llm still fits on the laptop (context 32768 → 16384, no skipped slots).
+
+### B-258 · Clearance CSV per run and episode, CLI now, API route later
+
+- **Date:** 2026-10-16 · 2.7 · commits `4c131c1`, `e464917` · DP-2.7-8; ruling R11 ([B-120](decisions.md#b-120--phase-2-plan-rulings-r1-to-r15-adopted))
+- **Choice:** the `clearance.csv` stage writes `runs/{run_id}/{ep}/clearance_report.csv` (data-model says `runs/{run_id}/clearance_report.csv`; 2.0 already made `report.json` per episode because a run spans episodes). Columns exactly as api-contracts.md. `nip clearance report --show S --episode E [--run run_N] [--out f.csv] [--include-hidden]`; wiring line in `cli.py`: `app.add_typer(clearance_report.app, name="clearance")`. CSV flag ids are keyed by check + best keyframe + quote (`e464917`).
+- **Consequence:** `thumbnail_url` is `s3://...` until the API presigns it (4.1). Review minor M4: `--run run_N` recomputes occurrences from today's registry and detections, so a historical run's CSV can show statuses its flags did not have (not changed).
+
+### B-259 · Crop sharpness is stored as a companion `detection` row
+
+- **Date:** 2026-10-16 · 2.7 · commit `4c131c1` · notes ("Smaller findings")
+- **Context:** `detection` has no attribute column. **Choice:** a row with `label` = `sharpness` per candidate whose `confidence` holds the Laplacian variance of its crop. **Consequence:** review M3: other readers of `channel='ocr'` confidences see out-of-range values (300+); the proposed fix is an `attrs jsonb` column in a migration 0003 (not done).
+
+### B-260 · Unknown plates stay at their recognizer score and `suppressed`
+
+- **Date:** 2026-10-17 · 2.7 fix round 1 · commit `f324627` · review M7 (stated as a decision in the report)
+- **Choice:** no certainty floor for plates (scores <= 0.4); plates are "to validate" by EXP-019. **Consequence:** an unlogged real plate is not shown by default; pending/denied plates are covered by the tier override and the near match.
+
+## 2.8 Scene vector index and hybrid retrieval
+
+### B-261 · The embedder client module is `clients/text_embedder.py`
+
+- **Date:** 2026-10-16 · 2.8 · commit `7a664c1` · **Controller ruling** (carried into the 2.8 brief); D-2.8-1 in the 2.8 notes
+- **Ruling text (progress.md):** embedder client module named `clients/text_embedder.py` (matches Slot name so 2.0's generic `_bind` hook works; phase2-plan said `embedder.py`).
+- **Consequence:** `serving.actor_class(slot)` imports `nip.runtime.clients.text_embedder` and takes `Actor` with no per-slot code (checked by the reviewer). Deviates from `phase2-plan.md`.
+
+### B-262 · `script_line.speaker text` in migration 0002 holds the raw character cue
+
+- **Date:** 2026-10-16 · 2.8 · commit `7a664c1` · **Controller ruling**; D-2.8-2
+- **Ruling text (progress.md):** `script_line.speaker` column added by 2.8 in migration 0002 (2.8 is sole schema owner). Cost if wrong: one more migration.
+- **Context:** 2.0's ingest dropped the speaker and 2.1 needs it. **Choice:** the column holds the script's raw cue (e.g. `MAYA`); `speaker_entity_id` stays 2.1's job (entity resolution). `_write_script` fills it for dialogue and parenthetical elements (the one allowed edit to 2.0's writer, 4 lines). **Consequence:** episodes ingested before 0002 keep `speaker = NULL` and re-ingest is a no-op (review minor 4; backfill left to 2.9B). 2.1B later kept cue extensions as written (V.O., O.S.) in this column.
+
+### B-263 · `UNIQUE (scene_id, kind, embedder_variant)` on `scene_chunk`; the writer is an upsert
+
+- **Date:** 2026-10-16 · 2.8 · commit `7a664c1` · D-2.8-3
+- **Options:** no constraint and delete + insert (races, duplicates on retry). **Choice:** the database enforces "embed once per variant"; a changed scene is replaced in place. Skipping compares the stored chunk text with the current scene text, not `scene.text_hash` (the reviewer: same semantics, stricter, since speaker and parenthetical text are part of it).
+- **Consequence:** a scene replaced on re-ingest must have its chunks deleted or upserted first (the FK); 2.9B-1 deletes `scene_chunk` before `scene`. The constraint's explicit name equals Postgres's default, so the drift test sees no difference.
+
+### B-264 · One HNSW partial expression index per catalog embedder variant, with the variant inlined
+
+- **Date:** 2026-10-16 · 2.8 · commit `7a664c1` · D-2.8-4 and the build findings; resolves the deferral in [B-004](decisions.md#b-004--schema-v1-contains-all-26-tables)
+- **Choice:** `((embedding::vector(1024)) vector_cosine_ops) WHERE embedder_variant = '<v>'` for `qwen3-embedding-0.6b` and `-8b` (the 8b one exists although no 8b chunks do, because the catalog lists it); default HNSW parameters (m 16, ef_construction 64); the stub gets no index. The variant is inlined into the query SQL (regex-checked `[\w.-]+`) because Postgres uses a partial index only for a predicate it can prove; every vector query sets `hnsw.iterative_scan = strict_order`; `hnsw.ef_search` is clamped to 1000.
+- **Consequence:** a new embedder variant needs a migration. Review minor 5: `schema.HNSW_VARIANTS` duplicates the migration's list and nothing checks catalog `text_embedder` variants are covered (a third variant would run un-indexed and pass the drift test).
+
+### B-265 · Hybrid score = cosine + weight x IDF-weighted entity overlap, weight 1.0
+
+- **Date:** 2026-10-16 · 2.8 · commit `7a664c1` · D-2.8-5
+- **Options:** a hard filter on shared entities (misses scenes about the same thing from another angle); reciprocal-rank fusion (no fact weighting); plain Jaccard (a main character shared everywhere counts as much as a secret). **Choice:** cosine plus weight times the IDF-weighted share of the query scene's entities; one SQL candidate query plus a few lines of Python; the IDF needs no entity-kind table. `Filters(kinds, shared_only, episode_ids)` lets a Phase 3 consumer ask for props and secrets only.
+- **Consequence:** weight 1.0 was picked from a sweep on 3 planted pairs ([C-39](experiments.md#c-39--scene-retrieval-vector-only-vs-hybrid-vector--entity-overlap)), where the facts are the generator's truth; the reviewer noted 1.0 lets the overlap term dominate the narrow cosine band. Re-sweep with 2.1's real facts. Review minors 1 and 3: `retrieve` reloads the whole show's facts per call and the shared-entity pool is unbounded (fine at 150 scenes, a ceiling for Phase 3 Layer 2).
+
+### B-266 · CPU is the in-process embedding default; the Serve actor uses CUDA
+
+- **Date:** 2026-10-16 · 2.8 · commit `7a664c1` · D-2.8-6
+- **Context:** CPU 5.8 to 6.0 scenes/s vs GPU 242.5 to 280.8 on short scenes ([C-40](experiments.md#c-40--scene-embedding-throughput-cpu-vs-gpu-qwen3-embedding-06b)); the GPU is shared with vLLM and a 1.6 GiB actor does not fit next to a resident LLM on the 8 GB laptop.
+- **Choice:** `make_embedder(device="cpu")` in process; the Serve `Actor` uses CUDA because the planner decided its placement. **Consequence:** at about 300 tok/s an episode of 60 scenes x about 300 tokens (an assumption, not measured) is roughly a minute on CPU, a season about 10 minutes; revisit if that is too slow.
+
+### B-267 · No instruction prompt; scene text is heading plus `SPEAKER: text`, truncated at 1,024 tokens
+
+- **Date:** 2026-10-16 · 2.8 · commit `7a664c1` · D-2.8-7, D-2.8-8
+- **Choice:** Qwen3-Embedding is trained with a query instruction for asymmetric retrieval, but both sides here are scene text (symmetric), so none is used. Scene text = heading, then each element: dialogue as `SPEAKER: text`, parentheticals in parentheses, transitions dropped; `max_seq_length` 1,024 tokens (the model allows 32k). **Consequence:** the longest synthetic scene is 69 tokens, so truncation is untested on real scripts; a longer scene loses its tail.
+
+### B-268 · The index stage is a no-op without a `text_embedder` decision; never a silent stub
+
+- **Date:** 2026-10-16 · 2.8 · commit `7a664c1` · D-2.8-9
+- **Choice:** one work unit per episode; without a Plan decision the stage does nothing rather than fall back to the stub (stub vectors in a real database would be wrong). **Consequence:** W-int must put a `text_embedder` workload into the Plan (`current_plan({Slot.TEXT_EMBEDDER: n})`) for it to run.
+
+## 2.9A Injectors, synthetic show, sidecars
+
+### B-269 · The synthetic show is a template generator with truth by construction; a script line is a Fountain element
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-A in `notes/2.9A.md` · implements ruling R2 ([B-120](decisions.md#b-120--phase-2-plan-rulings-r1-to-r15-adopted))
+- **Context:** evaluation.md says the show is generated "using the local text model"; an LLM may not fit and gives no exact truth.
+- **Choice:** a deterministic template generator. `truth.json` = the model (scenes, lines, facts with quotes, mentions incl. nicknames/descriptions, story_seq/day, markers) plus computed line/scene refs and setup/payoff pairs; predicates `present_at`, `learns`, `references`, `holds` (value.event obtain|use), `state` (value.state dead|destroyed), `setup`, `payoff`. Because the Fountain reader merges consecutive action paragraphs, the generator merges adjacent actions and the line `seq` is the element position ([B-135](#b-135--script_lineseq-is-1-based-within-its-scene)).
+- **Consequence:** 2.1/2.2/2.3 can load oracle facts from it; prose is repetitive, and synthetic results are reported separately.
+
+### B-270 · Label conventions per target kind
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-B · applies ruling R12
+- **Choice:** cue-level labels (`loc.term`, `loc.shot_change`) carry the cue ref and the cue's frame range in the output file; track-level labels (`loc.drift`, `loc.offset`) carry every cue ref of the track and no frames, kind `subtitle_track`; script labels (`plot.*`) are kind `script_line` with refs = planted line + its scene (+ the paired scene for two_places), no frames; clearance labels are kind `frame_range` with frames only (the overlay window, 72 to 96 frames).
+- **Consequence:** `eval.metrics.overlap` matches track labels by any claimed cue ref, script labels by line or scene ref, clearance labels by IoU ≥ 0.3, so 2.7 should flag the occurrence's shot/keyframe range. Labels are written to `<out>/<set>/seed<N>/labels/<title>.jsonl`, not the spec's `eval/labels/<set>/<title>.jsonl` (review M3).
+
+### B-271 · Cleared clearance items are rendered but not labelled
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-C
+- **Context:** the sidecar clearance log marks injected items cleared, pending or denied; a cleared item must be hidden, so finding it is not an error.
+- **Options:** label everything and mark the status in the description (rejected); label only what should be shown.
+- **Choice:** cleared items and negatives (555-0100..0199, RFC 2606 domains/emails, bible-fictional brands) are listed in `<picture>.clr.json`, not in the labels, so 2.7 can test that cleared items are hidden and negatives unflagged without charging a correct system with false negatives.
+
+### B-272 · Clearance text is an overlay plate over a still stretch
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-D and "Tried → switched"
+- **Choice:** an opaque dark plate with white text in one of five fixed screen regions for 72 to 96 frames inside a still stretch (frame-to-frame difference under 1.0 gray level for at least 84 frames, [C-41](experiments.md#c-41--low-motion-threshold-for-clearance-overlay-windows)), drawn as Pillow PNGs with ffmpeg `overlay=enable='between(n,a,b)'` rather than `drawtext` (no font-file dependency); bitexact ffmpeg flags.
+- **Consequence:** easier to read than a sign in perspective, so OCR numbers from this injector are an upper bound (top risk 3 in the phase plan). Byte-identity is proven on one machine only (review M4).
+
+### B-273 · Phone positives must be valid numbers outside the fiction range
+
+- **Date:** 2026-10-16 · 2.9A · commit `2894fdd` · review I1b · **Controller ruling** · supersedes D-E
+- **Context:** D-E followed the doc: positives with NANP N9X expansion area codes (290, 390) plus 555 numbers outside 0100-0199. The reviewer showed N9X numbers are `is_valid_number` False and Presidio's default leniency (VALID) rejects them ([C-42](experiments.md#c-42--phone-positives-nanp-expansion-area-codes-vs-555-numbers-outside-the-fiction-range)).
+- **Choice:** positives are `phonenumbers`-valid and outside 555-0100..0199 ((212) 555-0234, (415) 555-2671, (310) 555-0287, (212) 555-0963); N9X rows dropped. **Consequence:** clr.phone recall is no longer capped below 1 by the detector's validity check.
+
+### B-274 · Track plan per title: stacked edits in one copy, separate tracks for drift and offset
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-F (`eval/inject.py::PLANS`)
+- **Choice:** Sintel: es = term + shot_change + readability, fr = drift, de = offset, en untouched. Tears of Steel: es = term + shot_change + readability, fr = term + shot_change, de = drift, it = offset; en/nl/no/ru copied untouched (the `no` file is UTF-16 and copied as is). Stack order term → shot_change → readability with an `avoid` cue set.
+- **Options rejected:** one copy per injector; injecting everything everywhere, because drift and offset move every cue and invalidate other labels on the same track.
+
+### B-275 · Glossary variants live in the `notes` column
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-G
+- **Choice:** `glossary.csv` `notes` may contain `variants: A | B`; without it `loc.term` misspells by swapping two inner letters. Keeps the file valid for `parse_glossary` with no extra column. The sidecar glossaries were hand-written from the English/target subtitles (terms checked to occur in the files).
+- **Consequence (review M2):** some variants contain the approved rendering (`Thom` / `Thomas`), which a substring checker would miss.
+
+### B-276 · `synthetic-show` in the manifest with license CC-BY-4.0 and no source
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-H
+- **Choice:** added to titles and `mvp` with `CC-BY-4.0` (the `test_corpus` licence whitelist has no CC0; the content is generated by the project) and an empty source, so `nip eval corpus fetch --set mvp` creates an empty `data/corpus/synthetic-show/`. **Alternative:** add CC0-1.0 to the whitelist in `tests/unit/eval/test_corpus.py` (not 2.9A's file).
+
+### B-277 · `nip eval inject` is wired as a command, not a sub-app
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-I; wired by W-int in `3d66622`
+- **Choice:** `from eval.inject import inject` and `eval_app.command("inject")(inject)`; a one-command Typer added with `add_typer` would need a sub-command name. `eval.inject.app` exists for tests.
+
+### B-278 · Each injector seeds its own stream from `(injector id, seed)`
+
+- **Date:** 2026-10-16 · 2.9A · commit `2e3cb6e` · D-J
+- **Choice:** `random.Random(f"{injector id}/{seed}")` (string seeding is stable across processes), so stacked injectors on one seed do not share a stream; `Label.seed` is the user's seed. **Consequence (review M5):** the title is not in the seed, so Sintel and ToS pick correlated positions; `loc_readability.py` still seeds with the bare seed.
+
+### B-279 · A film is `show=<slug>`, `episode="S01E01"`
+
+- **Date:** 2026-10-16 · 2.9A · commit `2894fdd` · review I1 · **Controller ruling** · changes the episode default stated in [B-108](decisions.md#b-108--the-locreadabilityv1-injector-isolated-cues-one-kind-per-pick-ref-based-labels)
+- **Context:** film labels used `episode = <title slug>` (inherited from 1.9/1.10), the store accepts only `SxxEyy`, and `metrics.overlap` returns 0 when episodes differ, so no film flag could ever match a film label.
+- **Choice:** films are `S01E01` under `show=<slug>`; `FILM_EPISODE` is every injector's default, label ids start with the title, cue refs read `S01E01/es/N`; the 1.10 walking-skeleton native labels were rewritten to `S01E01`. **Cost if wrong (ledger):** relabel.
+
+### B-280 · `eval/labels/` is reserved for Label-format files; EXP-004 ground truth moves out
+
+- **Date:** 2026-10-16 · 2.9A review → 2.5 · **Controller ruling**
+- **Context:** `test_committed_labels_validate` scans `eval/labels/**` and failed on 2.5's untracked `eval/labels/exp004/*.jsonl` (rows of `{scene, element, text, start_ms, labeller, basis}`, no `label_id`). The reviewer judged the test correctly scoped by the spec and advised against loosening it.
+- **Choice:** 2.5's EXP-004 alignment ground truth moves out of `eval/labels/`; the test stays strict.
+
+### B-281 · Mention truth records every entity surface in a line
+
+- **Date:** 2026-10-16 · 2.9A · commit `2894fdd` · review I2
+- **Context:** `truth.json` recorded mentions for characters and Kappa Cola only; EXP-020 scores resolution against these mentions, and a registry-enum extractor legitimately emits location, prop and org mentions.
+- **Choice:** `model.find_mentions` scans each line's final text for every entity surface (character full/first name, nickname, description such as "the informant", location, prop, org, brand; whole words, longest first), used by the generator and the plot injectors instead of template-time bookkeeping. **Consequence:** 483 → 704 mention records for seed 1; generated scripts unchanged ([C-43](experiments.md#c-43--synthetic-show-mention-truth-template-bookkeeping-vs-scanning-every-surface)).
+
+## W-int Wiring, integration fixes, image smoke, end-to-end store runs
+
+### B-282 · Wiring by an idempotent `pipeline.wire()` called from `nip run`, not module-level `add_stage`
+
+- **Date:** 2026-10-16 · W-int · commit `3d66622` · W-1 in the W-int notes
+- **Context:** 2.0 provided `add_stage(name, fn, before=...)`; each W0/W1 report listed its wiring lines. Nine integration tests copy `pipeline.STAGES` and add their own stage.
+- **Options:** (a) module-level `add_stage` at import of `nip.pipeline`; (b) a separate full stage list; (c) an idempotent `wire()`.
+- **Choice:** (c). (a) would run the tests' stages twice, make every store test also run ASR, extraction and the SQL rules, and load the knowledge modules on every `nip --help`.
+- **Consequence:** library callers of `run_store` get only the core stages unless they call `wire()`; 2.9B and the API controller must call it. A test that invokes `nip run` must patch copies of `STAGES`/`AGENTS`, or the wiring leaks into later tests (found and fixed in `test_store.py`).
+
+### B-283 · Stage order: knowledge stages before `timeline`, cue alignment after it
+
+- **Date:** 2026-10-16 · W-int · commit `3d66622` · W-2
+- **Context:** the brief (and `briefs/phase2-plan.md`'s W2 order) listed cue_align + loc.observed before story; architecture.md puts "Target ↔ source cues" in Stage 2 (Timeline), before Stage 3 (Knowledge).
+- **Choice:** `timeline.asr → timeline.align → knowledge.story → knowledge.extract → knowledge.consolidate → knowledge.index → timeline → timeline.cue_align → loc.observed → checks → verification → flags → report`. Forced by what the code reads: `cue_align.stage` reads `ep.timeline`, and `load_timeline` must see the new `fact/{id}` rows and aligned frames. No knowledge stage reads cue links, so the move is data-equivalent (the reviewer agreed, watch item W-a).
+- **Consequence:** doc correction recorded; the reviewer also noted `knowledge.index` (group `text_prep`) runs after `knowledge.extract` (group `llm`), the reverse of the docs' group order, harmless while the embedder runs in-process.
+
+### B-284 · `nip run` asks for asr, text_llm and text_embedder; asr pinned to `timeline.asr.variant`
+
+- **Date:** 2026-10-16 · W-int · commit `3d66622` · W-3
+- **Context:** the laptop Plan had no `asr`, `text_llm` or `text_embedder` decisions, so those stages would never run with a real model (2.5 / 2.8 notes).
+- **Options for the asr choice:** let the planner choose (it picked `faster-whisper-large-v3-int8`, gpu_fraction 0.38, by quality rank, against EXP-003's turbo decision); change the catalog `quality_rank` (1.6's file and semantics); pin to the pipeline config.
+- **Choice:** workload `{asr, text_llm, text_embedder: len(episodes)}` (one unit per episode per slot, a deliberate simplification: the counts only size replicas on multi-GPU hardware); asr pinned to `timeline.asr.variant` (turbo) unless `NIP_PIN_ASR` is set.
+- **Consequence:** laptop Plan: asr turbo (0.19), text_embedder qwen3-embedding-0.6b (0.20), resident; text_llm skipped at 6.69 to 6.73 GB free. Reviewer M-3: asr is requested even for script-only shows, where on one 8 GB GPU in resident mode it competes with text_llm for a stage that does nothing (deferred). Watch W-c: planner behaviour when the pinned turbo cannot be placed was not exercised.
+
+
+### B-285 · Knowledge and story constants move to `config/pipeline.yaml` with identical values
+
+- **Date:** 2026-10-16 · W-int · commit `3d66622` · brief item 3 (2.1 review M-5; the controller had ruled in W1 that 2.1 keep them as module constants until told, because `pipeline.yaml` was 2.5's file until 2.5 completed)
+- **Choice:** a `knowledge:` section (extract prompt_version/max_tokens, grounding and resolve thresholds, story llm_max_tokens / excerpt_chars / days_per_unit) read through `nip.config.pipeline_config()`; module attribute names unchanged; `NIP_INFERRED_STORY_CONFIDENCE_FACTOR` stays an env var.
+- **Consequence:** reviewer minors, deferred: M-1 the four callers read the config at import time although `pipeline_config()` says "read on every call", so a `NIP_CONFIG_DIR` without a `knowledge:` section makes any `nip run` fail with `KeyError` via `wire()`; M-2 two readers of the same file (`timeline_config()` and `pipeline_config()`); M-5 `extract.PROMPT_VERSION` is now user-editable although it versions a template in code and is part of the recording and cache identity.
+
+### B-286 · `load_timeline` resolves superseded facts as well as active ones
+
+- **Date:** 2026-10-16 · W-int · commit `3d66622` · brief item 4b (2.1 note)
+- **Context:** consolidation of a later episode closes earlier facts (`superseded`), and earlier episodes' flags cite them as `fact/{id}`.
+- **Choice:** load `active` + `superseded`, exclude `retracted`. All four `plot.*.sql` rules still filter `status = 'active'`, so only an older flag's evidence resolves a superseded fact.
+- **Consequence (watch W-b):** `superseded` covers two meanings once the fact-correction loop exists (closed by consolidation vs replaced by a reviewer edit); then re-evaluation must look at fact status or version, or an edit must mark the old version distinctly.
+
+### B-287 · vLLM structured outputs run with xgrammar and `disable_any_whitespace`
+
+- **Date:** 2026-10-16 · W-int · commit `3d66622` · brief item 4d (2.1 proposal 6)
+- **Context:** 2.1 measured about 5 % of scenes running to max_tokens and attributed it to whitespace.
+- **Choice:** `serving.vllm_args` always appends `--structured-outputs-config {"backend": "xgrammar", "disable_any_whitespace": true}` (vLLM 0.30 syntax; the old `--guided-decoding-backend xgrammar:disable-any-whitespace` is gone and `auto` is rejected with the option). Confirmed applied in the engine config in the image smoke.
+- **Consequence:** **the hypothesis behind it was wrong.** W-serve measured 2 of 25 scenes still at 2,048 tokens with the flag on, and found the cause to be an enumeration loop inside valid JSON ([C-49](experiments.md#c-49--does-xgrammars-disable_any_whitespace-stop-the-extraction-runaway)). The flag stays (JSON output has fixed separators).
+
+### B-288 · CI's integration step runs the Postgres-only store tests
+
+- **Date:** 2026-10-16 · W-int · commit `3d66622` · **Controller ruling** (W0: adding `tests/integration/test_store.py` to `ci.yml` assigned to W-int) + brief item 4e
+- **Choice:** the ten Postgres-only store files under `NIP_PROFILE=cpu`, with `test_index_pg.py::test_real_embedder_ranks` deselected (it downloads 1.2 GB under `NIP_INDEX_REAL`, and `NIP_CI=1` turns a skip into a failure). LLM replays come from the tracked `tests/fixtures/llm` (142 files, reviewer count).
+- **Consequence:** 76 passed locally with the exact CI command. W-serve appended its Postgres tests to `test_store.py` so CI runs them.
+
+### B-289 · The clearance OCR stage is not wired by W-int; 2.7 may add the one line
+
+- **Date:** 2026-10-16 · W-int · W-4 → **Controller ruling** ("2.7 may add the one add_stage line for the clearance OCR stage in pipeline.py (after W-serve lands)")
+- **Context:** 2.6 exposes only `ocr_detections` and `insert_detections`, no `fn(ep)` stage; `wire()` lives in `pipeline.py`, which 2.7 does not own.
+- **Options (W-4):** 2.7 adds one `add_stage("clearance.ocr", ...)` line; or 2.9B (the W3 owner) adds it.
+- **Choice:** 2.7, after W-serve. **Consequence:** clearance has no stage in W-int's runs; `clearance.CHECKS` stays empty until 2.7.
+
+### B-290 · The vLLM image smoke is re-run on the new lock, with a forced exact-KV setting
+
+- **Date:** 2026-10-16 · W-int · **Controller ruling** ("W-int must re-run the vLLM image smoke (transformers/hf-hub changed by gliner)"); fix commit `ff7b038`
+- **Context:** 2.6's gliner pin moved transformers 5.20.0 → 5.16.1 and huggingface-hub 2.2.0 → 1.33.0 in the image's install; the Phase 1 smoke had validated the previous lock.
+- **Choice:** rebuild `nip:dev` (old kept as `nip:pre-wint`), run `test_serving.py` in ray-head and one qwen3.5-4b-awq start through the shipped `serving.vllm_args`. Because the planner refused text_llm at the desktop's VRAM, the start forced EXP-001's `kv-planner` exact KV (`--kv-cache-memory-bytes 1006632960`).
+- **Consequence:** PASS; the planner's own text_llm path was not exercised; load and throughput were worse than the Phase 1 smoke (n = 1, not attributed). The latent placeholder-test failure (Slot.ASR now bound to 2.5's actor) was fixed by using `Slot.DETECTOR`.
+
+### B-291 · The ASR stub under the cpu profile still does its I/O (proposal, not built)
+
+- **Date:** 2026-10-16 · W-int · W-6 (not built)
+- **Context:** under the cpu profile the stub ASR still downloads the picture and extracts audio for an empty transcript (13.3 s on Sintel).
+- **Choice:** not changed: skipping it would hide the I/O path from cpu-profile tests.
+
+## W-serve Real models for `nip run` (staged serving in ray-head)
+
+### B-292 · A W-serve step before W2: `nip run` inside ray-head with staged serving, and an `HF_HOME` default
+
+- **Date:** 2026-10-16 · W-serve · **Controller ruling** W-5 (and W-7)
+- **Context:** W-int found that no real LLM ever ran in `nip run` on the laptop: (a) nothing deploys the Serve apps for a run started on the Windows host (no Ray there; Phase 2 ruling R8 deferred the pgqueuer controller, [B-120](decisions.md#b-120--phase-2-plan-rulings-r1-to-r15-adopted)); (b) at the desktop's free VRAM the planner skips text_llm. W-int's W-5 options: run inside ray-head with `serving.run(plan, ...)`; a `nip serve up/down` command; wait for the Phase 4 controller. Separately its first real-ASR pass put 2.8 GB of HF models on C: because `HF_HOME` was unset (W-7).
+- **Choice:** run inside ray-head with staged serving (deploy per stage group, teardown, VRAM check), which matches the docs' "controller runs inside the Ray cluster"; `nip` defaults `HF_HOME` to `<repo>/models/hf`. W-int review I-1 (silent skipped slots) was folded into the same step because W-serve owned `pipeline.py`. Cost if wrong (ledger): one extra exec hop for laptop runs.
+- **Consequence:** [B-293](#b-293--nip-run---in-cluster-plus-a-documented-docker-compose-exec-line-no-wrapper-command-no-schedulerpy) to [B-303](#b-303--the-extraction-runaway-and-single-stream-throughput-are-handed-on-not-fixed-in-w-serve).
+
+### B-293 · `nip run --in-cluster` plus a documented `docker compose exec` line; no wrapper command, no `scheduler.py`
+
+- **Date:** 2026-10-16 · W-serve · commit `c02a542` · WS-1
+- **Options:** a `nip cluster run` host wrapper that shells out to `docker compose exec` (it must know the compose files, `MSYS_NO_PATHCONV` and env passing); a flag that runs inside ray-head; wait for the Phase 4 controller.
+- **Choice:** the flag, the smallest piece matching project-structure.md's `runtime/scheduler.py` / `controller.py` inside the cluster. The command: `HF_HUB_OFFLINE=1 docker compose -f compose.yaml -f compose.dev.yaml up -d --wait ray-head`, then `MSYS_NO_PATHCONV=1 docker compose -f compose.yaml -f compose.dev.yaml exec ray-head nip run --show S --episodes E… --in-cluster`.
+- **Consequence:** one command on the laptop, but the user types the compose prefix; `--in-cluster` on the host raises `BadParameter` with the in-cluster command. `runtime/scheduler.py` was not created; the segment loop is about 15 lines in `run_store`, to move when the controller lands.
+
+### B-294 · Only vLLM slots are deployed as Serve apps; actor slots stay in-process
+
+- **Date:** 2026-10-16 · W-serve · commit `c02a542` · WS-3
+- **Context:** only `text_llm` is called over HTTP; ASR (faster-whisper, CUDA) and the text embedder (CPU) are built in-process by their stages. Deploying the whole Plan group would load whisper twice on an 8 GB GPU.
+- **Choice:** `pipeline.serve_slots` deploys only slots whose engine is `vllm`. Before a group loads, the in-process ASR cache is cleared (`asr.backend.cache_clear()` + `gc.collect()`).
+- **Consequence:** the cache release is unexercised (M-6: every run was script-only). Revisit when a stage calls an actor over Serve, as 2.6's OCR/NER clients will (they hard-code `SERVE_URL`).
+
+### B-295 · Staged serving is cut into stage segments, not 1.7's `serving.run(plan, work)`
+
+- **Date:** 2026-10-16 · W-serve · commit `c02a542` · design entry in the W-serve notes
+- **Context:** `serving.run` deploys every group's apps and calls `work(group)` in the Plan's group order, but the pipeline order runs `knowledge.index` (`text_prep`) after `knowledge.extract` (`llm`).
+- **Choice:** `pipeline.segments(STAGES, served)` cuts the stage list where the needed Serve group changes; each segment runs inside `serving.group(...)` (a new context manager: idle → deploy → body → teardown → VRAM within idle + 256 MiB). `serving.run` was rewritten on top of `group`; 1.7's tests pass unchanged.
+- **Consequence:** with the wired order the model loads once per run (`[story, extract]` in `llm`). Reviewer watch: if the embedder becomes a Serve app, `text_prep` would split into a second load.
+
+### B-296 · A skipped slot's stages are skipped by one guard in `run_store`, and the checks they feed are gaps
+
+- **Date:** 2026-10-16 · W-serve · commit `c02a542` · WS-4 (fixes W-int review I-1)
+- **Context:** on a non-cpu Plan without text_llm the stages fell back to `StubLLM` or returned silently, and the run said `completed` with script_critic coverage 1.0 over 0 facts.
+- **Options:** edit the three stage modules (`extract.py`, `index.py`, `asr.py`, owned by others); one guard in `run_store`.
+- **Choice:** the guard, keyed on `plan.skipped_slots` (not "absent from decisions", so `stub_plan()` tests keep their behaviour): `STAGE_SLOTS` decides which stages are not called; `knowledge.story` is `RULES_ONLY`; `FEEDS = {"knowledge.extract": "plot."}` moves the plot checks to `skipped`, so the run is `completed_with_gaps`. ASR and index skips are recorded but not gaps. `ReportPlan` gains additive optional `skipped_slots` and `warnings`; the run summary gains `plan` and `serving`; episodes gain `skipped_stages`.
+- **Consequence:** `extract.text_llm`'s stub fallback (`extract.py:276-279`) is still in the code but unreachable from `nip run` on a hardware Plan. Reviewer minors deferred: M-3 `slot_reason` parses warning strings (a structured `{slot: reason}` is the upgrade path); M-4 coverage 0.0 for a lost agent looks the same as a "not applicable" 0.0.
+
+### B-297 · A VRAM skip says free vs needed, from the planner's own formula
+
+- **Date:** 2026-10-16 · W-serve · commits `c02a542`, `dff0f7f` (M-1, M-2) · brief item 2
+- **Choice:** `no_fit()` replaces the bare `no hardware for <slot>`: smallest candidate's per-GPU need at its minimum context, max(weights + KV + overhead, startup peak), against the roomiest GPU's usable = min(gmu × total, free − margin). Example: "qwen3.5-4b-awq needs 6.25 GiB on one GPU, GPU 0 has 6.20 usable = min(0.90 x 8.00 total, 6.70 free - 0.50 margin): short 0.05 GiB". The margin is passed to `planner.plan(margin_gb=…)` so message and planner cannot drift. After review: `need_gb` reuses `planner._kv_gb`; when VRAM is not the cause the bare reason is kept (never a negative shortfall). A run outside the cluster reports `no Serve for <slot>`.
+
+### B-298 · Importing `nip` defaults `HF_HOME` to the repo's model cache
+
+- **Date:** 2026-10-16 · W-serve · commit `c02a542` · W-7 (**Controller ruling** in W-5)
+- **Context:** W-int's first real-ASR pass downloaded turbo (1.6 GB) and Qwen3-Embedding-0.6B (1.2 GB) into `C:\Users\pc872\.cache\huggingface\hub` because `HF_HOME` was unset.
+- **Options:** default in `nip.config`; or each client passes `cache_dir`.
+- **Choice:** `nip/config.py` `os.environ.setdefault("HF_HOME", …)` at import: `$NIP_MODEL_CACHE/hf` (compose sets `/models`), else `<repo>/models/hf`; the empty `nip/__init__.py` imports `nip.config` (one line outside the brief's file list, needed for "before any HF import"; the reviewer agreed only the package `__init__` runs before every entry point).
+- **Consequence:** in the container compose already sets `HF_HOME=/models/hf`, so the default acts on the host. Reviewer M-7 (deferred): `nip.config` mutates the environment for every `import nip.contracts`, bypassing the contracts layer's import-linter ban on `nip.config` (import-linter does not count implicit parent-package imports); say so in the import-linter contract comment. The existing C: downloads were left for the user ("Do NOT delete", ledger).
+
+### B-299 · `compose.dev.yaml` mounts the weights and the source into ray-head
+
+- **Date:** 2026-10-16 · W-serve · commit `c02a542`
+- **Context:** the named `models` volume held none of `models/hf`; the 26.5 GB image runs its baked source copy.
+- **Choice:** ray-head mounts `./models:/models`, `./src`, `./config`, `./eval`, `./tests` (code read-only) with `PYTHONPATH=/app/src:/app`, the same set as 1.7's `exp001.compose.yaml`. `HF_HUB_OFFLINE=1` is set when the container is created (the vLLM child inherits Ray's environment), documented in the overlay header.
+- **Consequence:** ray-head must be created from a shell without the host-side `NIP_DATABASE_URL` / `NIP_S3_ENDPOINT`, or compose bakes the loopback URLs into the container (a fix-round run failed in 11 s this way).
+
+### B-300 · `NIP_VRAM_MARGIN_GB`, default 0.5; the 8 GB laptop may set 0.25
+
+- **Date:** 2026-10-16 · W-serve · commit `dff0f7f` · **Controller ruling** (review I-2; WS-5)
+- **Context:** the shipped 0.5 GiB margin refused qwen3.5-4b-awq by 0.02 to 0.21 GiB with the user's usual desktop apps open; the real end-to-end run used a monkeypatched 0.25 (device peak 7,585 of 8,188 MiB). WS-5 options: keep 0.5 (text_llm runs only when the desktop is at about 1,045 MiB or less); an env knob; lower it to 0.25 on single-GPU WSL2 hosts.
+- **Choice:** env knob `NIP_VRAM_MARGIN_GB` (`nip.config.vram_margin_gb()`), default 0.5, fed to `planner.plan(margin_gb=…)` and `no_fit`; `.env.example` documents 0.25 for the laptop (EXP-001: real use +54..107 MiB over the prediction). An environment-only difference; cost if wrong (ledger): occasional start OOM → recorded gap.
+- **Consequence:** run 3 at 0.25 peaked at 7,792 of 8,188 MiB; the gpu test passed at 0.5 when the desktop was light (388 MiB used). Builds on [B-083](decisions.md#b-083--exact-kv-budgets-on-single-gpu-engines-sized-by-the-planner-from-probed-free-vram).
+
+### B-301 · One execution order everywhere: each stage over all episodes before the next stage
+
+- **Date:** 2026-10-16 · W-serve · commit `dff0f7f` · **Controller ruling** (review I-3; supersedes WS-2's "in-cluster only")
+- **Context:** the first version ran in-cluster runs segment-major (so the model loads once) but kept the per-episode order on the host, so the same input gave different `plot.*` flags for earlier episodes on the host and in the cluster (the host path is the test and CI proxy). The docs imply group-major ("Load group → drain all its work units → unload"; "Each model is loaded at most once per run").
+- **Choice:** stage-major over all episodes, on the host and in the cluster, justified by the spec and cross-episode Script Critic; `segments()` only decides where a Serve group is held up. Cost if wrong (ledger): higher peak memory for long seasons.
+- **Consequence:** every episode's plot checks see the facts of every episode in the run. Test: 6 identical flags on both paths over synthetic S01E01-02. Single-transaction semantics hold (re-review).
+
+### B-302 · A Serve group that fails to deploy is a coverage gap; VRAM drift after the work is a warning
+
+- **Date:** 2026-10-16 · W-serve · commit `dff0f7f` · review I-1 (fix as the reviewer proposed; tolerance value is the implementer's)
+- **Context:** a deploy `ServingError` rolled back every episode and marked the run `failed`; with 20 to 50 MiB of headroom a load OOM from desktop drift is likely. The post-work teardown check raised if VRAM was not within 256 MiB of the pre-load idle, and the desktop moved 604 MiB (1,065 → 1,669) in 25 minutes.
+- **Choice:** a deploy failure removes the group's slots from each episode's Plan (`no Serve for text_llm: group llm failed to deploy: …`) and degrades through the same path as a planner skip, ending `completed_with_gaps` with the error in `serving[]`. Post-work drift becomes `serving[].warning`; `DRIFT_TOLERANCE_MIB = 1024` (a left-over model is at least 1.5 GiB, vLLM about 6 GiB); the apps are deleted before the wait, and if the desktop really took the room the next group's deploy fails as a gap.
+- **Consequence:** re-review minors (deferred): `rec["error"]` keeps only the first line, losing the teardown-also-failed note; the drift warning is not logged and not in `plan.warnings` or report.json.
+
+### B-303 · The extraction runaway and single-stream throughput are handed on, not fixed in W-serve
+
+- **Date:** 2026-10-16 · W-serve · WS-6 and the fix-round runaway analysis
+- **Context:** runs 2 and 3 lost `sc/7` and `sc/25` to max_tokens (2/25), about 89 to 110 s of GPU each; the cause is an enumeration loop inside schema-valid JSON ([C-49](experiments.md#c-49--does-xgrammars-disable_any_whitespace-stop-the-extraction-runaway)). Extraction sends one scene at a time (14 to 24 tok/s), so 25 scenes take about 460 to 560 s.
+- **Choice:** the runaway fix candidates (`maxItems` on `events`, forbidding `confidence: 0.0` events, a repetition penalty) are in 2.1B's `extract.py` / `llm.py`, so the evidence went to 2.1B; bounded units in flight per replica (docs › Work units and backpressure) to W2 / 2.9B.
+- **Consequence:** 2.1B shipped a runaway guard (see the 2.1B record).
+
+## 2.close Phase 2 closeout
+
+### B-304 · CUDA 12 cuBLAS only, on `ldconfig`, and the uv cache dir fixed
+
+- **Date:** 2026-10-18 · 2.close · commits `d5ef357`, `7532221` · DP-2.close-1 (+ review M1)
+- **Context:** the image is CUDA 13; CTranslate2 4.8.3's Linux wheel dlopens `libcublas.so.12` and never cuDNN ([journal](journal.md#2026-10-18--2close-image-cuda-12-cublas-for-faster-whisper-and-a-uv-cache-mount-that-was-never-used)).
+- **Options:** cuBLAS + cuDNN cu12 wheels as the docs say (cuDNN unused on Linux, and `nvidia-cudnn-cu12` would overwrite the cu13 `nvidia/cudnn` directory); a system CUDA 12 install (+GB, apt); `LD_LIBRARY_PATH` (lost if a launcher overrides the environment).
+- **Choice:** `nvidia-cublas-cu12` in the `serve` extra (locked, Linux only) + an `/etc/ld.so.conf.d` entry + `ENV UV_CACHE_DIR=/root/.cache/uv UV_LINK_MODE=copy`. The wheels' licence (NVIDIA CUDA proprietary redistributable, the same class as the base image's CUDA libraries) was accepted; the docs' License Policy covers catalog variants, not pip wheels.
+- **Consequence:** faster-whisper runs on the GPU in ray-head (RTF 0.019 to 0.027); image 25.1 GB (was 26.5); a later cuBLAS bump is a lock change; drop the wheel if CTranslate2 moves to CUDA 13. Deferred (review M2): the hardcoded `python3.12/dist-packages` path has no build-time guard.
+
+### B-305 · `gliner-x-large` stays the planner's pick on the 8 GB laptop, measured, no pin
+
+- **Date:** 2026-10-18 · 2.close · commits `d2a8fa3`, `c0988ee`, `cf6724e` · DP-2.close-2 · **Controller ruling** (keep only if EXP-008 recall ≥ base)
+- **Context:** the planner picked `gliner-x-large` from an unmeasured 3.7 GiB estimate, and runs pinned `NIP_PIN_NER=gliner-x-base`; 2.7's ruling had already said the NER variant comes from the planner/catalog, not a pin.
+- **Options:** keep a pin (the withdrawn DP-2.7-5); demote large in the catalog (quality_rank below base); measure and leave the planner alone.
+- **Choice:** measure ([C-53](experiments.md#c-53--gliner-x-base-vs-gliner-x-large-size-latency-and-candidates-on-sintels-stored-ocr)): x-large 2.6 GiB, x-base 1.4, `pp-ocrv6-medium` 1.6 (`family: rapidocr`). The review found the default unscored; the controller ruled large stays only if a scored EXP-008 run (3 seeds, both films) shows recall at least equal to base. The NER A/B on replayed OCR gave recall 1.00 for both and shown FP per content-hour 90.99 → 86.55 ([C-54](experiments.md#c-54--ner-ab-on-replayed-ocr-gliner-x-large-vs-gliner-x-base-on-the-exp-008-end-to-end-benchmark)), so large stays.
+- **Consequence:** laptop runs use large (+1.2 GiB, about +25 ms per call); `NIP_PIN_NER` is no longer needed; the published 2.7 EXP-008 numbers are for base and stay reproducible because `exp008_e2e run-cpu` still pins base in code. The A/B bounds "no recall loss" only: the benchmark barely exercises NER-driven checks.
+
+### B-306 · Occurrence ref `clr/occ-<hash>` with kind `clearance_item`; occurrences are derived, not stored
+
+- **Date:** 2026-10-18 · 2.close · commit `5f65199` · DP-2.close-3
+- **Context:** stored clearance flags claim `clr/occ-<hash>` spans that existed only in the run's timeline.
+- **Options:** a new `EvidenceKind` (frozen contract, DB enum, every consumer); a first-class ref format with the existing kind; occurrence rows.
+- **Choice:** `refs.occurrence()` / `refs.is_occurrence()`; `load_timeline` rebuilds keyframe OCR text and occurrence spans from the stored `detection` rows through `checks.with_stored_ocr` (helpers in `checks.py` because importing `stage` costs 9.3 s for Presidio/spaCy against 0.8 s).
+- **Consequence:** no migration and no contract change; `load_timeline` costs one extra query per episode plus the occurrence analysis (about 0.07 s on Sintel) when OCR rows exist; 34/34 stored Sintel flags re-verify without OCR. Deferred (review M4): `store.load` now lazily imports `agents.clearance.checks`, inverting store → agents.
+
+### B-307 · The occurrence hash uses registry-independent fields only
+
+- **Date:** 2026-10-18 · 2.close · commit `ddf6206` · review I1 · **Controller ruling**
+- **Context:** hashing the matched registry item made the ref change when an unknown item was later logged, so the stored claim stopped resolving.
+- **Choice:** hash episode, check, the normalized text of the first read and the first keyframe `(shot, n)`; the matched item is separate `context` evidence. Known limit: logging an item that merges two differently spelled reads into one occurrence can move the first keyframe. The rule re-check still drops the one flag whose item status changed (its "not in the clearance log" finding is stale); relaxing `ClearanceText.recheck` was left to 2.9B (see [B-124](decisions.md#b-124--a-clearance-status-change-shows-in-the-run-diff-as-resolved--new)).
+
+### B-308 · Nothing changed in the image for OCR; the CPU fallback stays
+
+- **Date:** 2026-10-18 · 2.close · no commit (no change)
+- **Context:** the brief asked to make onnxruntime-gpu's CUDA provider load in the container; it already did ([C-52](experiments.md#c-52--rapidocr-in-the-container-cuda-provider-vs-cpu-and-the-041-kfs-that-was-not-reproduced)), and the log line read as a failure is a benign ORT 1.31 warning.
+- **Choice:** no image change for OCR; `RapidOcrBackend(cuda=False)` and `_cuda()` false without torch CUDA remain the fallback. **Consequence:** 2.7's "OCR ran on the CPU in the container" statement is wrong and recorded as such.
 
 ## 2.9B-1 Stage cache, incremental re-runs, run diff
 
